@@ -1731,6 +1731,16 @@ namespace NPOI.OpenXmlFormats.Dml
                 this.prstClrField = value;
             }
         }
+
+        public bool IsSetSrgbClr()
+        {
+            throw new NotImplementedException();
+        }
+
+        public CT_SRgbColor AddNewSrgbClr()
+        {
+            throw new NotImplementedException();
+        }
     }
 
     [Serializable]
@@ -2283,6 +2293,11 @@ namespace NPOI.OpenXmlFormats.Dml
             {
                 this.rotWithShapeFieldSpecified = value;
             }
+        }
+
+        public bool IsSetBlip()
+        {
+            return this.blipField != null;
         }
     }
 

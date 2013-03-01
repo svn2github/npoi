@@ -21,7 +21,6 @@
 namespace NPOI.SS.Formula.Functions
 {
     using System;
-    using NPOI.SS.Formula.Eval;
 
     /**
      * @author Amol S. Deshmukh &lt; amolweb at ya hoo dot com &gt;
@@ -32,7 +31,10 @@ namespace NPOI.SS.Formula.Functions
 
         public override double Evaluate(double d)
         {
-            return Math.Round(d - 0.5);
+            if (d > 0)
+                return Math.Round(d - 0.49);
+            else
+                return Math.Round(d - 0.5);
         }
 
     }

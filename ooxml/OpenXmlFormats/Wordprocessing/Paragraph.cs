@@ -3054,7 +3054,7 @@ namespace NPOI.OpenXmlFormats.Wordprocessing
 
         public bool IsSetLang()
         {
-            return !string.IsNullOrEmpty(this.langField.val);
+            return this.langField != null;// !string.IsNullOrEmpty(this.langField.val);
         }
 
         public CT_Language AddNewLang()
@@ -3185,6 +3185,11 @@ namespace NPOI.OpenXmlFormats.Wordprocessing
         public bool IsSetSz()
         {
             return (this.szField!=null && this.szField.val != 0);
+        }
+
+        public bool IsSetColor()
+        {
+            return colorField != null && !string.IsNullOrEmpty(colorField.val);
         }
     }
 

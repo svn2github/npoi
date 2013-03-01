@@ -17,21 +17,19 @@
 namespace NPOI.HSSF.Converter
 {
     using System;
-    using System.Collections.Generic;
     using System.Text;
     using System.IO;
 
     using NPOI.HSSF.UserModel;
     using NPOI.SS.UserModel;
     using NPOI.HSSF.Util;
-    using NPOI.HSSF.Record.CF;
-    using NPOI.Util;
     using NPOI.SS.Util;
 
     public class ExcelToHtmlUtils
     {
-        private static short EXCEL_COLUMN_WIDTH_FACTOR = 256;
-        private static int UNIT_OFFSET_LENGTH = 7;
+        private const short EXCEL_COLUMN_WIDTH_FACTOR = 256;
+        private const int UNIT_OFFSET_LENGTH = 7;
+
         public static void AppendAlign(StringBuilder style, HorizontalAlignment alignment)
         {
             switch (alignment)

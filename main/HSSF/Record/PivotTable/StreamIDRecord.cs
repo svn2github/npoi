@@ -17,7 +17,6 @@
 
 namespace NPOI.HSSF.Record.PivotTable
 {
-    using System;
     using System.Text;
     using NPOI.HSSF.Record;
     using NPOI.Util;
@@ -31,7 +30,7 @@ namespace NPOI.HSSF.Record.PivotTable
      */
     public class StreamIDRecord : StandardRecord
     {
-        public static short sid = 0x00D5;
+        public const short sid = 0x00D5;
 
         private int idstm;
 

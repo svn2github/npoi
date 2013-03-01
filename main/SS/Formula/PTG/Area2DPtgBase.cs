@@ -19,8 +19,6 @@ namespace NPOI.SS.Formula.PTG
 {
     using System;
     using System.Text;
-    using System.Collections;
-    using NPOI.HSSF.Record;
     using NPOI.Util;
 
     using NPOI.SS.Util;
@@ -31,7 +29,7 @@ namespace NPOI.SS.Formula.PTG
     [Serializable]
     public abstract class Area2DPtgBase : AreaPtgBase
     {
-        private static int SIZE = 9;
+        private const int SIZE = 9;
 
         protected Area2DPtgBase(int firstRow, int lastRow, int firstColumn, int lastColumn, bool  firstRowRelative, bool  lastRowRelative, bool  firstColRelative, bool  lastColRelative)
             : base(firstRow, lastRow, firstColumn, lastColumn, firstRowRelative, lastRowRelative, firstColRelative, lastColRelative)

@@ -16,13 +16,12 @@
 ==================================================================== */
 
 
+using NPOI.HSSF.Util;
+
 namespace NPOI.HSSF.UserModel
 {
     using System;
-    using System.IO;
-    using System.Collections;
     using NPOI.HSSF.Record;
-    using NPOI.SS.UserModel;
 
     /// <summary>
     /// Represents a Font used in a workbook.
@@ -126,6 +125,16 @@ namespace NPOI.HSSF.UserModel
             set { font.ColorPaletteIndex=value; }
         }
 
+        /// <summary>
+        /// get the color value for the font
+        /// </summary>
+        /// <param name="wb">HSSFWorkbook</param>
+        /// <returns></returns>
+        public HSSFColor GetHSSFColor(HSSFWorkbook wb)
+        {
+            HSSFPalette pallette = wb.GetCustomPalette();
+            return pallette.GetColor(Color);
+        }
 
         /// <summary>
         /// Gets or sets the boldness to use

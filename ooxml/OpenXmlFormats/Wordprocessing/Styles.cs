@@ -86,12 +86,13 @@ namespace NPOI.OpenXmlFormats.Wordprocessing
 
         public bool IsSetDocDefaults()
         {
-            throw new NotImplementedException();
+            return this.docDefaultsField != null;
         }
 
         public CT_DocDefaults AddNewDocDefaults()
         {
-            throw new NotImplementedException();
+            this.docDefaultsField = new CT_DocDefaults();
+            return this.docDefaultsField;
         }
     }
 
@@ -141,12 +142,13 @@ namespace NPOI.OpenXmlFormats.Wordprocessing
 
         public bool IsSetRPrDefault()
         {
-            throw new NotImplementedException();
+            return this.rPrDefaultField != null;
         }
 
         public CT_RPrDefault AddNewRPrDefault()
         {
-            throw new NotImplementedException();
+            this.rPrDefaultField = new CT_RPrDefault();
+            return this.rPrDefaultField;
         }
     }
 
@@ -180,12 +182,13 @@ namespace NPOI.OpenXmlFormats.Wordprocessing
 
         public bool IsSetRPr()
         {
-            throw new NotImplementedException();
+            return this.rPrField != null;
         }
 
         public CT_RPr AddNewRPr()
         {
-            throw new NotImplementedException();
+            this.rPrField = new CT_RPr();
+            return this.rPrField;
         }
     }
 
@@ -394,6 +397,13 @@ namespace NPOI.OpenXmlFormats.Wordprocessing
             {
                 this.countField = value;
             }
+        }
+
+        public CT_LsdException AddNewLsdException()
+        {
+            CT_LsdException lsd = new CT_LsdException();
+            this.lsdExceptionField.Add(lsd);
+            return lsd;
         }
     }
 

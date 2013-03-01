@@ -16,8 +16,6 @@
 ==================================================================== */
 namespace NPOI.HSSF.EventUserModel
 {
-    using System;
-    using System.Text;
     using NPOI.HSSF.Record;
     using NPOI.HSSF.EventUserModel;
     using NPOI.HSSF.EventUserModel.DummyRecord;
@@ -73,6 +71,12 @@ namespace NPOI.HSSF.EventUserModel
             }
             else
             {
+                if (record is StringRecord)
+                {
+                    //it contains only cashed result of the previous FormulaRecord evaluation
+                    childListener.ProcessRecord(record);
+                    return;
+                }
                 thisRow = -1;
                 thisColumn = -1;
 

@@ -19,7 +19,6 @@ namespace NPOI.HSSF.Record
 {
     using System;
     using System.Text;
-    using System.IO;
     using NPOI.Util;
     using NPOI.HSSF.Util;
 
@@ -35,6 +34,7 @@ namespace NPOI.HSSF.Record
      */
     public class HyperlinkRecord : StandardRecord
     {
+        private static POILogger logger = POILogFactory.GetLogger(typeof(HyperlinkRecord));
         /**
          * Link flags
          */
@@ -45,19 +45,19 @@ namespace NPOI.HSSF.Record
         private const int HLINK_TARGET_FRAME = 0x80;  // has 'target frame'
         private const int HLINK_UNC_PATH = 0x100;  // has UNC path
 
-        public static GUID STD_MONIKER = GUID.Parse("79EAC9D0-BAF9-11CE-8C82-00AA004BA90B");
-        public static GUID URL_MONIKER = GUID.Parse("79EAC9E0-BAF9-11CE-8C82-00AA004BA90B");
-        public static GUID FILE_MONIKER = GUID.Parse("00000303-0000-0000-C000-000000000046");
+        public static readonly GUID STD_MONIKER = GUID.Parse("79EAC9D0-BAF9-11CE-8C82-00AA004BA90B");
+        public static readonly GUID URL_MONIKER = GUID.Parse("79EAC9E0-BAF9-11CE-8C82-00AA004BA90B");
+        public static readonly GUID FILE_MONIKER = GUID.Parse("00000303-0000-0000-C000-000000000046");
 
         /**
          * Tail of a URL link
          */
-        public static byte[] URL_uninterpretedTail = HexRead.ReadFromString("79 58 81 F4  3B 1D 7F 48   AF 2C 82 5D  C4 85 27 63   00 00 00 00  A5 AB 00 00"); 
+        public static readonly byte[] URL_uninterpretedTail = HexRead.ReadFromString("79 58 81 F4  3B 1D 7F 48   AF 2C 82 5D  C4 85 27 63   00 00 00 00  A5 AB 00 00"); 
         /**
          * Tail of a file link
          */
-        public static byte[] FILE_uninterpretedTail = HexRead.ReadFromString("FF FF AD DE  00 00 00 00   00 00 00 00  00 00 00 00   00 00 00 00  00 00 00 00");
-        private static int TAIL_SIZE = FILE_uninterpretedTail.Length;
+        public static readonly byte[] FILE_uninterpretedTail = HexRead.ReadFromString("FF FF AD DE  00 00 00 00   00 00 00 00  00 00 00 00   00 00 00 00  00 00 00 00");
+        private static readonly int TAIL_SIZE = FILE_uninterpretedTail.Length;
         
         public const short sid = 0x1b8;
 
@@ -199,11 +199,8 @@ namespace NPOI.HSSF.Record
                         int charDataSize = in1.ReadInt();
 
                         //From the spec: An optional unsigned integer that MUST be 3 if present
-                        int optFlags = in1.ReadUShort();
-                        if (optFlags != 0x0003)
-                        {
-                            throw new RecordFormatException("Expected 0x3 but found " + optFlags);
-                        }
+                        // but some files has 4
+                        int usKeyValue = in1.ReadUShort();
                         _address = StringUtil.ReadUnicodeLE(in1, charDataSize / 2);
                     }
                     else
@@ -245,7 +242,7 @@ namespace NPOI.HSSF.Record
             //    {
             //        if (expectedTail[i] != result[i])
             //        {
-            //            Console.WriteLine("Mismatch in tail byte [" + i + "]"
+            //           logger.Log( POILogger.ERROR, "Mismatch in tail byte [" + i + "]"
             //                    + "expected " + (expectedTail[i] & 0xFF) + " but got " + (result[i] & 0xFF));
             //        }
             //    }

@@ -18,14 +18,12 @@
 namespace NPOI.HSSF.Model
 {
     using System;
-    using System.Text;
-    using System.Collections;
 
     using NPOI.HSSF.Record;
     using NPOI.DDF;
     using NPOI.HSSF.UserModel;
 
-
+    [Obsolete]
     public class SimpleFilledShape: AbstractShape
     {
         private EscherContainerRecord spContainer;

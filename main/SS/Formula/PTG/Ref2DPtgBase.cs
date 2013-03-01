@@ -19,7 +19,6 @@ namespace NPOI.SS.Formula.PTG
 {
     using System;
     using System.Text;
-    using NPOI.HSSF.Record;
     using NPOI.Util;
 
     using NPOI.SS.Util;
@@ -30,7 +29,7 @@ namespace NPOI.SS.Formula.PTG
     [Serializable]
     public abstract class Ref2DPtgBase : RefPtgBase
     {
-        private static int SIZE = 5;
+        private const int SIZE = 5;
 
         /**
          * Takes in a String representation of a cell reference and fills out the

@@ -20,7 +20,6 @@ namespace NPOI.HSSF.UserModel
 {
     using System;
     using System.Collections;
-    using System.Collections.Generic;
     using System.IO;
     using NPOI.HSSF.Model;
     using NPOI.HSSF.Record;
@@ -65,9 +64,9 @@ namespace NPOI.HSSF.UserModel
         private IComment comment;
 
 
-        private static String FILE_FORMAT_NAME = "BIFF8";
-        public static int LAST_COLUMN_NUMBER = SpreadsheetVersion.EXCEL97.LastColumnIndex; // 2^8 - 1
-        private static String LAST_COLUMN_NAME = SpreadsheetVersion.EXCEL97.LastColumnName;
+        private const string FILE_FORMAT_NAME = "BIFF8";
+        public static readonly int LAST_COLUMN_NUMBER = SpreadsheetVersion.EXCEL97.LastColumnIndex; // 2^8 - 1
+        private static readonly string LAST_COLUMN_NAME = SpreadsheetVersion.EXCEL97.LastColumnName;
 
         /// <summary>
         /// Creates new Cell - Should only be called by HSSFRow.  This Creates a cell
@@ -1097,7 +1096,7 @@ namespace NPOI.HSSF.UserModel
             {
                 if (comment == null)
                 {
-                    comment = FindCellComment(sheet.Sheet, record.Row, record.Column);
+                    comment = sheet.FindCellComment(record.Row, record.Column);
                 }
                 return comment;
             }
@@ -1123,46 +1122,13 @@ namespace NPOI.HSSF.UserModel
         /// all comments after performing this action!</remarks>
         public void RemoveCellComment()
         {
-            HSSFComment comment = FindCellComment(sheet.Sheet, record.Row, record.Column);
-            this.comment = null;
-
-            if (comment == null)
+            HSSFComment comment2 = sheet.FindCellComment(record.Row, record.Column);
+            comment = null;
+            if (null == comment2)
             {
-                // Nothing to do
                 return;
             }
-
-            // Zap the underlying NoteRecord
-            IList sheetRecords = sheet.Sheet.Records;
-            sheetRecords.Remove(comment.NoteRecord);
-
-            // If we have a TextObjectRecord, is should
-            //  be proceeed by:
-            // MSODRAWING with container
-            // OBJ
-            // MSODRAWING with EscherTextboxRecord
-            if (comment.TextObjectRecord != null)
-            {
-                TextObjectRecord txo = comment.TextObjectRecord;
-                int txoAt = sheetRecords.IndexOf(txo);
-
-                if (sheetRecords[txoAt - 3] is DrawingRecord &&
-                    sheetRecords[txoAt - 2] is ObjRecord &&
-                    sheetRecords[txoAt - 1] is DrawingRecord)
-                {
-                    // Zap these, in reverse order
-                    sheetRecords.RemoveAt(txoAt - 1);
-                    sheetRecords.RemoveAt(txoAt - 2);
-                    sheetRecords.RemoveAt(txoAt - 3);
-                }
-                else
-                {
-                    throw new InvalidOperationException("Found the wrong records before the TextObjectRecord, can't Remove comment");
-                }
-
-                // Now Remove the text record
-                sheetRecords.Remove(txo);
-            }
+            (sheet.DrawingPatriarch as HSSFPatriarch).RemoveShape(comment2);
         }
 
         /// <summary>
@@ -1175,58 +1141,58 @@ namespace NPOI.HSSF.UserModel
         /// <returns>cell comment or 
         /// <c>null</c>
         ///  if not found</returns>
-        public static HSSFComment FindCellComment(InternalSheet sheet, int row, int column)
-        {
-            HSSFComment comment = null;
-            Dictionary<int, TextObjectRecord> noteTxo = new Dictionary<int, TextObjectRecord>(); //map shapeId and TextObjectRecord
-            int i = 0;
-            for (IEnumerator it = sheet.Records.GetEnumerator(); it.MoveNext(); )
-            {
-                RecordBase rec = (RecordBase)it.Current;
-                if (rec is NoteRecord)
-                {
-                    NoteRecord note = (NoteRecord)rec;
-                    if (note.Row == row && note.Column == column)
-                    {
-                        if (i < noteTxo.Count)
-                        {
-                            TextObjectRecord txo = (TextObjectRecord)noteTxo[note.ShapeId];
-                            comment = new HSSFComment(note, txo);
-                            comment.Row = note.Row;
-                            comment.Column = note.Column;
-                            comment.Author = note.Author;
-                            comment.Visible = (note.Flags == NoteRecord.NOTE_VISIBLE);
-                            comment.String = txo.Str;
-                            break;
-                        }
-                    }
-                }
-                else if (rec is ObjRecord)
-                {
-                    ObjRecord obj = (ObjRecord)rec;
-                    SubRecord sub = obj.SubRecords[0];
-                    if (sub is CommonObjectDataSubRecord)
-                    {
-                        CommonObjectDataSubRecord cmo = (CommonObjectDataSubRecord)sub;
-                        if (cmo.ObjectType == CommonObjectType.COMMENT)
-                        {
-                            //Find the nearest TextObjectRecord which holds comment's text and map it to its shapeId
-                            while (it.MoveNext())
-                            {
-                                rec = (Record)it.Current;
-                                if (rec is TextObjectRecord)
-                                {
-                                    noteTxo.Add(cmo.ObjectId, (TextObjectRecord)rec);
-                                    break;
-                                }
-                            }
+        //public static HSSFComment FindCellComment(InternalSheet sheet, int row, int column)
+        //{
+        //    HSSFComment comment = null;
+        //    Dictionary<int, TextObjectRecord> noteTxo = new Dictionary<int, TextObjectRecord>(); //map shapeId and TextObjectRecord
+        //    int i = 0;
+        //    for (IEnumerator it = sheet.Records.GetEnumerator(); it.MoveNext(); )
+        //    {
+        //        RecordBase rec = (RecordBase)it.Current;
+        //        if (rec is NoteRecord)
+        //        {
+        //            NoteRecord note = (NoteRecord)rec;
+        //            if (note.Row == row && note.Column == column)
+        //            {
+        //                if (i < noteTxo.Count)
+        //                {
+        //                    TextObjectRecord txo = (TextObjectRecord)noteTxo[note.ShapeId];
+        //                    comment = new HSSFComment(note, txo);
+        //                    comment.Row = note.Row;
+        //                    comment.Column = note.Column;
+        //                    comment.Author = note.Author;
+        //                    comment.Visible = (note.Flags == NoteRecord.NOTE_VISIBLE);
+        //                    comment.String = txo.Str;
+        //                    break;
+        //                }
+        //            }
+        //        }
+        //        else if (rec is ObjRecord)
+        //        {
+        //            ObjRecord obj = (ObjRecord)rec;
+        //            SubRecord sub = obj.SubRecords[0];
+        //            if (sub is CommonObjectDataSubRecord)
+        //            {
+        //                CommonObjectDataSubRecord cmo = (CommonObjectDataSubRecord)sub;
+        //                if (cmo.ObjectType == CommonObjectType.COMMENT)
+        //                {
+        //                    //Find the nearest TextObjectRecord which holds comment's text and map it to its shapeId
+        //                    while (it.MoveNext())
+        //                    {
+        //                        rec = (Record)it.Current;
+        //                        if (rec is TextObjectRecord)
+        //                        {
+        //                            noteTxo.Add(cmo.ObjectId, (TextObjectRecord)rec);
+        //                            break;
+        //                        }
+        //                    }
 
-                        }
-                    }
-                }
-            }
-            return comment;
-        }
+        //                }
+        //            }
+        //        }
+        //    }
+        //    return comment;
+        //}
         /// <summary>
         /// Gets the index of the column.
         /// </summary>

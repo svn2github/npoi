@@ -21,8 +21,6 @@ using System.Text;
 namespace NPOI.DDF
 {
     using System;
-    using System.IO;
-    using System.Collections;
     using NPOI.Util;
 
     /// <summary>
@@ -92,6 +90,7 @@ namespace NPOI.DDF
         public int PropertyValue
         {
             get { return propertyValue; }
+            internal set { propertyValue = value; }
         }
 
         /// <summary>

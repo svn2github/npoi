@@ -24,7 +24,6 @@ namespace NPOI.HSSF.Model
     using NPOI.HSSF.Record.Aggregates;
     using NPOI.SS.Formula;
     using NPOI.SS.Util;
-    using NPOI.HSSF.Record.Aggregates.Chart;
 
     /// <summary>
     /// Low level model implementation of a Sheet (one workbook Contains many sheets)
@@ -113,10 +112,10 @@ namespace NPOI.HSSF.Model
         /** Add an UncalcedRecord if not true indicating formulas have not been calculated */
         protected bool _isUncalced = false;
 
-        //public static byte PANE_LOWER_RIGHT = (byte)0;
-        //public static byte PANE_UPPER_RIGHT = (byte)1;
-        //public static byte PANE_LOWER_LEFT = (byte)2;
-        //public static byte PANE_UPPER_LEFT = (byte)3;
+        //public const byte PANE_LOWER_RIGHT = (byte)0;
+        //public const byte PANE_UPPER_RIGHT = (byte)1;
+        //public const byte PANE_LOWER_LEFT = (byte)2;
+        //public const byte PANE_UPPER_LEFT = (byte)3;
 
 
         /// <summary>
@@ -138,8 +137,18 @@ namespace NPOI.HSSF.Model
                     ((RecordAggregate)rb).VisitContainedRecords(new RecordCloner(clonedRecords));
                     continue;
                 }
+
+                if (rb is EscherAggregate)
+                {
+                    /**
+                     * this record will be removed after reading actual data from EscherAggregate
+                     */
+                    rb = new DrawingRecord();
+                }
                 Record rec = (Record)((Record)rb).Clone();
                 clonedRecords.Add(rec);
+
+                
             }
             return CreateSheet(new RecordStream(clonedRecords, 0));
         }
@@ -1182,7 +1191,12 @@ namespace NPOI.HSSF.Model
         public short DefaultRowHeight
         {
             get { return defaultrowheight.RowHeight; }
-            set { defaultrowheight.RowHeight = (value); }
+            set 
+            { 
+                defaultrowheight.RowHeight = (value);
+                // set the bit that specifies that the default settings for the row height have been changed.
+                defaultrowheight.OptionFlags = (short)1;
+            }
         }
 
         /**
@@ -1924,15 +1938,14 @@ namespace NPOI.HSSF.Model
             set { this._isUncalced = value; }
         }
 
-        /**
-         * Finds the DrawingRecord for our sheet, and
-         *  attaches it to the DrawingManager (which knows about
-         *  the overall DrawingGroup for our workbook).
-         * If requested, will Create a new DrawRecord
-         *  if none currently exist
-         * @param drawingManager The DrawingManager2 for our workbook
-         * @param CreateIfMissing Should one be Created if missing?
-         */
+        /// <summary>
+        /// Finds the DrawingRecord for our sheet, and  attaches it to the DrawingManager (which knows about
+        ///  the overall DrawingGroup for our workbook).
+        /// If requested, will Create a new DrawRecord if none currently exist
+        /// </summary>
+        /// <param name="drawingManager">The DrawingManager2 for our workbook</param>
+        /// <param name="CreateIfMissing">Should one be Created if missing?</param>
+        /// <returns>location of EscherAggregate record. if no EscherAggregate record is found return -1</returns>
         public int AggregateDrawingRecords(DrawingManager2 drawingManager, bool CreateIfMissing)
         {
             int loc = FindFirstRecordLocBySid(DrawingRecord.sid);
@@ -1945,7 +1958,7 @@ namespace NPOI.HSSF.Model
                     return -1;
                 }
 
-                EscherAggregate aggregate = new EscherAggregate(drawingManager);
+                EscherAggregate aggregate = new EscherAggregate(true);
                 loc = FindFirstRecordLocBySid(EscherAggregate.sid);
                 if (loc == -1)
                 {
@@ -1958,32 +1971,8 @@ namespace NPOI.HSSF.Model
                 Records.Insert(loc, aggregate);
                 return loc;
             }
-            else
-            {
-                List<RecordBase> records = Records;
-                EscherAggregate r = EscherAggregate.CreateAggregate(records, loc, drawingManager);
-                int startloc = loc;
-                while (loc + 1 < records.Count
-                        && records[loc] is DrawingRecord
-                        && (records[loc + 1] is ObjRecord ||
-                            records[loc + 1] is TextObjectRecord)
-                        )
-                {
-                    loc += 2;
-                    if (records[loc] is NoteRecord) loc ++;
-                }
-                while (records[loc] is NoteRecord)
-                {
-                    loc++;
-                }
-                int endloc = loc - 1;
-
-                records.RemoveRange(startloc,endloc - startloc + 1);
-                records.Insert(startloc, r);
-
-                
-                return startloc;
-            }
+            EscherAggregate.CreateAggregate(records, loc);
+            return loc;
         }
 
         /**

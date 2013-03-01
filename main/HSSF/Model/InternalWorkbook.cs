@@ -73,7 +73,7 @@ namespace NPOI.HSSF.Model
          * (which is duplciated in more than one record)
          */
 
-        private static short CODEPAGE = (short)0x4b0;
+        private const short CODEPAGE = (short)0x4b0;
 
         /**
          * this Contains the Worksheet record objects
@@ -846,19 +846,19 @@ namespace NPOI.HSSF.Model
                 OrCreateLinkTable.CheckExternSheet(sheetnum);
                 FixTabIdRecord();
             }
-            else
-            {
-                // Ensure we have enough tab IDs
-                // Can be a few short if new sheets were added
-                if (records.Tabpos > 0)
-                {
-                    TabIdRecord tir = (TabIdRecord)records[records.Tabpos];
-                    if (tir._tabids.Length < boundsheets.Count)
-                    {
-                        FixTabIdRecord();
-                    }
-                }
-            }
+            //else
+            //{
+            //    // Ensure we have enough tab IDs
+            //    // Can be a few short if new sheets were added
+            //    if (records.Tabpos > 0)
+            //    {
+            //        TabIdRecord tir = (TabIdRecord)records[records.Tabpos];
+            //        if (tir._tabids.Length < boundsheets.Count)
+            //        {
+            //            FixTabIdRecord();
+            //        }
+            //    }
+            //}
         }
 
         public void RemoveSheet(int sheetnum)
@@ -897,13 +897,14 @@ namespace NPOI.HSSF.Model
             }
         }
 
-        /**
-         * make the tabid record look like the current situation.
-         *
-         */
-        private void FixTabIdRecord()
+        /// <summary>
+        /// make the tabid record look like the current situation.
+        /// </summary>
+        /// <returns>number of bytes written in the TabIdRecord</returns>
+        private int FixTabIdRecord()
         {
             TabIdRecord tir = (TabIdRecord)records[records.Tabpos];
+            int sz = tir.RecordSize;
             short[] tia = new short[boundsheets.Count];
 
             for (short k = 0; k < tia.Length; k++)
@@ -911,6 +912,7 @@ namespace NPOI.HSSF.Model
                 tia[k] = k;
             }
             tir.SetTabIdArray(tia);
+            return tir.RecordSize - sz;
         }
 
         /**
@@ -1176,7 +1178,24 @@ namespace NPOI.HSSF.Model
             //    log.Log(DEBUG, "Exiting Serialize workbook");
             return pos;
         }
-
+        /**
+         * Perform any work necessary before the workbook is about to be serialized.
+         *
+         * Include in it ant code that modifies the workbook record stream and affects its size.
+         */
+        public void PreSerialize()
+        {
+            // Ensure we have enough tab IDs
+            // Can be a few short if new sheets were added
+            if (records.Tabpos > 0)
+            {
+                TabIdRecord tir = (TabIdRecord)records[(records.Tabpos)];
+                if (tir._tabids.Length < boundsheets.Count)
+                {
+                    FixTabIdRecord();
+                }
+            }
+        }
         public int Size
         {
             get
@@ -1279,16 +1298,20 @@ namespace NPOI.HSSF.Model
         private static Record CreateWriteAccess()
         {
             WriteAccessRecord retval = new WriteAccessRecord();
-
+            String defaultUserName = "NPOI";
             try
             {
-                retval.Username=(Environment.UserName);
+                String username = (Environment.UserName);
+                // Google App engine returns null for user.name, see Bug 53974
+                if (string.IsNullOrEmpty(username)) username = defaultUserName;
+
+                retval.Username = (username);
             }
             catch (SecurityException)
             {
                 // AccessControlException can occur in a restricted context
                 // (client applet/jws application or restricted security server)
-                retval.Username=("POI");
+                retval.Username = (defaultUserName);
             }
             return retval;
         }
@@ -2743,6 +2766,17 @@ namespace NPOI.HSSF.Model
             numxfs--;
         }
 
+        /// <summary>
+        /// Removes ExtendedFormatRecord record with given index from the file's list. This will make all
+        /// subsequent font indicies drop by one,so you'll need to update those yourself!
+        /// </summary>
+        /// <param name="index">index of the Extended format record (0-based)</param>
+        public void RemoveExFormatRecord(int index)
+        {
+            int xfptr = records.Xfpos - (numxfs - 1) + index;
+            records.Remove(xfptr); // this updates XfPos for us
+            numxfs--;
+        }
         public EscherBSERecord GetBSERecord(int pictureIndex)
         {
             return (EscherBSERecord)escherBSERecords[pictureIndex - 1];
@@ -2963,6 +2997,20 @@ namespace NPOI.HSSF.Model
                 }
                 return record;
             }
+        }
+
+        /**
+	     * Changes an external referenced file to another file.
+	     * A formular in Excel which refers a cell in another file is saved in two parts: 
+	     * The referenced file is stored in an reference table. the row/cell information is saved separate.
+	     * This method invokation will only change the reference in the lookup-table itself.
+	     * @param oldUrl The old URL to search for and which is to be replaced
+	     * @param newUrl The URL replacement
+	     * @return true if the oldUrl was found and replaced with newUrl. Otherwise false
+	     */
+        public bool ChangeExternalReference(String oldUrl, String newUrl)
+        {
+            return linkTable.ChangeExternalReference(oldUrl, newUrl);
         }
     }
 }

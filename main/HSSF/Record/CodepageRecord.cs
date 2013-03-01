@@ -21,8 +21,6 @@ namespace NPOI.HSSF.Record
 {
 
     using System;
-    using System.Collections;
-    using System.IO;
     using System.Text;
     using NPOI.Util;
 
@@ -47,7 +45,7 @@ namespace NPOI.HSSF.Record
          * for)
          */
 
-        public static short CODEPAGE = (short)0x4b0;
+        public const short CODEPAGE = (short)0x4b0;
 
         public CodepageRecord()
         {

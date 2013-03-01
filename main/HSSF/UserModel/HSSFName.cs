@@ -18,15 +18,10 @@
 namespace NPOI.HSSF.UserModel
 {
     using System;
-    using System.IO;
-    using System.Collections;
     using System.Text;
 
     using NPOI.HSSF.Record;
-    using NPOI.Util;
     using NPOI.HSSF.Model;
-    using NPOI.HSSF.Util;
-    using NPOI.SS.Formula;
     using NPOI.SS.Formula.PTG;
 
 
@@ -196,6 +191,17 @@ namespace NPOI.HSSF.UserModel
                 return _definedNameRec.DescriptionText; 
             }
             set { _definedNameRec.DescriptionText = value; }
+        }
+
+
+        //
+        /// <summary>
+        /// Sets the NameParsedFormula structure that specifies the formula for the defined name.
+        /// </summary>
+        /// <param name="ptgs">the sequence of {@link Ptg}s for the formula.</param>
+        public void SetNameDefinition(Ptg[] ptgs)
+        {
+            _definedNameRec.NameDefinition = (ptgs);
         }
 
         /// <summary>

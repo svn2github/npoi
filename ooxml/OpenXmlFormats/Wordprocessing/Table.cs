@@ -920,6 +920,49 @@ namespace NPOI.OpenXmlFormats.Wordprocessing
                 this.tblBordersField = new CT_TblBorders();
             return this.tblBordersField;
         }
+        public CT_String AddNewTblStyle()
+        {
+            this.tblStyleField = new CT_String();
+            return this.tblStyleField;
+        }
+
+        public bool IsSetTblBorders()
+        {
+            return this.tblBordersField != null;
+        }
+
+        public bool IsSetTblStyleRowBandSize()
+        {
+            return this.tblStyleRowBandSizeField != null;
+        }
+
+        public CT_DecimalNumber AddNewTblStyleRowBandSize()
+        {
+            this.tblStyleRowBandSizeField = new CT_DecimalNumber();
+            return this.tblStyleRowBandSizeField;
+        }
+
+        public bool IsSetTblStyleColBandSize()
+        {
+            return this.tblStyleColBandSizeField != null;
+        }
+
+        public CT_DecimalNumber AddNewTblStyleColBandSize()
+        {
+            this.tblStyleColBandSizeField = new CT_DecimalNumber();
+            return this.tblStyleColBandSizeField;
+        }
+
+        public bool IsSetTblCellMar()
+        {
+            return this.tblCellMarField != null;
+        }
+
+        public CT_TblCellMar AddNewTblCellMar()
+        {
+            this.tblCellMarField = new CT_TblCellMar();
+            return this.tblCellMarField;
+        }
     }
 
 
@@ -1676,6 +1719,16 @@ namespace NPOI.OpenXmlFormats.Wordprocessing
                 this.insideVField = new CT_Border();
             return this.insideVField;
         }
+
+        public bool IsSetInsideH()
+        {
+            return this.insideH != null;
+        }
+
+        public bool IsSetInsideV()
+        {
+            return this.insideV != null;
+        }
     }
 
 
@@ -1804,6 +1857,50 @@ namespace NPOI.OpenXmlFormats.Wordprocessing
             {
                 this.rightField = value;
             }
+        }
+
+        public bool IsSetLeft()
+        {
+            return this.leftField != null;
+        }
+
+        public bool IsSetTop()
+        {
+            return this.topField != null;
+        }
+
+        public bool IsSetBottom()
+        {
+            return this.bottomField != null;
+        }
+
+        public bool IsSetRight()
+        {
+            return this.rightField != null;
+        }
+
+        public CT_TblWidth AddNewLeft()
+        {
+            this.leftField = new CT_TblWidth();
+            return this.leftField;
+        }
+
+        public CT_TblWidth AddNewTop()
+        {
+            this.topField = new CT_TblWidth();
+            return this.topField;
+        }
+
+        public CT_TblWidth AddNewBottom()
+        {
+            this.bottomField = new CT_TblWidth();
+            return this.bottomField;
+        }
+
+        public CT_TblWidth AddNewRight()
+        {
+            this.rightField = new CT_TblWidth();
+            return this.rightField;
         }
     }
 
@@ -1943,6 +2040,36 @@ namespace NPOI.OpenXmlFormats.Wordprocessing
         public CT_Height AddNewTrHeight()
         {
             return AddNewObject<CT_Height>(ItemsChoiceType2.trHeight);
+        }
+
+        public CT_OnOff AddNewCantSplit()
+        {
+            return AddNewObject<CT_OnOff>(ItemsChoiceType2.cantSplit);
+        }
+
+        public List<CT_OnOff> GetCantSplitList()
+        {
+            return GetObjectList<CT_OnOff>(ItemsChoiceType2.cantSplit);
+        }
+
+        public CT_OnOff AddNewTblHeader()
+        {
+            return AddNewObject<CT_OnOff>(ItemsChoiceType2.tblHeader);
+        }
+
+        public List<CT_OnOff> GetTblHeaderList()
+        {
+            return GetObjectList<CT_OnOff>(ItemsChoiceType2.tblHeader);
+        }
+
+        public int SizeOfTblHeaderArray()
+        {
+            return SizeOfArray(ItemsChoiceType2.tblHeader);
+        }
+
+        public int SizeOfCantSplitArray()
+        {
+            return SizeOfArray(ItemsChoiceType2.cantSplit);
         }
         #region Generic methods for object operation
 
@@ -2295,6 +2422,18 @@ namespace NPOI.OpenXmlFormats.Wordprocessing
         public CT_Tbl GetTblArray(int p)
         {
             return GetObjectArray<CT_Tbl>(p, ItemsChoiceTableCellType.tbl);
+        }
+
+        public CT_TcPr AddNewTcPr()
+        {
+            this.tcPrField = new CT_TcPr();
+            return this.tcPrField;
+        }
+
+        public bool IsSetTcPr()
+        {
+            return (this.tcPrField != null);
+
         }
     }
 
@@ -2875,6 +3014,7 @@ namespace NPOI.OpenXmlFormats.Wordprocessing
                 this.tcPrChangeField = value;
             }
         }
+
     }
 
     
@@ -3097,6 +3237,41 @@ namespace NPOI.OpenXmlFormats.Wordprocessing
             {
                 this.hideMarkField = value;
             }
+        }
+
+        public CT_Shd AddNewShd()
+        {
+            this.shdField = new CT_Shd();
+            return this.shdField;
+        }
+
+        public bool IsSetShd()
+        {
+            return this.shdField != null;
+        }
+
+        public CT_VerticalJc AddNewVAlign()
+        {
+            this.vAlign = new CT_VerticalJc();
+            return this.vAlign;
+        }
+
+        public CT_VMerge AddNewVMerge()
+        {
+            this.vMerge = new CT_VMerge();
+            return this.vMerge;
+        }
+
+        public CT_TcBorders AddNewTcBorders()
+        {
+            this.tcBorders = new CT_TcBorders();
+            return this.tcBorders;
+        }
+
+        public CT_HMerge AddNewHMerge()
+        {
+            this.hMerge = new CT_HMerge();
+            return this.hMerge;
         }
     }
 

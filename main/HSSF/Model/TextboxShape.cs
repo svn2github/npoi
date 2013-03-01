@@ -19,7 +19,6 @@
 namespace NPOI.HSSF.Model
 {
     using System;
-    using System.Collections;
     using NPOI.DDF;
     using NPOI.HSSF.UserModel;
     using NPOI.HSSF.Record;
@@ -29,6 +28,7 @@ namespace NPOI.HSSF.Model
     /// and lowlevel records for an oval.
     /// @author Glen Stampoultzis (glens at apache.org)
     /// </summary>
+    [Obsolete]
     public class TextboxShape : AbstractShape
     {
         private EscherContainerRecord spContainer;
