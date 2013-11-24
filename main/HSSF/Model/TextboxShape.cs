@@ -19,7 +19,6 @@
 namespace NPOI.HSSF.Model
 {
     using System;
-    using System.Collections;
     using NPOI.DDF;
     using NPOI.HSSF.UserModel;
     using NPOI.HSSF.Record;
@@ -29,6 +28,7 @@ namespace NPOI.HSSF.Model
     /// and lowlevel records for an oval.
     /// @author Glen Stampoultzis (glens at apache.org)
     /// </summary>
+    [Obsolete]
     public class TextboxShape : AbstractShape
     {
         private EscherContainerRecord spContainer;
@@ -143,10 +143,10 @@ namespace NPOI.HSSF.Model
             HSSFTextbox shape = hssfShape;
 
             TextObjectRecord obj = new TextObjectRecord();
-            obj.HorizontalTextAlignment=(int)hssfShape.HorizontalAlignment;
-            obj.VerticalTextAlignment=(int)hssfShape.VerticalAlignment;
+            obj.HorizontalTextAlignment=hssfShape.HorizontalAlignment;
+            obj.VerticalTextAlignment=hssfShape.VerticalAlignment;
             obj.IsTextLocked=true;
-            obj.TextOrientation=TextObjectRecord.TEXT_ORIENTATION_NONE;
+            obj.TextOrientation=TextOrientation.None;
             int frLength = (shape.String.NumFormattingRuns + 1) * 8;
             obj.Str=shape.String;
 

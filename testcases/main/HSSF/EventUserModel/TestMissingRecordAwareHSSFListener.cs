@@ -398,7 +398,7 @@ namespace TestCases.HSSF.EventUserModel
                 if (record is BOFRecord)
                 {
                     BOFRecord r = (BOFRecord)record;
-                    if (r.Type == BOFRecord.TYPE_WORKSHEET)
+                    if (r.Type == BOFRecordType.Worksheet)
                     {
                         log("On new sheet");
                     }
@@ -498,6 +498,28 @@ namespace TestCases.HSSF.EventUserModel
                 throw new AssertionException("Identified bug 45672");
             }
             Assert.AreEqual(2, eorCount);
+        }
+        [Test]
+        public void TestStringRecordHandling()
+        {
+            ReadRecords("53588.xls");
+            Record[] rr = r;
+            int missingCount = 0;
+            int lastCount = 0;
+            for (int i = 0; i < rr.Length; i++)
+            {
+                Record record = rr[i];
+                if (record is MissingCellDummyRecord)
+                {
+                    missingCount++;
+                }
+                if (record is LastCellOfRowDummyRecord)
+                {
+                    lastCount++;
+                }
+            }
+            Assert.AreEqual(1, missingCount);
+            Assert.AreEqual(1, lastCount);
         }
     }
 }

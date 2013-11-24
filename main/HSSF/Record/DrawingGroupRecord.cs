@@ -19,7 +19,6 @@ namespace NPOI.HSSF.Record
 {
 
     using System;
-    using System.Text;
     using System.Collections;
     using NPOI.Util;
     using NPOI.DDF;
@@ -28,8 +27,8 @@ namespace NPOI.HSSF.Record
     {
         public const short sid = 0xEB;
 
-        static int MAX_RECORD_SIZE = 8228;
-        private static int MAX_DATA_SIZE = MAX_RECORD_SIZE - 4;
+        private const int MAX_RECORD_SIZE = 8228;
+        private const int MAX_DATA_SIZE = MAX_RECORD_SIZE - 4;
 
         public DrawingGroupRecord()
         {

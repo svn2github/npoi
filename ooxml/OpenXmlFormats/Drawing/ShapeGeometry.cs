@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Xml.Serialization;
 using System.Diagnostics;
+using System.Xml;
+using NPOI.OpenXml4Net.Util;
+using System.IO;
 
 namespace NPOI.OpenXmlFormats.Dml
 {
@@ -719,6 +722,26 @@ namespace NPOI.OpenXmlFormats.Dml
 
         private string fmlaField;
 
+        public static CT_GeomGuide Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_GeomGuide ctObj = new CT_GeomGuide();
+            ctObj.name = XmlHelper.ReadString(node.Attributes["name"]);
+            ctObj.fmla = XmlHelper.ReadString(node.Attributes["fmla"]);
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "name", this.name);
+            XmlHelper.WriteAttribute(sw, "fmla", this.fmla);
+            sw.Write(">");
+            sw.Write(string.Format("</a:{0}>", nodeName));
+        }
 
         [XmlAttribute(DataType = "token")]
         public string name
@@ -760,7 +783,7 @@ namespace NPOI.OpenXmlFormats.Dml
         private CT_AdjPoint2D[] ptField;
 
 
-        [XmlElement("pt", Order=0)]
+        [XmlElement("pt", Order = 0)]
         public CT_AdjPoint2D[] pt
         {
             get
@@ -787,6 +810,26 @@ namespace NPOI.OpenXmlFormats.Dml
 
         private string yField;
 
+        public static CT_AdjPoint2D Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_AdjPoint2D ctObj = new CT_AdjPoint2D();
+            ctObj.x = XmlHelper.ReadString(node.Attributes["x"]);
+            ctObj.y = XmlHelper.ReadString(node.Attributes["y"]);
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "x", this.x);
+            XmlHelper.WriteAttribute(sw, "y", this.y);
+            sw.Write(">");
+            sw.Write(string.Format("</a:{0}>", nodeName));
+        }
 
         [XmlAttribute]
         public string x
@@ -885,6 +928,30 @@ namespace NPOI.OpenXmlFormats.Dml
 
         private string bField;
 
+        public static CT_GeomRect Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_GeomRect ctObj = new CT_GeomRect();
+            ctObj.l = XmlHelper.ReadString(node.Attributes["l"]);
+            ctObj.t = XmlHelper.ReadString(node.Attributes["t"]);
+            ctObj.r = XmlHelper.ReadString(node.Attributes["r"]);
+            ctObj.b = XmlHelper.ReadString(node.Attributes["b"]);
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "l", this.l);
+            XmlHelper.WriteAttribute(sw, "t", this.t);
+            XmlHelper.WriteAttribute(sw, "r", this.r);
+            XmlHelper.WriteAttribute(sw, "b", this.b);
+            sw.Write(">");
+            sw.Write(string.Format("</a:{0}>", nodeName));
+        }
 
         [XmlAttribute]
         public string l
@@ -1196,6 +1263,31 @@ namespace NPOI.OpenXmlFormats.Dml
         private CT_AdjPoint2D posField;
 
         private string angField;
+        public static CT_ConnectionSite Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_ConnectionSite ctObj = new CT_ConnectionSite();
+            ctObj.ang = XmlHelper.ReadString(node.Attributes["ang"]);
+            foreach (XmlNode childNode in node.ChildNodes)
+            {
+                if (childNode.LocalName == "pos")
+                    ctObj.pos = CT_AdjPoint2D.Parse(childNode, namespaceManager);
+            }
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "ang", this.ang);
+            sw.Write(">");
+            if (this.pos != null)
+                this.pos.Write(sw, "pos");
+            sw.Write(string.Format("</a:{0}>", nodeName));
+        }
 
         [XmlElement(Order = 0)]
         public CT_AdjPoint2D pos
@@ -1290,6 +1382,26 @@ namespace NPOI.OpenXmlFormats.Dml
         private uint idField;
 
         private uint idxField;
+        public static CT_Connection Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_Connection ctObj = new CT_Connection();
+            ctObj.id = XmlHelper.ReadUInt(node.Attributes["id"]);
+            ctObj.idx = XmlHelper.ReadUInt(node.Attributes["idx"]);
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "id", this.id);
+            XmlHelper.WriteAttribute(sw, "idx", this.idx);
+            sw.Write(">");
+            sw.Write(string.Format("</a:{0}>", nodeName));
+        }
 
 
         [XmlAttribute]
@@ -1496,7 +1608,7 @@ namespace NPOI.OpenXmlFormats.Dml
     public class CT_Path2D
     {
 
-        private object[] itemsField;
+        //private object[] itemsField;
 
         private ItemsChoiceType[] itemsElementNameField;
 
@@ -1509,6 +1621,40 @@ namespace NPOI.OpenXmlFormats.Dml
         private bool strokeField;
 
         private bool extrusionOkField;
+        public static CT_Path2D Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_Path2D ctObj = new CT_Path2D();
+            ctObj.w = XmlHelper.ReadLong(node.Attributes["w"]);
+            ctObj.h = XmlHelper.ReadLong(node.Attributes["h"]);
+            if (node.Attributes["fill"] != null)
+                ctObj.fill = (ST_PathFillMode)Enum.Parse(typeof(ST_PathFillMode), node.Attributes["fill"].Value);
+            ctObj.stroke = XmlHelper.ReadBool(node.Attributes["stroke"]);
+            ctObj.extrusionOk = XmlHelper.ReadBool(node.Attributes["extrusionOk"]);
+            //foreach(XmlNode childNode in node.ChildNodes)
+            //{
+            //    if(childNode.LocalName == "ItemsElementName")
+            //        ctObj.ItemsElementName = ItemsChoiceType[].Parse(childNode, namespaceManager);
+            //}
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "w", this.w);
+            XmlHelper.WriteAttribute(sw, "h", this.h);
+            XmlHelper.WriteAttribute(sw, "fill", this.fill.ToString());
+            XmlHelper.WriteAttribute(sw, "stroke", this.stroke);
+            XmlHelper.WriteAttribute(sw, "extrusionOk", this.extrusionOk);
+            sw.Write(">");
+            //if (this.ItemsElementName != null)
+            //    this.ItemsElementName.Write(sw, "ItemsElementName");
+            sw.Write(string.Format("</a:{0}>", nodeName));
+        }
 
         public CT_Path2D()
         {
@@ -1520,39 +1666,39 @@ namespace NPOI.OpenXmlFormats.Dml
         }
 
 
-        [XmlElement("arcTo", typeof(CT_Path2DArcTo))]
-        [XmlElement("close", typeof(CT_Path2DClose))]
-        [XmlElement("cubicBezTo", typeof(CT_Path2DCubicBezierTo))]
-        [XmlElement("lnTo", typeof(CT_Path2DLineTo))]
-        [XmlElement("moveTo", typeof(CT_Path2DMoveTo))]
-        [XmlElement("quadBezTo", typeof(CT_Path2DQuadBezierTo))]
-        [XmlChoiceIdentifier("ItemsElementName")]
-        public object[] Items
-        {
-            get
-            {
-                return this.itemsField;
-            }
-            set
-            {
-                this.itemsField = value;
-            }
-        }
+        //[XmlElement("arcTo", typeof(CT_Path2DArcTo))]
+        //[XmlElement("close", typeof(CT_Path2DClose))]
+        //[XmlElement("cubicBezTo", typeof(CT_Path2DCubicBezierTo))]
+        //[XmlElement("lnTo", typeof(CT_Path2DLineTo))]
+        //[XmlElement("moveTo", typeof(CT_Path2DMoveTo))]
+        //[XmlElement("quadBezTo", typeof(CT_Path2DQuadBezierTo))]
+        //[XmlChoiceIdentifier("ItemsElementName")]
+        //public object[] Items
+        //{
+        //    get
+        //    {
+        //        return this.itemsField;
+        //    }
+        //    set
+        //    {
+        //        this.itemsField = value;
+        //    }
+        //}
 
 
-        [XmlElement("ItemsElementName")]
-        [XmlIgnore]
-        public ItemsChoiceType[] ItemsElementName
-        {
-            get
-            {
-                return this.itemsElementNameField;
-            }
-            set
-            {
-                this.itemsElementNameField = value;
-            }
-        }
+        //[XmlElement("ItemsElementName")]
+        //[XmlIgnore]
+        //public ItemsChoiceType[] ItemsElementName
+        //{
+        //    get
+        //    {
+        //        return this.itemsElementNameField;
+        //    }
+        //    set
+        //    {
+        //        this.itemsElementNameField = value;
+        //    }
+        //}
 
 
         [XmlAttribute]
@@ -1694,27 +1840,61 @@ namespace NPOI.OpenXmlFormats.Dml
 
         private ST_ShapeType prstField;
 
-        public void AddNewAvLst()
+        public CT_GeomGuide AddNewAvLst()
         {
-            //this.avLstField = new List<CT_GeomGuide>();
+            if (this.avLstField == null)
+                this.avLstField = new List<CT_GeomGuide>();
+            CT_GeomGuide geomGuideNode = new CT_GeomGuide();
+            avLstField.Add(geomGuideNode);
+            return geomGuideNode;
+        }
+
+        public static CT_PresetGeometry2D Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_PresetGeometry2D ctObj = new CT_PresetGeometry2D();
+            if (node.Attributes["prst"] != null)
+                ctObj.prst = (ST_ShapeType)Enum.Parse(typeof(ST_ShapeType), node.Attributes["prst"].Value);
+            ctObj.avLst = new List<CT_GeomGuide>();
+            foreach (XmlNode childNode in node.ChildNodes)
+            {
+                if (childNode.LocalName == "avLst")
+                    ctObj.avLst.Add(CT_GeomGuide.Parse(childNode, namespaceManager));
+            }
+            return ctObj;
         }
 
 
-        [XmlArray(Order = 0)]
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "prst", this.prst.ToString());
+            sw.Write(">");
+            if (this.avLst != null)
+            {
+                foreach (CT_GeomGuide x in this.avLst)
+                {
+                    x.Write(sw, "avLst");
+                }
+            }
+            sw.Write(string.Format("</a:{0}>", nodeName));
+        }
+
+
+
+        //        [XmlArray(Order = 0)]
         //[XmlArrayItem("avLst", IsNullable = false)]
-        [XmlArrayItem("gd", IsNullable = false)]
-        public CT_GeomGuide[] avLst
+        public List<CT_GeomGuide> avLst
         {
             get
             {
-                return this.avLstField.ToArray();
+                return this.avLstField;
             }
             set
             {
-                if (value == null)
-                    this.avLstField = new List<CT_GeomGuide>();
-                else
-                    this.avLstField = new List<CT_GeomGuide>(value);
+                this.avLstField = new List<CT_GeomGuide>(value);
             }
         }
 
@@ -1741,14 +1921,46 @@ namespace NPOI.OpenXmlFormats.Dml
     [XmlRoot(Namespace = "http://schemas.openxmlformats.org/drawingml/2006/main", IsNullable = true)]
     public class CT_PresetTextShape
     {
+        public static CT_PresetTextShape Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_PresetTextShape ctObj = new CT_PresetTextShape();
+            if (node.Attributes["prst"] != null)
+                ctObj.prst = (ST_TextShapeType)Enum.Parse(typeof(ST_TextShapeType), node.Attributes["prst"].Value);
+            ctObj.avLst = new List<CT_GeomGuide>();
+            foreach (XmlNode childNode in node.ChildNodes)
+            {
+                if (childNode.LocalName == "avLst")
+                    ctObj.avLst.Add(CT_GeomGuide.Parse(childNode, namespaceManager));
+            }
+            return ctObj;
+        }
 
-        private CT_GeomGuide[] avLstField;
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "prst", this.prst.ToString());
+            sw.Write(">");
+            if (this.avLst != null)
+            {
+                foreach (CT_GeomGuide x in this.avLst)
+                {
+                    x.Write(sw, "avLst");
+                }
+            }
+            sw.Write(string.Format("</a:{0}>", nodeName));
+        }
+
+        private List<CT_GeomGuide> avLstField;
 
         private ST_TextShapeType prstField;
 
         [XmlArray(Order = 0)]
         [XmlArrayItem("gd", IsNullable = false)]
-        public CT_GeomGuide[] avLst
+        public List<CT_GeomGuide> avLst
         {
             get
             {
@@ -1784,21 +1996,87 @@ namespace NPOI.OpenXmlFormats.Dml
     public class CT_CustomGeometry2D
     {
 
-        private CT_GeomGuide[] avLstField;
+        private List<CT_GeomGuide> avLstField;
 
-        private CT_GeomGuide[] gdLstField;
+        private List<CT_GeomGuide> gdLstField;
 
-        private object[] ahLstField;
+        private List<object> ahLstField;
 
-        private CT_ConnectionSite[] cxnLstField;
+        private List<CT_ConnectionSite> cxnLstField;
 
         private CT_GeomRect rectField;
 
-        private CT_Path2D[] pathLstField;
+        private List<CT_Path2D> pathLstField;
+        public static CT_CustomGeometry2D Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_CustomGeometry2D ctObj = new CT_CustomGeometry2D();
+            ctObj.avLst = new List<CT_GeomGuide>();
+            ctObj.gdLst = new List<CT_GeomGuide>();
+            ctObj.ahLst = new List<Object>();
+            ctObj.cxnLst = new List<CT_ConnectionSite>();
+            ctObj.pathLst = new List<CT_Path2D>();
+            foreach (XmlNode childNode in node.ChildNodes)
+            {
+                if (childNode.LocalName == "rect")
+                    ctObj.rect = CT_GeomRect.Parse(childNode, namespaceManager);
+                else if (childNode.LocalName == "avLst")
+                    ctObj.avLst.Add(CT_GeomGuide.Parse(childNode, namespaceManager));
+                else if (childNode.LocalName == "gdLst")
+                    ctObj.gdLst.Add(CT_GeomGuide.Parse(childNode, namespaceManager));
+                //else if (childNode.LocalName == "ahLst")
+                //    ctObj.ahLst.Add(Object.Parse(childNode, namespaceManager));
+                else if (childNode.LocalName == "cxnLst")
+                    ctObj.cxnLst.Add(CT_ConnectionSite.Parse(childNode, namespaceManager));
+                else if (childNode.LocalName == "pathLst")
+                    ctObj.pathLst.Add(CT_Path2D.Parse(childNode, namespaceManager));
+            }
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            sw.Write(">");
+            if (this.rect != null)
+                this.rect.Write(sw, "rect");
+            if (this.avLst != null)
+            {
+                foreach (CT_GeomGuide x in this.avLst)
+                {
+                    x.Write(sw, "avLst");
+                }
+            }
+            if (this.gdLst != null)
+            {
+                foreach (CT_GeomGuide x in this.gdLst)
+                {
+                    x.Write(sw, "gdLst");
+                }
+            }
+            if (this.cxnLst != null)
+            {
+                foreach (CT_ConnectionSite x in this.cxnLst)
+                {
+                    x.Write(sw, "cxnLst");
+                }
+            }
+            if (this.pathLst != null)
+            {
+                foreach (CT_Path2D x in this.pathLst)
+                {
+                    x.Write(sw, "pathLst");
+                }
+            }
+            sw.Write(string.Format("</a:{0}>", nodeName));
+        }
 
         [XmlArray(Order = 0)]
         [XmlArrayItem("gd", IsNullable = false)]
-        public CT_GeomGuide[] avLst
+        public List<CT_GeomGuide> avLst
         {
             get
             {
@@ -1812,7 +2090,7 @@ namespace NPOI.OpenXmlFormats.Dml
 
         [XmlArray(Order = 1)]
         [XmlArrayItem("gd", IsNullable = false)]
-        public CT_GeomGuide[] gdLst
+        public List<CT_GeomGuide> gdLst
         {
             get
             {
@@ -1827,7 +2105,7 @@ namespace NPOI.OpenXmlFormats.Dml
         [XmlArray(Order = 2)]
         [XmlArrayItem("ahPolar", typeof(CT_PolarAdjustHandle), IsNullable = false)]
         [XmlArrayItem("ahXY", typeof(CT_XYAdjustHandle), IsNullable = false)]
-        public object[] ahLst
+        public List<object> ahLst
         {
             get
             {
@@ -1841,7 +2119,7 @@ namespace NPOI.OpenXmlFormats.Dml
 
         [XmlArray(Order = 3)]
         [XmlArrayItem("cxn", IsNullable = false)]
-        public CT_ConnectionSite[] cxnLst
+        public List<CT_ConnectionSite> cxnLst
         {
             get
             {
@@ -1868,7 +2146,7 @@ namespace NPOI.OpenXmlFormats.Dml
 
         [XmlArray(Order = 5)]
         [XmlArrayItem("path", IsNullable = false)]
-        public CT_Path2D[] pathLst
+        public List<CT_Path2D> pathLst
         {
             get
             {

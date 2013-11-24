@@ -1,12 +1,11 @@
 ﻿namespace NPOI.HSSF.Model
 {
     using System;
-    using System.Collections;
     using NPOI.DDF;
     using NPOI.HSSF.UserModel;
     using NPOI.HSSF.Record;
 
-
+    [Obsolete]
     public class ComboboxShape:AbstractShape
     {
         private EscherContainerRecord spContainer;
@@ -21,36 +20,36 @@
         public ComboboxShape(HSSFSimpleShape hssfShape, int shapeId)
         {
             spContainer = CreateSpContainer(hssfShape, shapeId);
-            objRecord = CreateObjRecord(hssfShape, shapeId);
+            //objRecord = CreateObjRecord(hssfShape, shapeId);
         }
 
         /**
          * Creates the low level OBJ record for this shape.
          */
-        private ObjRecord CreateObjRecord(HSSFSimpleShape shape, int shapeId)
-        {
-            ObjRecord obj = new ObjRecord();
-            CommonObjectDataSubRecord c = new CommonObjectDataSubRecord();
-            c.ObjectType = CommonObjectType.COMBO_BOX;
-            c.ObjectId = shapeId;
-            c.IsLocked = true;
-            c.IsPrintable = false;
-            c.IsAutoFill = true;
-            c.IsAutoline = false;
+        //private ObjRecord CreateObjRecord(HSSFSimpleShape shape, int shapeId)
+        //{
+        //    ObjRecord obj = new ObjRecord();
+        //    CommonObjectDataSubRecord c = new CommonObjectDataSubRecord();
+        //    c.ObjectType = CommonObjectType.COMBO_BOX;
+        //    c.ObjectId = shapeId;
+        //    c.IsLocked = true;
+        //    c.IsPrintable = false;
+        //    c.IsAutoFill = true;
+        //    c.IsAutoline = false;
 
-            FtCblsSubRecord f = new FtCblsSubRecord();
+        //    FtCblsSubRecord f = new FtCblsSubRecord();
 
-            LbsDataSubRecord l = LbsDataSubRecord.CreateAutoFilterInstance();
+        //    LbsDataSubRecord l = LbsDataSubRecord.CreateAutoFilterInstance();
 
-            EndSubRecord e = new EndSubRecord();
+        //    EndSubRecord e = new EndSubRecord();
 
-            obj.AddSubRecord(c);
-            obj.AddSubRecord(f);
-            obj.AddSubRecord(l);
-            obj.AddSubRecord(e);
+        //    obj.AddSubRecord(c);
+        //    obj.AddSubRecord(f);
+        //    obj.AddSubRecord(l);
+        //    obj.AddSubRecord(e);
 
-            return obj;
-        }
+        //    return obj;
+        //}
 
         /**
          * Generates the escher shape records for this shape.

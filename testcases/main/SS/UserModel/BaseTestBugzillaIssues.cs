@@ -41,10 +41,10 @@ namespace TestCases.SS.UserModel
         {
             _testDataProvider = TestCases.HSSF.HSSFITestDataProvider.Instance;
         }
-        //protected BaseTestBugzillaIssues(ITestDataProvider TestDataProvider)
-        //{
-        //    _testDataProvider = TestDataProvider;
-        //}
+        protected BaseTestBugzillaIssues(ITestDataProvider TestDataProvider)
+        {
+            _testDataProvider = TestDataProvider;
+        }
 
         /**
          * Test writing a hyperlink
@@ -392,7 +392,7 @@ namespace TestCases.SS.UserModel
                 IRow r = s.CreateRow(rn);
                 for (int cn = 0; cn < leftmostColumn; cn++)
                 {
-                    ICell c = r.CreateCell(cn, CellType.NUMERIC);
+                    ICell c = r.CreateCell(cn, CellType.Numeric);
                     c.SetCellValue(100 * rn + cn);
                 }
             }

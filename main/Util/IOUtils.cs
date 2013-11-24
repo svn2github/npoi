@@ -27,9 +27,7 @@
 
 namespace NPOI.Util
 {
-    using System;
     using System.IO;
-    using NPOI.POIFS.NIO;
 
     public class IOUtils
     {
@@ -42,21 +40,9 @@ namespace NPOI.Util
         /// <remarks>Tony Qu changed the code</remarks>
         public static byte[] ToByteArray(Stream stream)
         {
-            using (MemoryStream baos = new MemoryStream())
-            {
-                byte[] buffer = new byte[4096];
-                int read = -2;
-                while (read != -1 && read != 0)
-                {
-                    read = stream.Read(buffer, 0, buffer.Length);
-                    if (read > 0)
-                    {
-                        baos.Write(buffer, 0, read);
-                    }
-                }
-
-                return baos.ToArray();
-            }
+			byte[] outputBytes=new byte[stream.Length];
+			stream.Read(outputBytes,0, (int)stream.Length);
+			return outputBytes;
         }
 		   public static byte[] ToByteArray(ByteBuffer buffer, int length)
         {

@@ -18,7 +18,6 @@
 namespace NPOI.SS.Formula.Functions
 {
     using System;
-    using System.Collections.Generic;
     using NPOI.SS.Formula.Eval;
     using NPOI.SS.Formula;
 
@@ -110,7 +109,7 @@ namespace NPOI.SS.Formula.Functions
             }
         }
 
-        private static int DEFAULT_MAX_NUM_OPERANDS = 30;
+        private const int DEFAULT_MAX_NUM_OPERANDS = 30;
 
         /**
          * Maximum number of operands accepted by this function.

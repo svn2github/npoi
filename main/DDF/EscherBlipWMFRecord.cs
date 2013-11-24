@@ -21,10 +21,8 @@ namespace NPOI.DDF
 {
     using System;
     using System.Text;
-    using System.Collections;
     using NPOI.Util;
     using System.IO;
-    using NPOI.HSSF.Record;
     using ICSharpCode.SharpZipLib.Zip.Compression;
     using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
 
@@ -37,8 +35,8 @@ namespace NPOI.DDF
     /// </summary>
     public class EscherBlipWMFRecord : EscherBlipRecord
     {
-        //    public static short  RECORD_ID_START    = (short) 0xF018;
-        //    public static short  RECORD_ID_END      = (short) 0xF117;
+        //    public const short  RECORD_ID_START    = (short) 0xF018;
+        //    public const short  RECORD_ID_END      = (short) 0xF117;
         public new const String RECORD_DESCRIPTION = "msofbtBlip";
         private const int HEADER_SIZE = 8;
 

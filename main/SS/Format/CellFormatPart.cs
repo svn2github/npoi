@@ -21,7 +21,6 @@ namespace NPOI.SS.Format
     using NPOI.HSSF.Util;
     using System.Collections.Generic;
     using System.Drawing;
-    using NPOI.Util;
     using System.Collections;
     using System.Text.RegularExpressions;
     using System.Text;
@@ -55,7 +54,7 @@ namespace NPOI.SS.Format
         private class CaseInsensitiveComparator : IEqualityComparer<String>
         {
             // use serialVersionUID from JDK 1.2.2 for interoperability
-            //private static long serialVersionUID = 8575799808933029326L;
+            //private const long serialVersionUID = 8575799808933029326L;
 
 
 

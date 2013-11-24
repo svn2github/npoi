@@ -24,6 +24,7 @@ using NPOI.OpenXmlFormats.Dml.Spreadsheet;
 using NPOI.OpenXmlFormats.Spreadsheet;
 using NPOI.SS.UserModel;
 using NPOI.Util;
+using System.Xml;
 
 namespace NPOI.XSSF.UserModel
 {
@@ -73,7 +74,11 @@ namespace NPOI.XSSF.UserModel
          *
          * @return a prototype that is used to construct new shapes
          */
-
+        public XSSFPicture(XSSFDrawing drawing, XmlNode ctPicture)
+        {
+            this.drawing = drawing;
+            this.ctPicture =CT_Picture.Parse(ctPicture, POIXMLDocumentPart.NamespaceManager);
+        }
 
         internal static CT_Picture Prototype()
         {
@@ -81,21 +86,21 @@ namespace NPOI.XSSF.UserModel
             {
                 CT_Picture pic = new CT_Picture();
                 CT_PictureNonVisual nvpr = pic.AddNewNvPicPr();
-                CT_NonVisualDrawingProps nvProps = nvpr.AddNewCNvPr();
+                NPOI.OpenXmlFormats.Dml.Spreadsheet.CT_NonVisualDrawingProps nvProps = nvpr.AddNewCNvPr();
                 nvProps.id = (1);
                 nvProps.name = ("Picture 1");
                 nvProps.descr = ("Picture");
-                CT_NonVisualPictureProperties nvPicProps = nvpr.AddNewCNvPicPr();
+                NPOI.OpenXmlFormats.Dml.Spreadsheet.CT_NonVisualPictureProperties nvPicProps = nvpr.AddNewCNvPicPr();
                 nvPicProps.AddNewPicLocks().noChangeAspect = true;
 
 
 
-                CT_BlipFillProperties blip = pic.AddNewBlipFill();
+                NPOI.OpenXmlFormats.Dml.Spreadsheet.CT_BlipFillProperties blip = pic.AddNewBlipFill();
                 blip.AddNewBlip().embed = "";
                 blip.AddNewStretch().AddNewFillRect();
 
-                CT_ShapeProperties sppr = pic.AddNewSpPr();
-                CT_Transform2D t2d = sppr.AddNewXfrm();
+                NPOI.OpenXmlFormats.Dml.Spreadsheet.CT_ShapeProperties sppr = pic.AddNewSpPr();
+                NPOI.OpenXmlFormats.Dml.CT_Transform2D t2d = sppr.AddNewXfrm();
                 CT_PositiveSize2D ext = t2d.AddNewExt();
                 //should be original picture width and height expressed in EMUs
                 ext.cx = (0);
@@ -294,7 +299,7 @@ namespace NPOI.XSSF.UserModel
         }
 
 
-        protected override CT_ShapeProperties GetShapeProperties()
+        protected internal override NPOI.OpenXmlFormats.Dml.Spreadsheet.CT_ShapeProperties GetShapeProperties()
         {
             return ctPicture.spPr;
         }
@@ -361,15 +366,7 @@ namespace NPOI.XSSF.UserModel
             get
             {
                 String blipId = ctPicture.blipFill.blip.embed;
-                foreach (POIXMLDocumentPart part in GetDrawing().GetRelations())
-                {
-                    if (part.GetPackageRelationship().Id.Equals(blipId))
-                    {
-                        return (XSSFPictureData)part;
-                    }
-                }
-                logger.Log(POILogger.WARN, "Picture data was not found for blipId=" + blipId);
-                return null;
+                return (XSSFPictureData)GetDrawing().GetRelationById(blipId);
             }
         }
     }

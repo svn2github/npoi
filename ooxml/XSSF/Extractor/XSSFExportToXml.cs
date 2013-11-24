@@ -275,11 +275,11 @@ namespace NPOI.XSSF.Extractor
             switch (cell.CellType)
             {
 
-                case CellType.STRING: value = cell.StringCellValue; break;
-                case CellType.BOOLEAN: value += cell.BooleanCellValue; break;
-                case CellType.ERROR: value = cell.ErrorCellString; break;
-                case CellType.FORMULA: value = cell.StringCellValue; break;
-                case CellType.NUMERIC: value += cell.GetRawValue(); break;
+                case CellType.String: value = cell.StringCellValue; break;
+                case CellType.Boolean: value += cell.BooleanCellValue; break;
+                case CellType.Error: value = cell.ErrorCellString; break;
+                case CellType.Formula: value = cell.StringCellValue; break;
+                case CellType.Numeric: value += cell.GetRawValue(); break;
                 default:
                     break;
             }
@@ -407,7 +407,9 @@ namespace NPOI.XSSF.Extractor
         {
 
             int result = 0;
-            XmlNode xmlSchema = map.GetSchema();
+            string xmlSchema = map.GetSchema();
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xmlSchema);
 
 
             String[] leftTokens = leftXpath.Split(new char[]{'/'});
@@ -415,7 +417,7 @@ namespace NPOI.XSSF.Extractor
 
             int minLenght = leftTokens.Length < rightTokens.Length ? leftTokens.Length : rightTokens.Length;
 
-            XmlNode localComplexTypeRootNode = xmlSchema;
+            XmlNode localComplexTypeRootNode = doc.DocumentElement;
 
 
             for (int i = 1; i < minLenght; i++)
@@ -426,9 +428,7 @@ namespace NPOI.XSSF.Extractor
 
                 if (leftElementName.Equals(rightElementName))
                 {
-
-
-                    XmlNode complexType = GetComplexTypeForElement(leftElementName, xmlSchema, localComplexTypeRootNode);
+                    XmlNode complexType = GetComplexTypeForElement(leftElementName,doc.DocumentElement, localComplexTypeRootNode);
                     localComplexTypeRootNode = complexType;
                 }
                 else

@@ -57,19 +57,19 @@ namespace NPOI.SS.UserModel
         /// <summary>
         /// referes to the lower/right corner
         /// </summary>
-        LOWER_RIGHT = 0,
+        LowerRight = 0,
         /// <summary>
         /// referes to the upper/right corner
         /// </summary>
-        UPPER_RIGHT = 1,
+        UpperRight = 1,
         /// <summary>
         /// referes to the lower/left corner
         /// </summary>
-        LOWER_LEFT = 2,
+        LowerLeft = 2,
         /// <summary>
         /// referes to the upper/left corner
         /// </summary>
-        UPPER_LEFT = 3,
+        UpperLeft = 3,
     }
 
     /// <summary>
@@ -180,7 +180,7 @@ namespace NPOI.SS.UserModel
         /// twips (1/20 of  a point)
         /// </summary>
         /// <value>default row height measured in twips (1/20 of  a point)</value>
-        int DefaultRowHeight { get; set; }
+        short DefaultRowHeight { get; set; }
 
         /// <summary>
         /// Get the default row height for the sheet (if the rows do not define their own height) in
@@ -753,7 +753,7 @@ namespace NPOI.SS.UserModel
         /// <p/>
         /// If the Sheet does not have any repeating rows defined, null is returned.
         /// </summary>
-        //CellRangeAddress RepeatingRows { get; set; }
+        CellRangeAddress RepeatingRows { get; set; }
 
 
         /// <summary>
@@ -771,7 +771,7 @@ namespace NPOI.SS.UserModel
         /// If the Sheet does not have any repeating columns defined, null is 
         /// returned.
         /// </summary>
-        //CellRangeAddress RepeatingColumns { get; set; }
+        CellRangeAddress RepeatingColumns { get; set; }
     }
 
 }

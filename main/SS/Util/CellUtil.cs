@@ -1,4 +1,4 @@
-﻿/* ====================================================================
+/* ====================================================================
    Licensed to the Apache Software Foundation (ASF) under one or more
    contributor license agreements.  See the NOTICE file distributed with
    this work for additional information regarding copyright ownership.
@@ -34,27 +34,26 @@ namespace NPOI.SS.Util
      */
     public class CellUtil
     {
-
-        public static String ALIGNMENT = "alignment";
-        public static String BORDER_BOTTOM = "borderBottom";
-        public static String BORDER_LEFT = "borderLeft";
-        public static String BORDER_RIGHT = "borderRight";
-        public static String BORDER_TOP = "borderTop";
-        public static String BOTTOM_BORDER_COLOR = "bottomBorderColor";
-        public static String DATA_FORMAT = "dataFormat";
-        public static String FILL_BACKGROUND_COLOR = "fillBackgroundColor";
-        public static String FILL_FOREGROUND_COLOR = "fillForegroundColor";
-        public static String FILL_PATTERN = "fillPattern";
-        public static String FONT = "font";
-        public static String HIDDEN = "hidden";
-        public static String INDENTION = "indention";
-        public static String LEFT_BORDER_COLOR = "leftBorderColor";
-        public static String LOCKED = "locked";
-        public static String RIGHT_BORDER_COLOR = "rightBorderColor";
-        public static String ROTATION = "rotation";
-        public static String TOP_BORDER_COLOR = "topBorderColor";
-        public static String VERTICAL_ALIGNMENT = "verticalAlignment";
-        public static String WRAP_TEXT = "wrapText";
+        public const string ALIGNMENT = "alignment";
+        public const string BORDER_BOTTOM = "borderBottom";
+        public const string BORDER_LEFT = "borderLeft";
+        public const string BORDER_RIGHT = "borderRight";
+        public const string BORDER_TOP = "borderTop";
+        public const string BOTTOM_BORDER_COLOR = "bottomBorderColor";
+        public const string DATA_FORMAT = "dataFormat";
+        public const string FILL_BACKGROUND_COLOR = "fillBackgroundColor";
+        public const string FILL_FOREGROUND_COLOR = "fillForegroundColor";
+        public const string FILL_PATTERN = "fillPattern";
+        public const string FONT = "font";
+        public const string HIDDEN = "hidden";
+        public const string INDENTION = "indention";
+        public const string LEFT_BORDER_COLOR = "leftBorderColor";
+        public const string LOCKED = "locked";
+        public const string RIGHT_BORDER_COLOR = "rightBorderColor";
+        public const string ROTATION = "rotation";
+        public const string TOP_BORDER_COLOR = "topBorderColor";
+        public const string VERTICAL_ALIGNMENT = "verticalAlignment";
+        public const string WRAP_TEXT = "wrapText";
 
         private static UnicodeMapping[] unicodeMappings;
 
@@ -75,6 +74,7 @@ namespace NPOI.SS.Util
         {
             // no instances of this class
         }
+
         public static ICell CopyCell(IRow row, int sourceIndex, int targetIndex)
         {
             if (sourceIndex == targetIndex)
@@ -120,22 +120,22 @@ namespace NPOI.SS.Util
             // Set the cell data value
             switch (oldCell.CellType)
             {
-                case CellType.BLANK:
+                case CellType.Blank:
                     newCell.SetCellValue(oldCell.StringCellValue);
                     break;
-                case CellType.BOOLEAN:
+                case CellType.Boolean:
                     newCell.SetCellValue(oldCell.BooleanCellValue);
                     break;
-                case CellType.ERROR:
+                case CellType.Error:
                     newCell.SetCellErrorValue(oldCell.ErrorCellValue);
                     break;
-                case CellType.FORMULA:
+                case CellType.Formula:
                     newCell.SetCellFormula(oldCell.CellFormula);
                     break;
-                case CellType.NUMERIC:
+                case CellType.Numeric:
                     newCell.SetCellValue(oldCell.NumericCellValue);
                     break;
-                case CellType.STRING:
+                case CellType.String:
                     newCell.SetCellValue(oldCell.RichStringCellValue);
                     break;
             }
@@ -158,7 +158,6 @@ namespace NPOI.SS.Util
             return row;
         }
 
-
         /**
          * Get a specific cell from a row. If the cell doesn't exist, then create it.
          *
@@ -177,7 +176,6 @@ namespace NPOI.SS.Util
             return cell;
         }
 
-
         /**
          * Creates a cell, gives it a value, and applies a style if provided
          *
@@ -195,11 +193,10 @@ namespace NPOI.SS.Util
                     .CreateRichTextString(value));
             if (style != null)
             {
-                cell.CellStyle = (style);
+                cell.CellStyle = style;
             }
             return cell;
         }
-
 
         /**
          * Create a cell, and give it a value.
@@ -213,7 +210,6 @@ namespace NPOI.SS.Util
         {
             return CreateCell(row, column, value, null);
         }
-
 
         /**
          * Take a cell, and align it.
@@ -252,8 +248,7 @@ namespace NPOI.SS.Util
          *@param propertyValue The value of the property that is to be changed.
          *@param cell The cell that needs it's style changes
          */
-        public static void SetCellStyleProperty(ICell cell, IWorkbook workbook, String propertyName,
-                Object propertyValue)
+        public static void SetCellStyleProperty(ICell cell, IWorkbook workbook, String propertyName, Object propertyValue)
         {
             ICellStyle originalStyle = cell.CellStyle;
             ICellStyle newStyle = null;
@@ -273,7 +268,25 @@ namespace NPOI.SS.Util
 
                 Dictionary<String, Object> wbStyleMap = GetFormatProperties(wbStyle);
 
-                if (wbStyleMap.Equals(values))
+                if (values.Keys.Count != wbStyleMap.Keys.Count) continue;
+
+                bool found = true;
+                
+                foreach (string key in values.Keys)
+                {
+                    if (!wbStyleMap.ContainsKey(key))
+                    {
+                        found = false;
+                        break;
+                    }
+
+                    if (values[key].Equals(wbStyleMap[key])) continue;
+
+                    found = false;
+                    break;
+                }
+
+                if (found)
                 {
                     newStyle = wbStyle;
                     break;
@@ -286,7 +299,7 @@ namespace NPOI.SS.Util
                 SetFormatProperties(newStyle, workbook, values);
             }
 
-            cell.CellStyle=(newStyle);
+            cell.CellStyle = newStyle;
         }
 
         /**
@@ -332,26 +345,26 @@ namespace NPOI.SS.Util
          */
         private static void SetFormatProperties(ICellStyle style, IWorkbook workbook, Dictionary<String, Object> properties)
         {
-            style.Alignment=(HorizontalAlignment)(GetShort(properties, ALIGNMENT));
-            style.BorderBottom=(BorderStyle)(GetShort(properties, BORDER_BOTTOM));
-            style.BorderLeft=(BorderStyle)(GetShort(properties, BORDER_LEFT));
-            style.BorderRight=(BorderStyle)(GetShort(properties, BORDER_RIGHT));
-            style.BorderTop=(BorderStyle)(GetShort(properties, BORDER_TOP));
-            style.BottomBorderColor=(GetShort(properties, BOTTOM_BORDER_COLOR));
-            style.DataFormat=(GetShort(properties, DATA_FORMAT));
-            style.FillBackgroundColor=(GetShort(properties, FILL_BACKGROUND_COLOR));
-            style.FillForegroundColor=(GetShort(properties, FILL_FOREGROUND_COLOR));
-            style.FillPattern=(FillPatternType)(GetShort(properties, FILL_PATTERN));
+            style.Alignment = (HorizontalAlignment)GetShort(properties, ALIGNMENT);
+            style.BorderBottom = (BorderStyle)GetShort(properties, BORDER_BOTTOM);
+            style.BorderLeft = (BorderStyle)GetShort(properties, BORDER_LEFT);
+            style.BorderRight = (BorderStyle)GetShort(properties, BORDER_RIGHT);
+            style.BorderTop = (BorderStyle)GetShort(properties, BORDER_TOP);
+            style.BottomBorderColor = GetShort(properties, BOTTOM_BORDER_COLOR);
+            style.DataFormat =GetShort(properties, DATA_FORMAT);
+            style.FillBackgroundColor = GetShort(properties, FILL_BACKGROUND_COLOR);
+            style.FillForegroundColor = GetShort(properties, FILL_FOREGROUND_COLOR);
+            style.FillPattern = (FillPattern)GetShort(properties, FILL_PATTERN);
             style.SetFont(workbook.GetFontAt(GetShort(properties, FONT)));
-            style.IsHidden=(GetBoolean(properties, HIDDEN));
-            style.Indention=(GetShort(properties, INDENTION));
-            style.LeftBorderColor=(GetShort(properties, LEFT_BORDER_COLOR));
-            style.IsLocked=(GetBoolean(properties, LOCKED));
-            style.RightBorderColor=(GetShort(properties, RIGHT_BORDER_COLOR));
-            style.Rotation=(GetShort(properties, ROTATION));
-            style.TopBorderColor=(GetShort(properties, TOP_BORDER_COLOR));
-            style.VerticalAlignment=(VerticalAlignment)(GetShort(properties, VERTICAL_ALIGNMENT));
-            style.WrapText=(GetBoolean(properties, WRAP_TEXT));
+            style.IsHidden = GetBoolean(properties, HIDDEN);
+            style.Indention = GetShort(properties, INDENTION);
+            style.LeftBorderColor = GetShort(properties, LEFT_BORDER_COLOR);
+            style.IsLocked = GetBoolean(properties, LOCKED);
+            style.RightBorderColor = GetShort(properties, RIGHT_BORDER_COLOR);
+            style.Rotation = GetShort(properties, ROTATION);
+            style.TopBorderColor = GetShort(properties, TOP_BORDER_COLOR);
+            style.VerticalAlignment = (VerticalAlignment)GetShort(properties, VERTICAL_ALIGNMENT);
+            style.WrapText = GetBoolean(properties, WRAP_TEXT);
         }
 
         /**
@@ -428,7 +441,6 @@ namespace NPOI.SS.Util
          */
         public static ICell TranslateUnicodeValues(ICell cell)
         {
-
             String s = cell.RichStringCellValue.String;
             bool foundUnicode = false;
             String lowerCaseStr = s.ToLower();

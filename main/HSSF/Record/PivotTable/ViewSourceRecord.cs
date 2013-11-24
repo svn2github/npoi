@@ -17,8 +17,6 @@
 
 namespace NPOI.HSSF.Record.PivotTable
 {
-
-    using System;
     using System.Text;
     using NPOI.HSSF.Record;
     using NPOI.Util;
@@ -32,7 +30,7 @@ namespace NPOI.HSSF.Record.PivotTable
      */
     public class ViewSourceRecord : StandardRecord
     {
-        public static short sid = 0x00E3;
+        public const short sid = 0x00E3;
 
         private int vs;
 

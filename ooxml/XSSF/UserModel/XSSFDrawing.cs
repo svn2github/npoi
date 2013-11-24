@@ -22,6 +22,8 @@ using NPOI.OpenXmlFormats.Dml.Spreadsheet; // http://schemas.openxmlformats.org/
 using NPOI.SS.UserModel;
 using NPOI.XSSF.Model;
 using System.Collections.Generic;
+using System.Xml;
+using NPOI.OpenXmlFormats.Dml;
 
 
 namespace NPOI.XSSF.UserModel
@@ -52,8 +54,8 @@ namespace NPOI.XSSF.UserModel
         public XSSFDrawing()
             : base()
         {
+            drawing = NewDrawing();
         }
-
         /**
          * Construct a SpreadsheetML Drawing from a namespace part
          *
@@ -65,7 +67,8 @@ namespace NPOI.XSSF.UserModel
         internal XSSFDrawing(PackagePart part, PackageRelationship rel)
             : base(part, rel)
         {
-            drawing = NPOI.OpenXmlFormats.Dml.Spreadsheet.CT_Drawing.Parse(part.GetInputStream());
+            XmlDocument xmldoc = ConvertStreamToXml(part.GetInputStream());
+            drawing = NPOI.OpenXmlFormats.Dml.Spreadsheet.CT_Drawing.Parse(xmldoc, NamespaceManager);
         }
 
         /**
@@ -91,18 +94,6 @@ namespace NPOI.XSSF.UserModel
 
         protected override void Commit()
         {
-            // /*
-            //    Saved Drawings must have the following namespaces Set:
-            //    <xdr:wsDr
-            //        xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
-            //        xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing">
-            // */
-            ////if(isNew) xmlOptions.SetSaveSyntheticDocumentElement(new QName(CT_Drawing.type.GetName().GetNamespaceURI(), "wsDr", "xdr"));
-            //Dictionary<String, String> map = new Dictionary<String, String>();
-            //map[NAMESPACE_A]= "a";
-            //map[ST_RelationshipId.NamespaceURI]= "r";
-            //xmlOptions.SetSaveSuggestedPrefixes(map);
-
             PackagePart part = GetPackagePart();
             Stream out1 = part.GetOutputStream();
             drawing.Save(out1);
@@ -150,7 +141,7 @@ namespace NPOI.XSSF.UserModel
 
             long shapeId = newShapeId();
             CT_TwoCellAnchor ctAnchor = CreateTwoCellAnchor(anchor);
-            NPOI.OpenXmlFormats.Dml.Spreadsheet.CT_Picture ctShape = ctAnchor.AddNewPic();
+            CT_Picture ctShape = ctAnchor.AddNewPic();
             ctShape.Set(XSSFPicture.Prototype());
 
             ctShape.nvPicPr.cNvPr.id = (uint)shapeId;
@@ -338,19 +329,19 @@ namespace NPOI.XSSF.UserModel
         {
             CT_TwoCellAnchor ctAnchor = drawing.AddNewTwoCellAnchor();
             XSSFClientAnchor xssfanchor = (XSSFClientAnchor)anchor;
-            ctAnchor.from = (xssfanchor.GetFrom());
-            ctAnchor.to = (xssfanchor.GetTo());
+            ctAnchor.from = (xssfanchor.From);
+            ctAnchor.to = (xssfanchor.To);
             ctAnchor.AddNewClientData();
-            xssfanchor.SetTo(ctAnchor.to);
-            xssfanchor.SetFrom(ctAnchor.from);
+            xssfanchor.To = ctAnchor.to;
+            xssfanchor.From = ctAnchor.from;
             ST_EditAs aditAs;
             switch (anchor.AnchorType)
             {
-                case (int)AnchorType.DONT_MOVE_AND_RESIZE: 
+                case (int)AnchorType.DontMoveAndResize: 
                     aditAs = ST_EditAs.absolute; break;
-                case (int)AnchorType.MOVE_AND_RESIZE: 
+                case (int)AnchorType.MoveAndResize: 
                     aditAs = ST_EditAs.twoCell; break;
-                case (int)AnchorType.MOVE_DONT_RESIZE: 
+                case (int)AnchorType.MoveDontResize: 
                     aditAs = ST_EditAs.oneCell; break;
                 default: 
                     aditAs = ST_EditAs.oneCell;
@@ -374,6 +365,100 @@ namespace NPOI.XSSF.UserModel
         }
 
         #endregion
+
+        /**
+     *
+     * @return list of shapes in this drawing
+     */
+        public List<XSSFShape> GetShapes()
+        {
+            List<XSSFShape> lst = new List<XSSFShape>();
+            foreach (IEG_Anchor anchor in drawing.CellAnchors)
+            {
+                XSSFShape shape = null;
+                if (anchor.picture != null)
+                {
+                    shape = new XSSFPicture(this, anchor.picture);
+                }
+                else if (anchor.connector != null)
+                {
+                    shape = new XSSFConnector(this, anchor.connector);
+                }
+                else if (anchor.groupShape != null)
+                {
+                    shape = new XSSFShapeGroup(this, anchor.groupShape);
+                }
+                else if (anchor.graphicFrame != null)
+                {
+                    shape = new XSSFGraphicFrame(this, anchor.graphicFrame);
+                }
+                else if (anchor.sp != null)
+                {
+                   shape = new XSSFSimpleShape(this, anchor.sp);
+                }
+                if (shape != null)
+                {
+                    shape.anchor = GetAnchorFromIEGAnchor(anchor);
+                    lst.Add(shape);
+                }
+            }
+            //foreach (XmlNode obj in xmldoc.SelectNodes("./*/*/*"))
+            //{
+            //    XSSFShape shape = null;
+            //    if (obj.LocalName == "sp")
+            //    {
+            //        shape = new XSSFSimpleShape(this, obj);
+            //    }
+            //    else if (obj.LocalName == "pic")
+            //    {
+            //        shape = new XSSFPicture(this, obj);
+            //    }
+            //    else if (obj.LocalName == "cxnSp")
+            //    {
+            //        shape = new XSSFConnector(this, obj);
+            //    }
+            //    //    else if (obj is CT_GraphicalObjectFrame) shape = new XSSFGraphicFrame(this, (CT_GraphicalObjectFrame)obj);
+            //    //    else if (obj is CT_GroupShape) shape = new XSSFShapeGroup(this, (CT_GroupShape)obj);
+            //    if (shape != null)
+            //    {
+            //        shape.anchor = GetAnchorFromParent(obj);
+            //        lst.Add(shape);
+            //    }
+            //}
+            return lst;
+        }
+        private XSSFAnchor GetAnchorFromIEGAnchor(IEG_Anchor ctAnchor)
+        {
+            CT_Marker ctFrom=null, ctTo=null;
+            if (ctAnchor is CT_TwoCellAnchor)
+            {
+                ctFrom = ((CT_TwoCellAnchor)ctAnchor).from;
+                ctTo = ((CT_TwoCellAnchor)ctAnchor).to;
+            }
+            else if (ctAnchor is CT_OneCellAnchor)
+            {
+                ctFrom = ((CT_OneCellAnchor)ctAnchor).from;
+            }
+            XSSFAnchor anchor = new XSSFClientAnchor(ctFrom, ctTo);
+            return anchor;
+        }
+        private XSSFAnchor GetAnchorFromParent(XmlNode obj)
+        {
+            XSSFAnchor anchor = null;
+            XmlNode parentNode = obj.ParentNode;
+            XmlNode fromNode = parentNode.SelectSingleNode("xdr:from", POIXMLDocumentPart.NamespaceManager);
+            if(fromNode==null)
+                throw new InvalidDataException("xdr:from node is missing");
+            CT_Marker ctFrom = CT_Marker.Parse(fromNode, POIXMLDocumentPart.NamespaceManager);
+            XmlNode toNode = parentNode.SelectSingleNode("xdr:to", POIXMLDocumentPart.NamespaceManager);
+            CT_Marker ctTo=null;
+            if (toNode != null)
+            {
+                ctTo = CT_Marker.Parse(toNode, POIXMLDocumentPart.NamespaceManager);
+            }
+            anchor = new XSSFClientAnchor(ctFrom, ctTo);
+            return anchor;
+        }
     }
 }
 

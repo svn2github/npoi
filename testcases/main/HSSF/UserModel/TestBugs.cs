@@ -15,6 +15,8 @@
    limitations under the License.
 ==================================================================== */
 
+using NPOI;
+
 namespace TestCases.HSSF.UserModel
 {
     using System;
@@ -36,7 +38,7 @@ namespace TestCases.HSSF.UserModel
     using NPOI.HSSF.Model;
     using System.Collections.Generic;
     using NPOI.SS.Formula.PTG;
-using NPOI.POIFS.FileSystem;
+    using NPOI.POIFS.FileSystem;
     using NPOI.HSSF.Extractor;
 
     /**
@@ -177,7 +179,7 @@ using NPOI.POIFS.FileSystem;
                 cell = row.CreateCell(3);
 
             // Write Test
-            cell.SetCellType(CellType.STRING);
+            cell.SetCellType(CellType.String);
             setCellText(cell, "a Test");
 
             // change existing numeric cell value
@@ -632,7 +634,7 @@ using NPOI.POIFS.FileSystem;
                 if (row != null)
                 {
                     ICell cell = row.GetCell(0);
-                    Assert.AreEqual(CellType.STRING, cell.CellType);
+                    Assert.AreEqual(CellType.String, cell.CellType);
                     count++;
                 }
             }
@@ -759,11 +761,11 @@ using NPOI.POIFS.FileSystem;
             ISheet workSheet = workBook.CreateSheet("Sheet1");
             ICell cell;
             IRow row = workSheet.CreateRow(0);
-            cell = row.CreateCell(0, CellType.NUMERIC);
+            cell = row.CreateCell(0, CellType.Numeric);
             cell.SetCellValue(1.0);
-            cell = row.CreateCell(1, CellType.NUMERIC);
+            cell = row.CreateCell(1, CellType.Numeric);
             cell.SetCellValue(2.0);
-            cell = row.CreateCell(2, CellType.FORMULA);
+            cell = row.CreateCell(2, CellType.Formula);
             cell.CellFormula = ("SUM(A1:B1)");
 
             WriteOutAndReadBack(wb);
@@ -1269,7 +1271,7 @@ using NPOI.POIFS.FileSystem;
             Assert.IsNull(
                 wb.FindFont(
                     (short)11, (short)123, (short)22,
-                    "Thingy", false, true, (short)2, (byte)2
+                    "Thingy", false, true, FontSuperScript.Sub, FontUnderlineType.Double
                 )
             );
 
@@ -1285,8 +1287,8 @@ using NPOI.POIFS.FileSystem;
             nf.FontName = ("Thingy");
             nf.IsItalic = (false);
             nf.IsStrikeout = (true);
-            nf.TypeOffset = ((short)2);
-            nf.Underline = ((byte)2);
+            nf.TypeOffset = FontSuperScript.Sub;
+            nf.Underline = FontUnderlineType.Double;
 
             Assert.AreEqual(5, wb.NumberOfFonts);
             Assert.AreEqual(nf, wb.GetFontAt((short)5));
@@ -1295,20 +1297,20 @@ using NPOI.POIFS.FileSystem;
             Assert.IsNotNull(
                 wb.FindFont(
                     (short)11, (short)123, (short)22,
-                    "Thingy", false, true, (short)2, (byte)2
+                    "Thingy", false, true, FontSuperScript.Sub, FontUnderlineType.Double
                 )
             );
             Assert.AreEqual(
                 5,
                 wb.FindFont(
                        (short)11, (short)123, (short)22,
-                       "Thingy", false, true, (short)2, (byte)2
+                       "Thingy", false, true, FontSuperScript.Sub, FontUnderlineType.Double
                    ).Index
             );
             Assert.AreEqual(nf,
                    wb.FindFont(
                        (short)11, (short)123, (short)22,
-                       "Thingy", false, true, (short)2, (byte)2
+                       "Thingy", false, true, FontSuperScript.Sub, FontUnderlineType.Double
                    )
             );
         }
@@ -1413,14 +1415,14 @@ using NPOI.POIFS.FileSystem;
 
         private static void ConfirmCachedValue(double expectedValue, ICell cell)
         {
-            Assert.AreEqual(CellType.FORMULA, cell.CellType);
-            Assert.AreEqual(CellType.NUMERIC, cell.CachedFormulaResultType);
+            Assert.AreEqual(CellType.Formula, cell.CellType);
+            Assert.AreEqual(CellType.Numeric, cell.CachedFormulaResultType);
             Assert.AreEqual(expectedValue, cell.NumericCellValue, 0.0);
         }
         private static void ConfirmCachedValue(String expectedValue, ICell cell)
         {
-            Assert.AreEqual(CellType.FORMULA, cell.CellType);
-            Assert.AreEqual(CellType.STRING, cell.CachedFormulaResultType);
+            Assert.AreEqual(CellType.Formula, cell.CellType);
+            Assert.AreEqual(CellType.String, cell.CachedFormulaResultType);
             Assert.AreEqual(expectedValue, cell.RichStringCellValue.String);
         }
 
@@ -1534,7 +1536,7 @@ using NPOI.POIFS.FileSystem;
             s = wb.GetSheet("OneVariable Table Completed");
             r = s.GetRow(3);
             c = r.GetCell(4);
-            Assert.AreEqual(CellType.FORMULA, c.CellType);
+            Assert.AreEqual(CellType.Formula, c.CellType);
 
             // TODO - Check the formula once tables and
             //  arrays are properly supported
@@ -1544,7 +1546,7 @@ using NPOI.POIFS.FileSystem;
             s = wb.GetSheet("TwoVariable Table Example");
             r = s.GetRow(3);
             c = r.GetCell(4);
-            Assert.AreEqual(CellType.FORMULA, c.CellType);
+            Assert.AreEqual(CellType.Formula, c.CellType);
 
             // TODO - Check the formula once tables and
             //  arrays are properly supported
@@ -2318,37 +2320,37 @@ using NPOI.POIFS.FileSystem;
             IRow row;
 
             row = s.GetRow(0);
-            Assert.AreEqual(CellType.NUMERIC, row.GetCell(1).CellType);
+            Assert.AreEqual(CellType.Numeric, row.GetCell(1).CellType);
             Assert.AreEqual(112.0, row.GetCell(1).NumericCellValue);
 
             row = s.GetRow(1);
-            Assert.AreEqual(CellType.FORMULA, row.GetCell(1).CellType);
+            Assert.AreEqual(CellType.Formula, row.GetCell(1).CellType);
             Assert.AreEqual("B1", row.GetCell(1).CellFormula);
             Assert.AreEqual(112.0, row.GetCell(1).NumericCellValue);
 
             row = s.GetRow(2);
-            Assert.AreEqual(CellType.FORMULA, row.GetCell(1).CellType);
+            Assert.AreEqual(CellType.Formula, row.GetCell(1).CellType);
             Assert.AreEqual("Sheet1!B1", row.GetCell(1).CellFormula);
             Assert.AreEqual(112.0, row.GetCell(1).NumericCellValue);
 
             row = s.GetRow(3);
-            Assert.AreEqual(CellType.FORMULA, row.GetCell(1).CellType);
+            Assert.AreEqual(CellType.Formula, row.GetCell(1).CellType);
             Assert.AreEqual("[Formulas2.xls]Sheet1!B2", row.GetCell(1).CellFormula);
             Assert.AreEqual(112.0, row.GetCell(1).NumericCellValue);
 
             row = s.GetRow(4);
-            Assert.AreEqual(CellType.FORMULA, row.GetCell(1).CellType);
-            Assert.AreEqual("'[\u0005$http://gagravarr.org/FormulaRefs.xls]Sheet1'!B1", row.GetCell(1).CellFormula);
+            Assert.AreEqual(CellType.Formula, row.GetCell(1).CellType);
+            Assert.AreEqual("'[$http://gagravarr.org/FormulaRefs.xls]Sheet1'!B1", row.GetCell(1).CellFormula);
             Assert.AreEqual(112.0, row.GetCell(1).NumericCellValue);
 
             // Change 4
-            row.GetCell(1).CellFormula = ("'[\u0005$http://gagravarr.org/FormulaRefs2.xls]Sheet1'!B2");
+            row.GetCell(1).CellFormula = ("'[$http://gagravarr.org/FormulaRefs2.xls]Sheet1'!B2");
             row.GetCell(1).SetCellValue(123.0);
 
             // Add 5
             row = s.CreateRow(5);
-            row.CreateCell(1, CellType.FORMULA);
-            row.GetCell(1).CellFormula = ("'[\u0005$http://example.com/FormulaRefs.xls]Sheet1'!B1");
+            row.CreateCell(1, CellType.Formula);
+            row.GetCell(1).CellFormula = ("'[$http://example.com/FormulaRefs.xls]Sheet1'!B1");
             row.GetCell(1).SetCellValue(234.0);
 
 
@@ -2357,21 +2359,21 @@ using NPOI.POIFS.FileSystem;
             s = wb.GetSheetAt(0);
 
             row = s.GetRow(0);
-            Assert.AreEqual(CellType.NUMERIC, row.GetCell(1).CellType);
+            Assert.AreEqual(CellType.Numeric, row.GetCell(1).CellType);
             Assert.AreEqual(112.0, row.GetCell(1).NumericCellValue);
 
             row = s.GetRow(1);
-            Assert.AreEqual(CellType.FORMULA, row.GetCell(1).CellType);
+            Assert.AreEqual(CellType.Formula, row.GetCell(1).CellType);
             Assert.AreEqual("B1", row.GetCell(1).CellFormula);
             Assert.AreEqual(112.0, row.GetCell(1).NumericCellValue);
 
             row = s.GetRow(2);
-            Assert.AreEqual(CellType.FORMULA, row.GetCell(1).CellType);
+            Assert.AreEqual(CellType.Formula, row.GetCell(1).CellType);
             Assert.AreEqual("Sheet1!B1", row.GetCell(1).CellFormula);
             Assert.AreEqual(112.0, row.GetCell(1).NumericCellValue);
 
             row = s.GetRow(3);
-            Assert.AreEqual(CellType.FORMULA, row.GetCell(1).CellType);
+            Assert.AreEqual(CellType.Formula, row.GetCell(1).CellType);
             Assert.AreEqual("[Formulas2.xls]Sheet1!B2", row.GetCell(1).CellFormula);
             Assert.AreEqual(112.0, row.GetCell(1).NumericCellValue);
 
@@ -2380,12 +2382,12 @@ using NPOI.POIFS.FileSystem;
             if (1 == 2)
             {
                 row = s.GetRow(4);
-                Assert.AreEqual(CellType.FORMULA, row.GetCell(1).CellType);
+                Assert.AreEqual(CellType.Formula, row.GetCell(1).CellType);
                 Assert.AreEqual("'[\u0005$http://gagravarr.org/FormulaRefs2.xls]Sheet1'!B2", row.GetCell(1).CellFormula);
                 Assert.AreEqual(123.0, row.GetCell(1).NumericCellValue);
 
                 row = s.GetRow(5);
-                Assert.AreEqual(CellType.FORMULA, row.GetCell(1).CellType);
+                Assert.AreEqual(CellType.Formula, row.GetCell(1).CellType);
                 Assert.AreEqual("'[\u0005$http://example.com/FormulaRefs.xls]Sheet1'!B1", row.GetCell(1).CellFormula);
                 Assert.AreEqual(234.0, row.GetCell(1).NumericCellValue);
             }
@@ -2502,7 +2504,7 @@ using NPOI.POIFS.FileSystem;
             wb = WriteOutAndReadBack(wb);
             Assert.AreEqual(2, wb.NumberOfSheets);
         }
-        
+
         [Test]
         public void Test49219()
         {
@@ -2524,7 +2526,7 @@ using NPOI.POIFS.FileSystem;
             HSSFCellStyle cs1 = (HSSFCellStyle)wb.CreateCellStyle();
             HSSFCellStyle cs2 = (HSSFCellStyle)wb.CreateCellStyle();
             HSSFCellStyle cs3 = (HSSFCellStyle)wb.CreateCellStyle();
-            
+
             Assert.AreEqual(21, cs1.Index);
             cs1.UserStyleName = ("Testing");
 
@@ -2583,13 +2585,13 @@ using NPOI.POIFS.FileSystem;
             HSSFWorkbook workbook = new HSSFWorkbook();
             ISheet sheet = workbook.CreateSheet("Bug50416");
             IRow row1 = sheet.CreateRow(0);
-            ICell cellA_1 = row1.CreateCell(0, CellType.STRING);
+            ICell cellA_1 = row1.CreateCell(0, CellType.String);
             cellA_1.SetCellValue("Cell A,1");
             IRow row2 = sheet.CreateRow(1);
-            ICell cellA_2 = row2.CreateCell(0, CellType.STRING);
+            ICell cellA_2 = row2.CreateCell(0, CellType.String);
             cellA_2.SetCellValue("Cell A,2");
             IRow row3 = sheet.CreateRow(2);
-            ICell cellA_3 = row3.CreateCell(0, CellType.STRING);
+            ICell cellA_3 = row3.CreateCell(0, CellType.String);
             cellA_3.SetCellValue("Cell A,3");
 
             // Test the last Row number it currently correct
@@ -2808,6 +2810,145 @@ using NPOI.POIFS.FileSystem;
                 Assert.IsTrue(text.Contains("Bottom Right Cell"));
             }
         }
+        /**
+     * Sum across multiple workbooks
+     *  eg =SUM($Sheet2.A1:$Sheet3.A1)
+     * DISABLED - We currently get the formula wrong, and mis-evaluate
+     */
+        public void DISABLEDtest48703()
+        {
+            HSSFWorkbook wb = OpenSample("48703.xls");
+            Assert.AreEqual(3, wb.NumberOfSheets);
+
+            // Check reading the formula
+            ISheet sheet = wb.GetSheetAt(0);
+            IRow r = sheet.GetRow(0);
+            ICell c = r.GetCell(0);
+
+            Assert.AreEqual("SUM(Sheet2!A1:Sheet3!A1)", c.CellFormula);
+            Assert.AreEqual(4.0, c.NumericCellValue);
+
+            // Check the evaluated result
+            HSSFFormulaEvaluator eval = new HSSFFormulaEvaluator(wb);
+            eval.EvaluateFormulaCell(c);
+            Assert.AreEqual(4.0, c.NumericCellValue);
+        }
+        /**
+         * Normally encrypted files have BOF then FILEPASS, but
+         *  some may squeeze a WRITEPROTECT in the middle
+         */
+        [Test]
+        public void Test51832()
+        {
+            try
+            {
+                OpenSample("51832.xls");
+                Assert.Fail("Encrypted file");
+            }
+            catch (EncryptedDocumentException e)
+            {
+                // Good
+            }
+        }
+        [Test]
+        public void Test49896()
+        {
+            HSSFWorkbook wb = OpenSample("49896.xls");
+            HSSFCell cell = (HSSFCell)wb.GetSheetAt(0).GetRow(1).GetCell(1);
+            char separator = Path.DirectorySeparatorChar;
+            Assert.AreEqual("VLOOKUP(A2,'[C:Documents and Settings" + separator + "Yegor" + separator
+                + "My Documents" + separator + "csco.xls]Sheet1'!$A$2:$B$3,2,FALSE)",
+                    cell.CellFormula);
+        }
+        [Test]
+        public void Test49529()
+        {
+            // user code reported in Bugzilla #49529
+            HSSFWorkbook workbook = OpenSample("49529.xls");
+            workbook.GetSheetAt(0).CreateDrawingPatriarch();
+            // prior to the fix the line below failed with
+            // java.lang.IllegalStateException: EOF - next record not available
+            workbook.CloneSheet(0);
+
+            // make sure we are still readable
+            WriteOutAndReadBack(workbook);
+        }
+
+        [Test]
+        public void Test51670()
+        {
+            HSSFWorkbook wb = OpenSample("51670.xls");
+            WriteOutAndReadBack(wb);
+        }
+
+        [Test]
+        public void Test52272()
+        {
+            HSSFWorkbook wb = new HSSFWorkbook();
+            HSSFSheet sh = wb.CreateSheet() as HSSFSheet;
+            HSSFPatriarch p = sh.CreateDrawingPatriarch() as HSSFPatriarch;
+
+            HSSFSimpleShape s = p.CreateSimpleShape(new HSSFClientAnchor());
+            s.ShapeType = (HSSFSimpleShape.OBJECT_TYPE_LINE);
+
+            HSSFSheet sh2 = wb.CloneSheet(0) as HSSFSheet;
+            Assert.IsNotNull(sh2.DrawingPatriarch);
+        }
+
+        [Test]
+        public void Test53432()
+        {
+            IWorkbook wb = new HSSFWorkbook(); //or new HSSFWorkbook();
+            wb.AddPicture(new byte[] { 123, 22 }, PictureType.JPEG);
+            Assert.AreEqual(wb.GetAllPictures().Count, 1);
+
+            wb = new HSSFWorkbook();
+            wb = WriteOutAndReadBack((HSSFWorkbook)wb);
+            Assert.AreEqual(wb.GetAllPictures().Count, 0);
+            wb.AddPicture(new byte[] { 123, 22 }, PictureType.JPEG);
+            Assert.AreEqual(wb.GetAllPictures().Count, 1);
+
+            wb = WriteOutAndReadBack((HSSFWorkbook)wb);
+            Assert.AreEqual(wb.GetAllPictures().Count, 1);
+        }
+        [Test]
+        public void Test46250()
+        {
+            IWorkbook wb = OpenSample("46250.xls");
+            ISheet sh = wb.GetSheet("Template");
+            ISheet cSh = wb.CloneSheet(wb.GetSheetIndex(sh));
+
+            HSSFPatriarch patriarch = (HSSFPatriarch)cSh.CreateDrawingPatriarch();
+            HSSFTextbox tb = (HSSFTextbox)patriarch.Children[2];
+
+            tb.String=(new HSSFRichTextString("POI test"));
+            tb.Anchor=(new HSSFClientAnchor(0, 0, 0, 0, (short)0, 0, (short)10, 10));
+
+            wb = WriteOutAndReadBack((HSSFWorkbook)wb);
+        }
+
+        [Test]
+        public void Test53404()
+        {
+            IWorkbook wb = OpenSample("53404.xls");
+            ISheet sheet = wb.GetSheet("test-sheet");
+            int rowCount = sheet.LastRowNum + 1;
+            int newRows = 5;
+            for (int r = rowCount; r < rowCount + newRows; r++)
+            {
+                IRow row = sheet.CreateRow(r);
+                row.CreateCell(0).SetCellValue(1.03 * (r + 7));
+                row.CreateCell(1).SetCellValue(DateTime.Now);
+                row.CreateCell(2).SetCellValue(DateTime.Now);
+                row.CreateCell(3).SetCellValue(String.Format("row:{0}/col:{1}", r, 3));
+                row.CreateCell(4).SetCellValue(true);
+                row.CreateCell(5).SetCellType(CellType.Error);
+                row.CreateCell(6).SetCellValue("added cells.");
+            }
+
+            wb = WriteOutAndReadBack((HSSFWorkbook)wb);
+        }
+
         [Test]
         public void Test54016()
         {

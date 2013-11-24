@@ -14,9 +14,7 @@
    See the License for the specific language governing permissions and
    limitations Under the License.
 ==================================================================== */
-using System;
-using System.Collections.Generic;
-using System.Text;
+
 using NPOI.HSSF.Model;
 using NPOI.HSSF.Record.Chart;
 using System.Diagnostics;
@@ -42,10 +40,11 @@ namespace NPOI.HSSF.Record.Aggregates.Chart
         private TextPropsAggregate textProps = null;
         private CrtMlFrtAggregate crtMlFrt = null;
 
+        private bool _isFirst;
         public bool IsFirst
         {
-            get;
-            set;
+            get { return _isFirst; }
+            set { _isFirst = value; }
         }
 
         public ObjectLinkRecord ObjectLink
@@ -57,7 +56,7 @@ namespace NPOI.HSSF.Record.Aggregates.Chart
             : base(RuleName_ATTACHEDLABEL, container)
         {
             ChartSheetAggregate cs = GetContainer<ChartSheetAggregate>(ChartRecordAggregate.RuleName_CHARTSHEET);
-            IsFirst = cs.AttachLabelCount == 0;
+            _isFirst = cs.AttachLabelCount == 0;
             cs.AttachLabelCount++;
             text = (TextRecord)rs.GetNext();
             rs.GetNext();//BeginRecord

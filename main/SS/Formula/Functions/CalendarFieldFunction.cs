@@ -38,12 +38,12 @@ namespace NPOI.SS.Formula.Functions
         public const int MINUTE_ID = 0x05;
         public const int SECOND_ID = 0x06;
 
-        public static Function YEAR = new CalendarFieldFunction(YEAR_ID);
-        public static Function MONTH = new CalendarFieldFunction(MONTH_ID);
-        public static Function DAY = new CalendarFieldFunction(DAY_OF_MONTH_ID);
-        public static Function HOUR = new CalendarFieldFunction(HOUR_OF_DAY_ID);
-        public static Function MINUTE = new CalendarFieldFunction(MINUTE_ID);
-        public static Function SECOND = new CalendarFieldFunction(SECOND_ID);
+        public static readonly Function YEAR = new CalendarFieldFunction(YEAR_ID);
+        public static readonly Function MONTH = new CalendarFieldFunction(MONTH_ID);
+        public static readonly Function DAY = new CalendarFieldFunction(DAY_OF_MONTH_ID);
+        public static readonly Function HOUR = new CalendarFieldFunction(HOUR_OF_DAY_ID);
+        public static readonly Function MINUTE = new CalendarFieldFunction(MINUTE_ID);
+        public static readonly Function SECOND = new CalendarFieldFunction(SECOND_ID);
 
         private int _dateFieldId;
 
@@ -89,7 +89,7 @@ namespace NPOI.SS.Formula.Functions
             // EXCEL functions round up nearly a half second (probably to prevent floating point
             // rounding issues); use UTC here to prevent daylight saving issues for HOUR
             //DateTime d = DateUtil.GetJavaDate(serialDate, false);
-            DateTime d = DateUtil.GetJavaCalendarUTC(serialDate + 0.4995 / DateUtil.SECONDS_PER_DAY, false);
+            DateTime d = DateUtil.GetJavaCalendar(serialDate + 0.4995 / DateUtil.SECONDS_PER_DAY, false);
 
             //Calendar c = new GregorianCalendar();
             //c.setTime(d);

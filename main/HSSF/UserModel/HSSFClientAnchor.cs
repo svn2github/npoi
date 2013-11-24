@@ -40,6 +40,7 @@ namespace NPOI.HSSF.UserModel
         /// </summary>
         public HSSFClientAnchor()
         {
+            //Is this necessary?
             this._escherClientAnchor = new EscherClientAnchorRecord();
         }
 
@@ -69,10 +70,10 @@ namespace NPOI.HSSF.UserModel
             CheckRange(row1, 0, 255 * 256, "row1");
             CheckRange(row2, 0, 255 * 256, "row2");
 
-            this.Col1 = col1;
-            this.Row1 = row1;
-            this.Col2 = col2;
-            this.Row2 = row2;
+            Col1=((short)Math.Min(col1, col2));
+            Col2=((short)Math.Max(col1, col2));
+            Row1=((short)Math.Min(row1, row2));
+            Row2=((short)Math.Max(row1, row2));
 
             if (col1 > col2)
             {
@@ -278,6 +279,21 @@ namespace NPOI.HSSF.UserModel
         protected override void CreateEscherAnchor()
         {
             _escherClientAnchor = new EscherClientAnchorRecord();
+        }
+
+        public override bool Equals(Object obj)
+        {
+            if (obj == null)
+                return false;
+            if (obj == this)
+                return true;
+            if (obj.GetType() != GetType())
+                return false;
+            HSSFClientAnchor anchor = (HSSFClientAnchor)obj;
+
+            return anchor.Col1 == Col1 && anchor.Col2 == Col2 && anchor.Dx1 == Dx1
+                    && anchor.Dx2 == Dx2 && anchor.Dy1 == Dy1 && anchor.Dy2 == Dy2
+                    && anchor.Row1 == Row1 && anchor.Row2 == Row2 && anchor.AnchorType == AnchorType;
         }
 
         public override int Dx1

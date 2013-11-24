@@ -19,7 +19,6 @@
 namespace NPOI.DDF
 {
     using System;
-    using System.IO;
     using System.Text;
     using System.Collections;
     using NPOI.Util;
@@ -275,6 +274,19 @@ namespace NPOI.DDF
         public void AddChildRecord(EscherRecord record)
         {
             this._childRecords.Add(record);
+        }
+
+        public void AddChildBefore(EscherRecord record, int insertBeforeRecordId)
+        {
+            for (int i = 0; i < _childRecords.Count; i++)
+            {
+                EscherRecord rec = _childRecords[(i)];
+                if (rec.RecordId == insertBeforeRecordId)
+                {
+                    _childRecords.Insert(i++, record);
+                    // TODO - keep looping? Do we expect multiple matches?
+                }
+            }
         }
         /// <summary>
         /// Returns a <see cref="T:System.String"/> that represents the current <see cref="T:System.Object"/>.

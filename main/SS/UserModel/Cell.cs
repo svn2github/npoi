@@ -18,18 +18,17 @@
 namespace NPOI.SS.UserModel
 {
     using System;
-    using NPOI.SS.Formula;
     using NPOI.SS.Util;
 
     public enum CellType : int
     {
         Unknown = -1,
-        NUMERIC = 0,
-        STRING = 1,
-        FORMULA = 2,
-        BLANK = 3,
-        BOOLEAN = 4,
-        ERROR = 5
+        Numeric = 0,
+        String = 1,
+        Formula = 2,
+        Blank = 3,
+        Boolean = 4,
+        Error = 5
     }
 
     /**

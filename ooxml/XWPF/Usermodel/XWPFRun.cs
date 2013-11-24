@@ -29,6 +29,7 @@ namespace NPOI.XWPF.UserModel
      * XWPFrun.object defines a region of text with a common Set of properties
      *
      * @author Yegor Kozlov
+     * @author Gregg Morris (gregg dot morris at gmail dot com) - added getColor(), setColor()
      */
     public class XWPFRun
     {
@@ -102,7 +103,7 @@ namespace NPOI.XWPF.UserModel
             pictures = new List<XWPFPicture>();
             foreach (object o in pictTextObjs)
             {
-                foreach (var pict in GetCTPictures(o))
+                foreach (OpenXmlFormats.Dml.Picture.CT_Picture pict in GetCTPictures(o))
                 {
                     XWPFPicture picture = new XWPFPicture(pict, this);
                    pictures.Add(picture);
@@ -133,11 +134,10 @@ namespace NPOI.XWPF.UserModel
             if (o is NPOI.OpenXmlFormats.Wordprocessing.CT_Drawing)
             {
                 NPOI.OpenXmlFormats.Wordprocessing.CT_Drawing drawing = o as NPOI.OpenXmlFormats.Wordprocessing.CT_Drawing;
-                foreach (object obj in drawing.Items)
+                if (drawing.inline!=null)
                 {
-                    if (obj is CT_Inline)
+                    foreach (CT_Inline inline in drawing.inline)
                     {
-                        CT_Inline inline = obj as CT_Inline;
                         GetPictures(inline.graphic.graphicData, pictures);
                     }
                 }
@@ -152,9 +152,9 @@ namespace NPOI.XWPF.UserModel
         private void GetPictures(CT_GraphicalObjectData god, List<NPOI.OpenXmlFormats.Dml.Picture.CT_Picture> pictures)
         {
             XmlSerializer xmlse = new XmlSerializer(typeof(NPOI.OpenXmlFormats.Dml.Picture.CT_Picture));
-            foreach (XmlElement el in god.Any)
+            foreach (string el in god.Any)
             {
-                System.IO.StringReader stringReader = new System.IO.StringReader(el.OuterXml);
+                System.IO.StringReader stringReader = new System.IO.StringReader(el);
 
                 NPOI.OpenXmlFormats.Dml.Picture.CT_Picture pict =
                     xmlse.Deserialize(System.Xml.XmlReader.Create(stringReader)) as NPOI.OpenXmlFormats.Dml.Picture.CT_Picture;
@@ -201,11 +201,7 @@ namespace NPOI.XWPF.UserModel
         {
             if (!onoff.IsSetVal())
                 return true;
-            if (onoff.val == ST_OnOff.on)
-                return true;
-            if (onoff.val == ST_OnOff.True)
-                return true;
-            return false;
+            return onoff.val;
         }
 
         /**
@@ -252,9 +248,36 @@ namespace NPOI.XWPF.UserModel
         {
             CT_RPr pr = run.IsSetRPr() ? run.rPr : run.AddNewRPr();
             CT_OnOff bold = pr.IsSetB() ? pr.b : pr.AddNewB();
-            bold.val=(value ? ST_OnOff.True : ST_OnOff.False);
+            bold.val=value ;
+        }
+        /**
+     * Get text color. The returned value is a string in the hex form "RRGGBB".
+     */
+        public String GetColor()
+        {
+            String color = null;
+            if (run.IsSetRPr())
+            {
+                CT_RPr pr = run.rPr;
+                if (pr.IsSetColor())
+                {
+                    NPOI.OpenXmlFormats.Wordprocessing.CT_Color clr = pr.color;
+                    color = clr.val; //clr.xgetVal().getStringValue();
+                }
+            }
+            return color;
         }
 
+        /**
+         * Set text color.
+         * @param rgbStr - the desired color, in the hex form "RRGGBB".
+         */
+        public void SetColor(String rgbStr)
+        {
+            CT_RPr pr = run.IsSetRPr() ? run.rPr : run.AddNewRPr();
+            NPOI.OpenXmlFormats.Wordprocessing.CT_Color color = pr.IsSetColor() ? pr.color : pr.AddNewColor();
+            color.val = (rgbStr);
+        }
         /**
          * Return the string content of this text run
          *
@@ -342,7 +365,7 @@ namespace NPOI.XWPF.UserModel
         {
             CT_RPr pr = run.IsSetRPr() ? run.rPr : run.AddNewRPr();
             CT_OnOff italic = pr.IsSetI() ? pr.i : pr.AddNewI();
-            italic.val = (value ? ST_OnOff.True : ST_OnOff.False);
+            italic.val = value;
         }
 
         /**
@@ -422,7 +445,7 @@ namespace NPOI.XWPF.UserModel
         {
             CT_RPr pr = run.IsSetRPr() ? run.rPr : run.AddNewRPr();
             CT_OnOff strike = pr.IsSetStrike() ? pr.strike : pr.AddNewStrike();
-            strike.val = (value ? ST_OnOff.True : ST_OnOff.False);
+            strike.val = value ;
         }
 
         /**
@@ -487,7 +510,7 @@ namespace NPOI.XWPF.UserModel
          */
         public void SetFontFamily(String fontFamily)
         {
-            CT_RPr pr = run.rPr;
+            CT_RPr pr = run.IsSetRPr() ? run.rPr : run.AddNewRPr();
             CT_Fonts fonts = pr.IsSetRFonts() ? pr.rFonts : pr.AddNewRFonts();
             fonts.ascii=(fontFamily);
         }
@@ -661,7 +684,8 @@ namespace NPOI.XWPF.UserModel
          *  
          * @param pictureData The raw picture data
          * @param pictureType The type of the picture, eg {@link Document#PICTURE_TYPE_JPEG}
-         * @throws IOException 
+         * @param width width in EMUs. To convert to / from points use {@link org.apache.poi.util.Units}
+         * @param height height in EMUs. To convert to / from points use {@link org.apache.poi.util.Units}
          * @throws NPOI.Openxml4j.exceptions.InvalidFormatException 
          * @throws IOException 
          */
@@ -674,8 +698,6 @@ namespace NPOI.XWPF.UserModel
             XWPFPictureData picData = (XWPFPictureData)doc.GetRelationById(relationId);
 
             // Create the Drawing entry for it
-            try
-            {
                 NPOI.OpenXmlFormats.Wordprocessing.CT_Drawing Drawing = run.AddNewDrawing();
                 CT_Inline inline = Drawing.AddNewInline();
 
@@ -684,7 +706,7 @@ namespace NPOI.XWPF.UserModel
                 //CT_GraphicalObject tmp = new CT_GraphicalObject();
                 //String xml =
                 //    "<a:graphic xmlns:a=\"" + "http://schemas.openxmlformats.org/drawingml/2006/main" + "\">" +
-                //    "<a:graphicData uri=\"" + "http://schemas.openxmlformats.org/drawingml/2006/main" + "\">" +
+                //    "<a:graphicData uri=\"" + "http://schemas.openxmlformats.org/drawingml/2006/picture" + "\">" +
                 //    "<pic:pic xmlns:pic=\"" + "http://schemas.openxmlformats.org/drawingml/2006/picture" + "\" />" +
                 //    "</a:graphicData>" +
                 //    "</a:graphic>";
@@ -695,7 +717,7 @@ namespace NPOI.XWPF.UserModel
 
                 inline.graphic = new CT_GraphicalObject();
                 inline.graphic.graphicData = new CT_GraphicalObjectData();
-                inline.graphic.graphicData.AddPicElement((XmlElement)el.Clone());
+                inline.graphic.graphicData.AddPicElement(el.OuterXml);
 
                 // Setup the inline
                 inline.distT = (0);
@@ -756,11 +778,7 @@ namespace NPOI.XWPF.UserModel
                 XWPFPicture xwpfPicture = new XWPFPicture(pic, this);
                 pictures.Add(xwpfPicture);
                 return xwpfPicture;
-            }
-            catch (Exception e)
-            {
-                throw new InvalidOperationException("", e);
-            }
+
         }
 
         /**

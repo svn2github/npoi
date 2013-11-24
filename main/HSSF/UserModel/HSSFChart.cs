@@ -420,7 +420,7 @@ namespace NPOI.HSSF.UserModel
         {
             BOFRecord r = new BOFRecord();
             r.Version = ((short)600);
-            r.Type = ((short)20);
+            r.Type = BOFRecordType.Chart;
             r.Build = ((short)0x1CFE);
             r.BuildYear = ((short)1997);
             r.HistoryBitMask = (0x40C9);
@@ -663,10 +663,10 @@ namespace NPOI.HSSF.UserModel
             r.MinimumDate = ((short)-28644);
             r.MaximumDate = ((short)-28715);
             r.MajorInterval = ((short)2);
-            r.MajorUnit = ((short)0);
+            r.MajorUnit = (DateUnit)0;
             r.MinorInterval = ((short)1);
-            r.MinorUnit = ((short)0);
-            r.BaseUnit = ((short)0);
+            r.MinorUnit = (DateUnit)0;
+            r.BaseUnit = (DateUnit)0;
             r.CrossDate = ((short)-28644);
             r.IsAutoMin = (true);
             r.IsAutoMax = (true);

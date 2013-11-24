@@ -19,7 +19,6 @@ namespace NPOI.DDF
     using System;
     using System.IO;
     using System.Text;
-    using System.Collections;
     using System.Drawing;
     using NPOI.Util;
     using ICSharpCode.SharpZipLib.Zip.Compression;
@@ -32,11 +31,11 @@ namespace NPOI.DDF
     {
         private static POILogger log = POILogFactory.GetLogger(typeof(EscherPictBlip));
 
-        public static short RECORD_ID_EMF = unchecked((short)0xF018) + 2;
-        public static short RECORD_ID_WMF = unchecked((short)0xF018) + 3;
-        public static short RECORD_ID_PICT = unchecked((short)0xF018) + 4;
+        public const short RECORD_ID_EMF = unchecked((short)0xF018) + 2;
+        public const short RECORD_ID_WMF = unchecked((short)0xF018) + 3;
+        public const short RECORD_ID_PICT = unchecked((short)0xF018) + 4;
 
-        private static int HEADER_SIZE = 8;
+        private const int HEADER_SIZE = 8;
 
         private byte[] field_1_UID;
         private int field_2_cb;

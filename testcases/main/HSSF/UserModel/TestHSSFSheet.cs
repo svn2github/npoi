@@ -54,7 +54,21 @@ namespace TestCases.HSSF.UserModel
         {
 
         }
-
+        /**
+     * Test for Bugzilla #29747.
+     * Moved from TestHSSFWorkbook#testSetRepeatingRowsAndColumns().
+     */
+        [Test]
+        public void TestSetRepeatingRowsAndColumnsBug29747()
+        {
+            HSSFWorkbook wb = new HSSFWorkbook();
+            wb.CreateSheet();
+            wb.CreateSheet();
+            HSSFSheet sheet2 = (HSSFSheet)wb.CreateSheet();
+            sheet2.RepeatingRows=(CellRangeAddress.ValueOf("1:2"));
+            NameRecord nameRecord = wb.Workbook.GetNameRecord(0);
+            Assert.AreEqual(3, nameRecord.SheetNumber);
+        }
         /// <summary>
         ///  Some of the tests are depending on the american culture.
         /// </summary>
@@ -933,8 +947,8 @@ namespace TestCases.HSSF.UserModel
             HSSFSheet sheet2 = (HSSFSheet)wb2.GetSheetAt(1);
 
             //Check that id of the drawing Group was updated
-            EscherDgRecord dg1 = (EscherDgRecord)sheet1.DrawingEscherAggregate.FindFirstWithId(EscherDgRecord.RECORD_ID);
-            EscherDgRecord dg2 = (EscherDgRecord)sheet2.DrawingEscherAggregate.FindFirstWithId(EscherDgRecord.RECORD_ID);
+            EscherDgRecord dg1 = (EscherDgRecord)(sheet1.DrawingPatriarch as HSSFPatriarch).GetBoundAggregate().FindFirstWithId(EscherDgRecord.RECORD_ID);
+            EscherDgRecord dg2 = (EscherDgRecord)(sheet2.DrawingPatriarch as HSSFPatriarch).GetBoundAggregate().FindFirstWithId(EscherDgRecord.RECORD_ID);
             int dg_id_1 = dg1.Options >> 4;
             int dg_id_2 = dg2.Options >> 4;
             Assert.AreEqual(dg_id_1 + 1, dg_id_2);
@@ -993,7 +1007,7 @@ namespace TestCases.HSSF.UserModel
             Assert.AreEqual(11 * 20, bs.GetFont(wbSimple).FontHeight);
             Assert.AreEqual(8, bs.GetFont(wbSimple).Color);
             Assert.IsFalse(bs.GetFont(wbSimple).IsItalic);
-            Assert.AreEqual((int)FontBoldWeight.NORMAL, bs.GetFont(wbSimple).Boldweight);
+            Assert.AreEqual((int)FontBoldWeight.Normal, bs.GetFont(wbSimple).Boldweight);
 
 
             ICellStyle cs = wbComplex.GetSheetAt(0).GetColumnStyle(1);
@@ -1003,7 +1017,7 @@ namespace TestCases.HSSF.UserModel
             Assert.AreEqual(8 * 20, cs.GetFont(wbComplex).FontHeight);
             Assert.AreEqual(10, cs.GetFont(wbComplex).Color);
             Assert.IsFalse(cs.GetFont(wbComplex).IsItalic);
-            Assert.AreEqual((int)FontBoldWeight.BOLD, cs.GetFont(wbComplex).Boldweight);
+            Assert.AreEqual((int)FontBoldWeight.Bold, cs.GetFont(wbComplex).Boldweight);
         }
         [Test]
         public void TestArabic()

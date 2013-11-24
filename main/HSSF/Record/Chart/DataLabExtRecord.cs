@@ -18,7 +18,6 @@
 namespace NPOI.HSSF.Record.Chart
 {
     using System;
-    using System.IO;
     using System.Text;
     using NPOI.Util;
 
@@ -30,7 +29,7 @@ namespace NPOI.HSSF.Record.Chart
      */
     public class DataLabExtRecord : StandardRecord
     {
-        public static short sid = 0x086A;
+        public const short sid = 0x086A;
 
         private int rt;
         private int grbitFrt;

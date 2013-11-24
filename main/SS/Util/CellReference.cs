@@ -23,7 +23,7 @@ namespace NPOI.SS.Util
     using System.Text;
     using System.Text.RegularExpressions;
     using NPOI.SS.Formula;
-using NPOI.SS.UserModel;
+    using NPOI.SS.UserModel;
     using System.Globalization;
 
     public enum NameType:int
@@ -32,11 +32,11 @@ using NPOI.SS.UserModel;
         /// Allow accessing the Initial value.
         /// </summary>
         None = 0,
-        CELL = 1,
-        NAMED_RANGE = 2,
-        COLUMN = 3,
-        ROW=4,
-        BAD_CELL_OR_NAMED_RANGE = -1
+        Cell = 1,
+        NamedRange = 2,
+        Column = 3,
+        Row = 4,
+        BadCellOrNamedRange = -1
     }
 
     /**
@@ -58,22 +58,22 @@ using NPOI.SS.UserModel;
          * The run of letters is group 1 and the run of digits is group 2.  
          * Each group may optionally be prefixed with a single '$'.
          */
-        private static string CELL_REF_PATTERN = @"^\$?([A-Za-z]+)\$?([0-9]+)";
+        private const string CELL_REF_PATTERN = @"^\$?([A-Za-z]+)\$?([0-9]+)";
         /**
          * Matches a run of one or more letters.  The run of letters is group 1.  
          * The text may optionally be prefixed with a single '$'.
          */
-        private static string COLUMN_REF_PATTERN = @"^\$?([A-Za-z]+)$";
+        private const string COLUMN_REF_PATTERN = @"^\$?([A-Za-z]+)$";
         /**
  * Matches a run of one or more digits.  The run of digits is group 1.
  * The text may optionally be prefixed with a single '$'.
  */
-        private static string ROW_REF_PATTERN = @"^\$?([0-9]+)$";
+        private const string ROW_REF_PATTERN = @"^\$?([0-9]+)$";
         /**
          * Named range names must start with a letter or underscore.  Subsequent characters may include
          * digits or dot.  (They can even end in dot).
          */
-        private static string NAMED_RANGE_NAME_PATTERN = "^[_A-Za-z][_.A-Za-z0-9]*$";
+        private const string NAMED_RANGE_NAME_PATTERN = "^[_A-Za-z][_.A-Za-z0-9]*$";
         //private static string BIFF8_LAST_COLUMN = "IV";
         //private static int BIFF8_LAST_COLUMN_TEXT_LEN = BIFF8_LAST_COLUMN.Length;
         //private static string BIFF8_LAST_ROW = (0x10000).ToString();
@@ -281,7 +281,7 @@ using NPOI.SS.UserModel;
             if (CellReferenceIsWithinRange(lettersGroup, digitsGroup, ssVersion))
             {
                 // valid cell reference
-                return NameType.CELL;
+                return NameType.Cell;
             }
             // If str looks like a cell reference, but is out of (row/col) range, it is a valid
             // named range name
@@ -291,9 +291,9 @@ using NPOI.SS.UserModel;
             if (str.IndexOf(ABSOLUTE_REFERENCE_MARKER) >= 0)
             {
                 // Of course, named range names cannot have '$'
-                return NameType.BAD_CELL_OR_NAMED_RANGE;
+                return NameType.BadCellOrNamedRange;
             }
-            return NameType.NAMED_RANGE;
+            return NameType.NamedRange;
         }
         private static NameType ValidateNamedRangeName(String str, SpreadsheetVersion ssVersion)
         {
@@ -304,7 +304,7 @@ using NPOI.SS.UserModel;
                 Group colStr = colMatcher.Matches(str)[0].Groups[1];
                 if (IsColumnWithnRange(colStr.Value, ssVersion))
                 {
-                    return NameType.COLUMN;
+                    return NameType.Column;
                 }
             }
             Regex rowMatcher = new Regex(ROW_REF_PATTERN);
@@ -313,14 +313,14 @@ using NPOI.SS.UserModel;
                 Group rowStr = rowMatcher.Matches(str)[0].Groups[1];
                 if (IsRowWithnRange(rowStr.Value, ssVersion))
                 {
-                    return NameType.ROW;
+                    return NameType.Row;
                 }
             }
             if (!Regex.IsMatch(str, NAMED_RANGE_NAME_PATTERN))
             {
-                return NameType.BAD_CELL_OR_NAMED_RANGE;
+                return NameType.BadCellOrNamedRange;
             }
-            return NameType.NAMED_RANGE;
+            return NameType.NamedRange;
         }
         /**
          * Takes in a 0-based base-10 column and returns a ALPHA-26

@@ -238,7 +238,7 @@ namespace NPOI.XSSF.UserModel
             Assert.AreEqual(3.0, ctWorksheet.sheetViews.GetSheetViewArray(0).pane.xSplit);
             //    Assert.AreEqual(10, sheet.GetTopRow());
             //    Assert.AreEqual(10, sheet.GetLeftCol());
-            sheet.CreateSplitPane(4, 8, 12, 12, PanePosition.LOWER_RIGHT);
+            sheet.CreateSplitPane(4, 8, 12, 12, PanePosition.LowerRight);
             Assert.AreEqual(8.0, ctWorksheet.sheetViews.GetSheetViewArray(0).pane.ySplit);
             Assert.AreEqual(ST_Pane.bottomRight, ctWorksheet.sheetViews.GetSheetViewArray(0).pane.activePane);
         }
@@ -1096,14 +1096,44 @@ namespace NPOI.XSSF.UserModel
             Assert.AreEqual(1, tables.Count);
 
             XSSFTable table = tables[0];
-            Assert.AreEqual("Tabella1", table.GetName());
-            Assert.AreEqual("Tabella1", table.GetDisplayName());
+            Assert.AreEqual("Tabella1", table.Name);
+            Assert.AreEqual("Tabella1", table.DisplayName);
 
             // And the others
             XSSFSheet s2 = (XSSFSheet)wb.GetSheetAt(1);
             Assert.AreEqual(0, s2.GetTables().Count);
             XSSFSheet s3 = (XSSFSheet)wb.GetSheetAt(2);
             Assert.AreEqual(0, s3.GetTables().Count);
+        }
+
+        /**
+     * Test to trigger OOXML-LITE generating to include org.openxmlformats.schemas.spreadsheetml.x2006.main.CTSheetCalcPr
+     */
+        [Test]
+        public void TestSetForceFormulaRecalculation()
+        {
+            XSSFWorkbook workbook = new XSSFWorkbook();
+            XSSFSheet sheet = (XSSFSheet)workbook.CreateSheet("Sheet 1");
+
+            // Set
+            sheet.ForceFormulaRecalculation = (true);
+            Assert.AreEqual(true, sheet.ForceFormulaRecalculation);
+
+            // calcMode="manual" is unset when forceFormulaRecalculation=true
+            CT_CalcPr calcPr = workbook.GetCTWorkbook().AddNewCalcPr();
+            calcPr.calcMode = (ST_CalcMode.manual);
+            sheet.ForceFormulaRecalculation=(true);
+            Assert.AreEqual(ST_CalcMode.auto, calcPr.calcMode);
+
+            // Check
+            sheet.ForceFormulaRecalculation = (false);
+            Assert.AreEqual(false, sheet.ForceFormulaRecalculation);
+
+
+            // Save, re-load, and re-check
+            workbook = (XSSFWorkbook)XSSFTestDataSamples.WriteOutAndReadBack(workbook);
+            sheet = (XSSFSheet)workbook.GetSheet("Sheet 1");
+            Assert.AreEqual(false, sheet.ForceFormulaRecalculation);
         }
     }
 }

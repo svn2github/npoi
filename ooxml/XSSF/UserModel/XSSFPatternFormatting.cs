@@ -75,16 +75,14 @@ namespace NPOI.XSSF.UserModel
             get
             {
                 if (!_fill.IsSetPatternFill() || !_fill.GetPatternFill().IsSetPatternType())
-                    return (short)FillPatternType.NO_FILL;
+                    return 0;
 
-                return (short)(_fill.GetPatternFill().patternType - 1);
+                return (short)_fill.GetPatternFill().patternType;
             }
             set 
             {
                 CT_PatternFill ptrn = _fill.IsSetPatternFill() ? _fill.GetPatternFill() : _fill.AddNewPatternFill();
-                if (value == (short)FillPatternType.NO_FILL)
-                    ptrn.patternType = ST_PatternType.none;
-                else ptrn.patternType = (ST_PatternType)(value + 1);
+                ptrn.patternType = (ST_PatternType)(value);
             }
         }
 

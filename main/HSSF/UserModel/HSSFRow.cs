@@ -18,13 +18,10 @@
 namespace NPOI.HSSF.UserModel
 {
     using System;
-    using System.IO;
     using System.Collections;
     using System.Collections.Generic;
 
     using NPOI.HSSF.Record;
-    using NPOI.HSSF.Model;
-    using NPOI.Util;
     using NPOI.SS.UserModel;
     using NPOI.SS;
 
@@ -107,14 +104,14 @@ namespace NPOI.HSSF.UserModel
         }
         /// <summary>
         /// Use this to create new cells within the row and return it.
-        /// The cell that is returned is a CELL_TYPE_BLANK (<see cref="ICell"/>/<see cref="CellType.BLANK"/>). 
+        /// The cell that is returned is a CELL_TYPE_BLANK (<see cref="ICell"/>/<see cref="CellType.Blank"/>). 
         /// The type can be changed either through calling <c>SetCellValue</c> or <c>SetCellType</c>.
         /// </summary>
         /// <param name="column">the column number this cell represents</param>
         /// <returns>a high level representation of the created cell.</returns>
         public ICell CreateCell(int column)
         {
-            return this.CreateCell(column, CellType.BLANK);
+            return this.CreateCell(column, CellType.Blank);
         }
 
         /// <summary>
@@ -291,12 +288,12 @@ namespace NPOI.HSSF.UserModel
         /// </summary>
         public void RemoveAllCells()
         {
-            int initialLen = cells.Count;
-            for (int i = 0; i < initialLen; i++)
+            ICell[] cellsToRemove = new ICell[cells.Values.Count];
+            cells.Values.CopyTo(cellsToRemove, 0);
+            foreach (ICell cell in cellsToRemove)
             {
-                RemoveCell(cells[i], true);
+                RemoveCell(cell, true);
             }
-            //cells = new HSSFCell[INITIAL_CAPACITY];
         }
 
         /// <summary>
@@ -487,7 +484,7 @@ namespace NPOI.HSSF.UserModel
             if (policy == MissingCellPolicy.RETURN_BLANK_AS_NULL)
             {
                 if (cell == null) return cell;
-                if (cell.CellType == CellType.BLANK)
+                if (cell.CellType == CellType.Blank)
                 {
                     return null;
                 }
@@ -497,7 +494,7 @@ namespace NPOI.HSSF.UserModel
             {
                 if (cell == null)
                 {
-                    return CreateCell(cellnum, CellType.BLANK);
+                    return CreateCell(cellnum, CellType.Blank);
                 }
                 return cell;
             }
@@ -603,7 +600,8 @@ namespace NPOI.HSSF.UserModel
             {
                 if (value == -1)
                 {
-                    row.Height = 20 * 20;
+                    row.Height = unchecked((short)(0xFF | 0x8000));
+                    row.BadFontHeight = false;
                 }
                 else
                 {
@@ -656,13 +654,13 @@ namespace NPOI.HSSF.UserModel
         {
             get
             {
-                return (row.Height / 20f);
+                return (Height / 20f);
             }
             set
             {
                 if (value == -1)
                 {
-                    row.Height = 20;
+                    row.Height = unchecked(((short)(0xFF | 0x8000)));
                 }
                 else
                 {

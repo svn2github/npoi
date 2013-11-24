@@ -18,12 +18,10 @@
 namespace NPOI.HSSF.Model
 {
     using System;
-    using System.Text;
     using System.Collections;
     using System.Collections.Generic;
 
     using NPOI.HSSF.Record;
-    using NPOI.SS.Formula;
     using NPOI.SS.Formula.PTG;
 
     /**
@@ -257,7 +255,8 @@ namespace NPOI.HSSF.Model
                 else if (nextClass == typeof(NameCommentRecord))
                 {
                     NameCommentRecord ncr = (NameCommentRecord)rs.GetNext();
-                    commentRecords.Add(ncr.NameText, ncr);
+                    //commentRecords.Add(ncr.NameText, ncr);
+                    commentRecords[ncr.NameText] = ncr;
                 }
                 else
                 {
@@ -590,6 +589,30 @@ namespace NPOI.HSSF.Model
         {
             int extBookIndex = _externSheetRecord.GetExtbookIndexFromRefIndex(refIndex);
             return _externalBookBlocks[extBookIndex].GetNameIx(definedNameIndex);
+        }
+
+        /**
+	     * Changes an external referenced file to another file.
+	     * A formular in Excel which refers a cell in another file is saved in two parts: 
+	     * The referenced file is stored in an reference table. the row/cell information is saved separate.
+	     * This method invokation will only change the reference in the lookup-table itself.
+	     * @param oldUrl The old URL to search for and which is to be replaced
+	     * @param newUrl The URL replacement
+	     * @return true if the oldUrl was found and replaced with newUrl. Otherwise false
+	     */
+        public bool ChangeExternalReference(String oldUrl, String newUrl)
+        {
+            foreach (ExternalBookBlock ex in _externalBookBlocks)
+            {
+                SupBookRecord externalRecord = ex.GetExternalBookRecord();
+                if (externalRecord.IsExternalReferences
+                    && externalRecord.URL.Equals(oldUrl))
+                {
+                    externalRecord.URL = (newUrl);
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

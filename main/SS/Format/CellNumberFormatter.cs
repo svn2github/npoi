@@ -20,7 +20,6 @@ namespace NPOI.SS.Format
     using System.Text.RegularExpressions;
     using System.Text;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using NPOI.SS.Util;
     using System.Collections;
 
@@ -96,10 +95,10 @@ namespace NPOI.SS.Format
                 FormatValue(toAppendTo, value);
             }
         }
-        static CellFormatter SIMPLE_NUMBER = new SimpleNumberCellFormatter("General");
 
-        private static CellFormatter SIMPLE_INT = new CellNumberFormatter("#");
-        private static CellFormatter SIMPLE_FLOAT = new CellNumberFormatter("#.#");
+        private static readonly CellFormatter SIMPLE_NUMBER = new SimpleNumberCellFormatter("General");
+        private static readonly CellFormatter SIMPLE_INT = new CellNumberFormatter("#");
+        private static readonly CellFormatter SIMPLE_FLOAT = new CellNumberFormatter("#.#");
 
         /**
          * This class is used to mark where the special characters in the format
