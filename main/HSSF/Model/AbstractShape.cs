@@ -18,7 +18,6 @@
 namespace NPOI.HSSF.Model
 {
     using System;
-    using System.Collections;
     using NPOI.DDF;
     using NPOI.HSSF.UserModel;
     using NPOI.HSSF.Record;
@@ -28,6 +27,7 @@ namespace NPOI.HSSF.Model
     /// An abstract shape Is the lowlevel model for a shape.
     /// @author Glen Stampoultzis (glens at apache.org)
     /// </summary>
+    [Obsolete]
     public abstract class AbstractShape
     {
         /// <summary>

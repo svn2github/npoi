@@ -62,16 +62,16 @@ namespace NPOI.XSSF.UserModel
             Assert.IsTrue(Arrays.Equals(jpegData, ((XSSFPictureData)pictures[jpegIdx]).Data));
 
             XSSFClientAnchor anchor = new XSSFClientAnchor(0, 0, 0, 0, 1, 1, 10, 30);
-            Assert.AreEqual(AnchorType.MOVE_AND_RESIZE, (AnchorType)anchor.AnchorType);
-            anchor.AnchorType = (int)AnchorType.DONT_MOVE_AND_RESIZE;
-            Assert.AreEqual(AnchorType.DONT_MOVE_AND_RESIZE, (AnchorType)anchor.AnchorType);
+            Assert.AreEqual(AnchorType.MoveAndResize, (AnchorType)anchor.AnchorType);
+            anchor.AnchorType = (int)AnchorType.DontMoveAndResize;
+            Assert.AreEqual(AnchorType.DontMoveAndResize, (AnchorType)anchor.AnchorType);
 
             XSSFPicture shape = (XSSFPicture)drawing.CreatePicture(anchor, jpegIdx);
             Assert.IsTrue(anchor.Equals(shape.GetAnchor()));
             Assert.IsNotNull(shape.PictureData);
             Assert.IsTrue(Arrays.Equals(jpegData, shape.PictureData.Data));
 
-            CT_TwoCellAnchor ctShapeHolder = drawing.GetCTDrawing().TwoCellAnchors[0];
+            CT_TwoCellAnchor ctShapeHolder = (CT_TwoCellAnchor)drawing.GetCTDrawing().CellAnchors[0];
             // STEditAs.ABSOLUTE corresponds to ClientAnchor.DONT_MOVE_AND_RESIZE
             Assert.AreEqual(ST_EditAs.absolute, ctShapeHolder.editAs);
         }
@@ -99,6 +99,55 @@ namespace NPOI.XSSF.UserModel
             jpegIdx = wb.AddPicture(jpegData, PictureType.JPEG);
             XSSFPicture shape2 = (XSSFPicture)drawing.CreatePicture(anchor, jpegIdx);
             Assert.AreEqual((uint)2, shape2.GetCTPicture().nvPicPr.cNvPr.id);
+        }
+
+        /**
+     * same image refrerred by mulitple sheets
+     */
+        [Test]
+        public void TestMultiRelationShips()
+        {
+            XSSFWorkbook wb = new XSSFWorkbook();
+
+            byte[] pic1Data = Encoding.UTF8.GetBytes("test jpeg data");
+            byte[] pic2Data = Encoding.UTF8.GetBytes("test png data");
+
+            List<XSSFPictureData> pictures = wb.GetAllPictures() as List<XSSFPictureData>;
+            Assert.AreEqual(0, pictures.Count);
+
+            int pic1 = wb.AddPicture(pic1Data, XSSFWorkbook.PICTURE_TYPE_JPEG);
+            int pic2 = wb.AddPicture(pic2Data, XSSFWorkbook.PICTURE_TYPE_PNG);
+
+            XSSFSheet sheet1 = wb.CreateSheet() as XSSFSheet;
+            XSSFDrawing drawing1 = sheet1.CreateDrawingPatriarch() as XSSFDrawing;
+            XSSFPicture shape1 = drawing1.CreatePicture(new XSSFClientAnchor(), pic1) as XSSFPicture;
+            XSSFPicture shape2 = drawing1.CreatePicture(new XSSFClientAnchor(), pic2) as XSSFPicture;
+
+            XSSFSheet sheet2 = wb.CreateSheet() as XSSFSheet;
+            XSSFDrawing drawing2 = sheet2.CreateDrawingPatriarch() as XSSFDrawing;
+            XSSFPicture shape3 = drawing2.CreatePicture(new XSSFClientAnchor(), pic2) as XSSFPicture;
+            XSSFPicture shape4 = drawing2.CreatePicture(new XSSFClientAnchor(), pic1) as XSSFPicture;
+
+            Assert.AreEqual(2, pictures.Count);
+
+            wb = XSSFTestDataSamples.WriteOutAndReadBack(wb) as XSSFWorkbook;
+            pictures = wb.GetAllPictures() as List<XSSFPictureData>;
+            Assert.AreEqual(2, pictures.Count);
+
+            sheet1 = wb.GetSheetAt(0) as XSSFSheet;
+            drawing1 = sheet1.CreateDrawingPatriarch() as XSSFDrawing;
+            XSSFPicture shape11 = (XSSFPicture)drawing1.GetShapes()[0];
+            Assert.IsTrue(Arrays.Equals(shape1.PictureData.Data, shape11.PictureData.Data));
+            XSSFPicture shape22 = (XSSFPicture)drawing1.GetShapes()[0];
+            Assert.IsTrue(Arrays.Equals(shape2.PictureData.Data, shape22.PictureData.Data));
+
+            sheet2 = wb.GetSheetAt(1) as XSSFSheet;
+            drawing2 = sheet2.CreateDrawingPatriarch() as XSSFDrawing;
+            XSSFPicture shape33 = (XSSFPicture)drawing2.GetShapes()[0];
+            Assert.IsTrue(Arrays.Equals(shape3.PictureData.Data, shape33.PictureData.Data));
+            XSSFPicture shape44 = (XSSFPicture)drawing2.GetShapes()[1];
+            Assert.IsTrue(Arrays.Equals(shape4.PictureData.Data, shape44.PictureData.Data));
+
         }
     }
 }

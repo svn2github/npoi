@@ -16,11 +16,11 @@
 ==================================================================== */
 
 
+using NPOI.HSSF.Util;
+
 namespace NPOI.HSSF.UserModel
 {
     using System;
-    using System.IO;
-    using System.Collections;
     using NPOI.HSSF.Record;
     using NPOI.SS.UserModel;
 
@@ -78,10 +78,10 @@ namespace NPOI.HSSF.UserModel
         /// use the GetFontHeightInPoints which matches to the familiar 10, 12, 14 etc..
         /// </summary>
         /// <value>height in 1/20ths of a point.</value>
-        public short FontHeight
+        public double FontHeight
         {
             get { return font.FontHeight; }
-            set { font.FontHeight = value; }
+            set { font.FontHeight = (short)value; }
         }
 
         /// <summary>
@@ -126,6 +126,16 @@ namespace NPOI.HSSF.UserModel
             set { font.ColorPaletteIndex=value; }
         }
 
+        /// <summary>
+        /// get the color value for the font
+        /// </summary>
+        /// <param name="wb">HSSFWorkbook</param>
+        /// <returns></returns>
+        public HSSFColor GetHSSFColor(HSSFWorkbook wb)
+        {
+            HSSFPalette pallette = wb.GetCustomPalette();
+            return pallette.GetColor(Color);
+        }
 
         /// <summary>
         /// Gets or sets the boldness to use
@@ -141,10 +151,10 @@ namespace NPOI.HSSF.UserModel
         /// Gets or sets normal,base or subscript.
         /// </summary>
         /// <value>offset type to use (none,base,sub)</value>
-        public short TypeOffset
+        public FontSuperScript TypeOffset
         {
             get { return font.SuperSubScript; }
-            set { font.SuperSubScript=(short)value; }
+            set { font.SuperSubScript = value; }
         }
 
 
@@ -152,10 +162,10 @@ namespace NPOI.HSSF.UserModel
         /// Gets or sets the type of text Underlining to use
         /// </summary>
         /// <value>The Underlining type.</value>
-        public byte Underline
+        public FontUnderlineType Underline
         {
             get { return font.Underline; }
-            set { font.Underline=(byte)value; }
+            set { font.Underline = value; }
         }
 
 

@@ -17,11 +17,7 @@
 namespace NPOI.HSSF.UserModel
 {
     using System;
-    using System.Text;
-    using System.Collections;
-    using NPOI.DDF;
     using NPOI.HSSF.Record;
-    using NPOI.HSSF.Util;
     using NPOI.SS.UserModel;
 
     /// <summary>
@@ -50,14 +46,14 @@ namespace NPOI.HSSF.UserModel
             record = new HyperlinkRecord();
             switch (type)
             {
-                case HyperlinkType.URL:
-                case HyperlinkType.EMAIL:
+                case HyperlinkType.Url:
+                case HyperlinkType.Email:
                     record.CreateUrlLink();
                     break;
-                case HyperlinkType.FILE:
+                case HyperlinkType.File:
                     record.CreateFileLink();
                     break;
-                case HyperlinkType.DOCUMENT:
+                case HyperlinkType.Document:
                     record.CreateDocumentLink();
                     break;
             }

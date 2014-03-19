@@ -29,7 +29,6 @@ namespace TestCases.SS.UserModel
      *
      * @author Yegor Kozlov
      */
-    [TestFixture]
     public class BaseTestFormulaEvaluator
     {
 
@@ -213,7 +212,7 @@ namespace TestCases.SS.UserModel
             IFormulaEvaluator fe = wb.GetCreationHelper().CreateFormulaEvaluator();
             ISheet sheet = wb.CreateSheet("Sheet1");
             IRow r = sheet.CreateRow(0);
-            ICell c = r.CreateCell(0, CellType.FORMULA);
+            ICell c = r.CreateCell(0, CellType.Formula);
 
             // Create a value and check it
             c.CellFormula = (/*setter*/"Date(2011,10,6)");

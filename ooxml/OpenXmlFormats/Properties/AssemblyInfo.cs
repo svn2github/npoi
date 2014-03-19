@@ -9,7 +9,7 @@ using System.Security;
 [assembly: AssemblyTitle("NPOI OpenXmlFormats")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("NPOI team, https://code.google.com/p/npoi/")]
+[assembly: AssemblyCompany("DotX")]
 [assembly: AssemblyProduct("NPOI")]
 [assembly: AssemblyCopyright("Apache 2.0")]
 [assembly: AssemblyTrademark("NPOI")]
@@ -33,6 +33,7 @@ using System.Security;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("2.0.0.0")]
-[assembly: AssemblyFileVersion("2.0.0.0")]
+[assembly: AssemblyVersion("2.0.8.0")]
+[assembly: AssemblyFileVersion("2.0.8.0")]
+[assembly: AssemblyInformationalVersion("NPOI 2.1")]
 [assembly: AllowPartiallyTrustedCallers]

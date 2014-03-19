@@ -19,7 +19,6 @@
 namespace NPOI.HSSF.Model
 {
     using System;
-    using System.Text;
 
     using NPOI.HSSF.Record;
     using NPOI.DDF;
@@ -29,7 +28,8 @@ namespace NPOI.HSSF.Model
     /// Represents a line shape and Creates all the line specific low level records.
     /// @author Glen Stampoultzis (glens at apache.org)
     /// </summary>
-    public class LineShape: AbstractShape
+    [Obsolete]
+    public class LineShape : AbstractShape
     {
         private EscherContainerRecord spContainer;
         private ObjRecord objRecord;

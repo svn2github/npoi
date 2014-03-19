@@ -209,7 +209,7 @@ namespace NPOI.XSSF.UserModel
             StylesTable st = ss;
 
             // Has 8 number formats
-            Assert.AreEqual(8, st._GetNumberFormatSize());
+            Assert.AreEqual(8, st.GetNumberFormatSize());
             // Has 2 fonts
             Assert.AreEqual(2, st.GetFonts().Count);
             // Has 2 Fills
@@ -224,7 +224,7 @@ namespace NPOI.XSSF.UserModel
                     st.PutNumberFormat("testFORMAT"));
             Assert.AreEqual(StylesTable.FIRST_CUSTOM_STYLE_ID + 9,
                     st.PutNumberFormat("testFORMAT2"));
-            Assert.AreEqual(10, st._GetNumberFormatSize());
+            Assert.AreEqual(10, st.GetNumberFormatSize());
 
 
             // Save, load back in again, and check
@@ -233,7 +233,7 @@ namespace NPOI.XSSF.UserModel
             ss = workbook.GetStylesSource();
             Assert.IsNotNull(ss);
 
-            Assert.AreEqual(10, st._GetNumberFormatSize());
+            Assert.AreEqual(10, st.GetNumberFormatSize());
             Assert.AreEqual(2, st.GetFonts().Count);
             Assert.AreEqual(2, st.GetFills().Count);
             Assert.AreEqual(1, st.GetBorders().Count);
@@ -264,9 +264,9 @@ namespace NPOI.XSSF.UserModel
             POIXMLProperties props = workbook.GetProperties();
             Assert.IsNotNull(props);
             //the Application property must be set for new workbooks, see Bugzilla #47559
-            Assert.AreEqual("NPOI", props.GetExtendedProperties().GetUnderlyingProperties().Application);
+            Assert.AreEqual("NPOI", props.ExtendedProperties.GetUnderlyingProperties().Application);
 
-            PackagePropertiesPart opcProps = props.GetCoreProperties().GetUnderlyingProperties();
+            PackagePropertiesPart opcProps = props.CoreProperties.GetUnderlyingProperties();
             Assert.IsNotNull(opcProps);
 
             opcProps.SetTitleProperty("Testing Bugzilla #47460");
@@ -274,8 +274,8 @@ namespace NPOI.XSSF.UserModel
             opcProps.SetCreatorProperty("poi-dev@poi.apache.org");
 
             workbook = (XSSFWorkbook) XSSFTestDataSamples.WriteOutAndReadBack(workbook);
-            Assert.AreEqual("NPOI", workbook.GetProperties().GetExtendedProperties().GetUnderlyingProperties().Application);
-            opcProps = workbook.GetProperties().GetCoreProperties().GetUnderlyingProperties();
+            Assert.AreEqual("NPOI", workbook.GetProperties().ExtendedProperties.GetUnderlyingProperties().Application);
+            opcProps = workbook.GetProperties().CoreProperties.GetUnderlyingProperties();
             Assert.AreEqual("Testing Bugzilla #47460", opcProps.GetTitleProperty());
             Assert.AreEqual("poi-dev@poi.apache.org", opcProps.GetCreatorProperty());
         }
@@ -288,7 +288,7 @@ namespace NPOI.XSSF.UserModel
         //{
         //    XSSFWorkbook workbook = XSSFTestDataSamples.OpenSampleWorkbook("47668.xlsx");
         //    IList allPictures = workbook.GetAllPictures();
-        //    Assert.AreEqual(2, allPictures.Count);
+        //    Assert.AreEqual(1, allPictures.Count);
 
         //    PackagePartName imagePartName = PackagingUriHelper
         //            .CreatePartName("/xl/media/image1.jpeg");
@@ -454,12 +454,27 @@ namespace NPOI.XSSF.UserModel
             wb.SetForceFormulaRecalculation(true); // resets the EngineId flag to zero
             Assert.AreEqual(0, (int)calcPr.calcId);
             Assert.IsFalse(wb.GetForceFormulaRecalculation());
+
+            // calcMode="manual" is unset when forceFormulaRecalculation=true
+            calcPr.calcMode = (ST_CalcMode.manual);
+            wb.SetForceFormulaRecalculation(true);
+            Assert.AreEqual(ST_CalcMode.auto, calcPr.calcMode);
         }
         [Test]
         public void TestChangeSheetNameWithSharedFormulas()
         {
             ChangeSheetNameWithSharedFormulas("shared_formulas.xlsx");
         }
-
+        [Test]
+        public void TestSetTabColor()
+        {
+            XSSFWorkbook wb = new XSSFWorkbook();
+            XSSFSheet sh = wb.CreateSheet() as XSSFSheet;
+            Assert.IsTrue(sh.GetCTWorksheet().sheetPr == null || !sh.GetCTWorksheet().sheetPr.IsSetTabColor());
+            sh.SetTabColor(IndexedColors.Red.Index);
+            Assert.IsTrue(sh.GetCTWorksheet().sheetPr.IsSetTabColor());
+            Assert.AreEqual(IndexedColors.Red.Index,
+                    sh.GetCTWorksheet().sheetPr.tabColor.indexed);
+        }
     }
 }

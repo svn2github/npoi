@@ -22,22 +22,22 @@ namespace NPOI.SS.UserModel
      * This enumeration value indicates the type of vertical alignment for a cell, i.e.,
      * whether it is aligned top, bottom, vertically centered, justified or distributed.
      */
-    public enum VerticalAlignment
+    public enum VerticalAlignment:int
     {
         /**
          * The vertical alignment is aligned-to-top.
          */
-        TOP,
+        Top = 1,
 
         /**
          * The vertical alignment is centered across the height of the cell.
          */
-        CENTER,
+        Center = 2,
 
         /**
          * The vertical alignment is aligned-to-bottom.
          */
-        BOTTOM,
+        Bottom = 3,
 
         /**
          * <p>
@@ -52,7 +52,7 @@ namespace NPOI.SS.UserModel
          * If no single line of text wraps in the cell, then the text is not justified.
          *  </p>
          */
-        JUSTIFY,
+        Justify = 4,
 
         /**
          * <p>
@@ -67,7 +67,7 @@ namespace NPOI.SS.UserModel
          * and the line of text is distributed evenly from top to bottom.
          * </p>
          */
-        DISTRIBUTED
+        Distributed = 5
     }
 
 }

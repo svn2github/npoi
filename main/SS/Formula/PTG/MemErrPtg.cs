@@ -18,9 +18,6 @@
 namespace NPOI.SS.Formula.PTG
 {
     using System;
-    using System.Text;
-    
-    using NPOI.HSSF.Record;
     using NPOI.Util;
 
     /**
@@ -33,7 +30,7 @@ namespace NPOI.SS.Formula.PTG
     public class MemErrPtg : MemAreaPtg
     {
         public new const short sid = 0x27;
-        // fix warning CS0414 "never used": private static int SIZE = 7;
+        // fix warning CS0414 "never used": private const int SIZE = 7;
 	    private int field_1_reserved = 0;
 	    private short field_2_subex_len = 0;
 

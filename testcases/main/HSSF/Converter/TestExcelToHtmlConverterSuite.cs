@@ -14,6 +14,7 @@ namespace TestCases.HSSF.Converter
         private static List<String> failingFiles = new List<string>();
 
         [Test]
+        [Ignore]
         public void TestExcelToHtmlConverter()
         {
             string[] fileNames = POIDataSamples.GetSpreadSheetInstance().GetFiles("*.xls");

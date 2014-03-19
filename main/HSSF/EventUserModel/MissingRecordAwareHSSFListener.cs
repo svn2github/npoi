@@ -16,8 +16,6 @@
 ==================================================================== */
 namespace NPOI.HSSF.EventUserModel
 {
-    using System;
-    using System.Text;
     using NPOI.HSSF.Record;
     using NPOI.HSSF.EventUserModel;
     using NPOI.HSSF.EventUserModel.DummyRecord;
@@ -73,6 +71,12 @@ namespace NPOI.HSSF.EventUserModel
             }
             else
             {
+                if (record is StringRecord)
+                {
+                    //it contains only cashed result of the previous FormulaRecord evaluation
+                    childListener.ProcessRecord(record);
+                    return;
+                }
                 thisRow = -1;
                 thisColumn = -1;
 
@@ -81,7 +85,7 @@ namespace NPOI.HSSF.EventUserModel
                     // the BOFRecord can represent either the beginning of a sheet or the workbook
                     case BOFRecord.sid:
                         BOFRecord bof = (BOFRecord)record;
-                        if (bof.Type == BOFRecord.TYPE_WORKBOOK || bof.Type == BOFRecord.TYPE_WORKSHEET)
+                        if (bof.Type == BOFRecordType.Workbook || bof.Type == BOFRecordType.Worksheet)
                         {
                             // Reset the row and column counts - new workbook / worksheet
                             ResetCounts();

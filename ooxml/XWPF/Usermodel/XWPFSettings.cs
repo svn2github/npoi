@@ -109,7 +109,7 @@ namespace NPOI.XWPF.UserModel
                 return false;
             }
 
-            return ctDocProtect.enforcement.Equals(ST_OnOff.Value1) && ctDocProtect.edit.Equals(editValue);
+            return ctDocProtect.enforcement.Equals(ST_OnOff.on) && ctDocProtect.edit.Equals(editValue);
         }
 
         /**
@@ -127,7 +127,7 @@ namespace NPOI.XWPF.UserModel
          */
         public void SetEnforcementEditValue(ST_DocProtect editValue)
         {
-            SafeGetDocumentProtection().enforcement = (ST_OnOff.Value1);
+            SafeGetDocumentProtection().enforcement = (ST_OnOff.on);
             SafeGetDocumentProtection().edit = (editValue);
         }
 
@@ -138,25 +138,51 @@ namespace NPOI.XWPF.UserModel
          */
         public void RemoveEnforcement()
         {
-            SafeGetDocumentProtection().enforcement = (ST_OnOff.Value0);
+            SafeGetDocumentProtection().enforcement = (ST_OnOff.off);
         }
 
+        /**
+         * Enforces fields update on document open (in Word).
+         * In the settings.xml file <br/>
+         * sets the updateSettings value to true (w:updateSettings w:val="true")
+         * 
+         *  NOTICES:
+         *  <ul>
+         *  	<li>Causing Word to ask on open: "This document contains fields that may refer to other files. Do you want to update the fields in this document?"
+         *           (if "Update automatic links at open" is enabled)</li>
+         *  	<li>Flag is removed after saving with changes in Word </li>
+         *  </ul> 
+         */
+        public void SetUpdateFields()
+        {
+            CT_OnOff onOff = new CT_OnOff();
+            onOff.val = true;
+            ctSettings.updateFields=(onOff);
+        }
 
+        public bool IsUpdateFields()
+        {
+            return ctSettings.IsSetUpdateFields() && ctSettings.updateFields.val == true;
+        }
         protected override void Commit()
         {
-
+            if (ctSettings == null)
+            {
+                throw new InvalidOperationException("Unable to write out settings that were never read in!");
+            }
             /*XmlOptions xmlOptions = new XmlOptions(DEFAULT_XML_OPTIONS);
             xmlOptions.SaveSyntheticDocumentElement=(new QName(CTSettings.type.Name.NamespaceURI, "settings"));
             Dictionary<String, String> map = new Dictionary<String, String>();
             map.Put("http://schemas.openxmlformats.org/wordprocessingml/2006/main", "w");
             xmlOptions.SaveSuggestedPrefixes=(map);*/
-            XmlSerializerNamespaces namespaces = new XmlSerializerNamespaces(new[] {
+            XmlSerializerNamespaces namespaces = new XmlSerializerNamespaces(new XmlQualifiedName[] {
                 new XmlQualifiedName("w", "http://schemas.openxmlformats.org/wordprocessingml/2006/main")});
             PackagePart part = GetPackagePart();
-            Stream out1 = part.GetOutputStream();
-            SettingsDocument sd = new SettingsDocument(ctSettings);
-            sd.Save(out1, namespaces);
-            out1.Close();
+            using (Stream out1 = part.GetOutputStream())
+            {
+                SettingsDocument sd = new SettingsDocument(ctSettings);
+                sd.Save(out1);
+            }
         }
 
         private CT_DocProtect SafeGetDocumentProtection()
@@ -172,14 +198,15 @@ namespace NPOI.XWPF.UserModel
 
         private void ReadFrom(Stream inputStream)
         {
-            try
-            {
-                ctSettings = SettingsDocument.Parse(inputStream).Settings;
-            }
-            catch (Exception e)
-            {
-                throw new Exception("SettingsDocument parse failed", e);
-            }
+            //try
+            //{
+                XmlDocument xmldoc = ConvertStreamToXml(inputStream);
+                ctSettings = SettingsDocument.Parse(xmldoc,NamespaceManager).Settings;
+            //}
+            //catch (Exception e)
+            //{
+            //    throw new Exception("SettingsDocument parse failed", e);
+            //}
         }
 
     }

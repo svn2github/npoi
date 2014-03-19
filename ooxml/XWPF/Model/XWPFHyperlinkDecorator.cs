@@ -63,16 +63,19 @@ namespace NPOI.XWPF.Model
                         hyperlinkText.Append(text.Value);
                     }
                 }
-                if (outputHyperlinkUrls && paragraph.GetDocument().GetHyperlinkByID(link.id) != null)
+                if (outputHyperlinkUrls && paragraph.Document.GetHyperlinkByID(link.id) != null)
                 {
-                    hyperlinkText.Append(" <" + paragraph.GetDocument().GetHyperlinkByID(link.id).URL + ">");
+                    hyperlinkText.Append(" <" + paragraph.Document.GetHyperlinkByID(link.id).URL + ">");
                 }
             }
         }
 
-        public override String GetText()
+        public override String Text
         {
-            return base.GetText() + hyperlinkText;
+            get
+            {
+                return base.Text + hyperlinkText;
+            }
         }
     }
 

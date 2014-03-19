@@ -18,15 +18,16 @@
 using NPOI.Util;
 using NPOI.OpenXml4Net.OPC;
 using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using TestCases.OpenXml4Net;
 using System.IO;
 using System.Web;
+using System.Text.RegularExpressions;
 namespace TestCases.OPC
 {
 
 
-    [TestClass]
+    [TestFixture]
     public class TestRelationships  {
 	private static String HYPERLINK_REL_TYPE =
 		"http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink";
@@ -43,7 +44,7 @@ namespace TestCases.OPC
          * The code in this case assumes there are no relationships defined, but it should
          * really look also for not yet loaded parts.
          */
-        [TestMethod]
+        [Test]
         public void TestLoadRelationships() {
             Stream is1 = OpenXml4NetTestDataSamples.OpenSampleStream("sample.xlsx");
             OPCPackage pkg = OPCPackage.Open(is1);
@@ -65,7 +66,7 @@ namespace TestCases.OPC
          * Checks that we can fetch a collection of relations by
          *  type, then grab from within there by id
          */
-        [TestMethod]
+        [Test]
         public void TestFetchFromCollection() {
             Stream is1 = OpenXml4NetTestDataSamples.OpenSampleStream("ExcelWithHyperlinks.xlsx");
             OPCPackage pkg = OPCPackage.Open(is1);
@@ -107,7 +108,7 @@ namespace TestCases.OPC
          * Excel uses relations on sheets to store the details of 
          *  external hyperlinks. Check we can load these ok.
          */
-        [TestMethod]
+        [Test]
         public void TestLoadExcelHyperlinkRelations() {
             Stream is1 = OpenXml4NetTestDataSamples.OpenSampleStream("ExcelWithHyperlinks.xlsx");
             OPCPackage pkg = OPCPackage.Open(is1);
@@ -142,7 +143,7 @@ namespace TestCases.OPC
          *  external hyperlinks. Check we can create these OK, 
          *  then still read them later
          */
-        [TestMethod]
+        [Test]
         public void TestCreateExcelHyperlinkRelations() {
     	    String filepath = OpenXml4NetTestDataSamples.GetSampleFileName("ExcelWithHyperlinks.xlsx");
 	        OPCPackage pkg = OPCPackage.Open(filepath, PackageAccess.READ_WRITE);
@@ -209,7 +210,7 @@ namespace TestCases.OPC
 	        Assert.AreEqual("MyDocument.docx",
 	    		    sheet.GetRelationship("rId9").TargetUri.ToString());
         }
-        [TestMethod]
+        [Test]
         public void TestCreateRelationsFromScratch() {
     	    MemoryStream baos = new MemoryStream();
     	    OPCPackage pkg = OPCPackage.Create(baos);
@@ -260,7 +261,7 @@ namespace TestCases.OPC
             "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties").GetRelationship(0).TargetUri.ToString());
         }
 
-        [TestMethod]
+        [Test]
         public void TestTargetWithSpecialChars(){
 
             OPCPackage pkg;
@@ -321,37 +322,68 @@ namespace TestCases.OPC
         {
             return Path.GetFullPath(Path.Combine(referencePath, relativePath));  
         }
-        [TestMethod]
-        public void TestSelfRelations_bug51187() {
-    	MemoryStream baos = new MemoryStream();
-    	OPCPackage pkg = OPCPackage.Create(baos);
+        [Test]
+        public void TestSelfRelations_bug51187()
+        {
+            MemoryStream baos = new MemoryStream();
+            OPCPackage pkg = OPCPackage.Create(baos);
 
-    	PackagePart partA =
-    		pkg.CreatePart(PackagingUriHelper.CreatePartName("/partA"), "text/plain");
-    	Assert.IsNotNull(partA);
+            PackagePart partA =
+                pkg.CreatePart(PackagingUriHelper.CreatePartName("/partA"), "text/plain");
+            Assert.IsNotNull(partA);
 
-    	// reference itself
-    	PackageRelationship rel1 = partA.AddRelationship(partA.PartName, TargetMode.Internal, "partA");
-
-    	
-    	// Save, and re-load
-    	pkg.Close();
-    	MemoryStream bais = new MemoryStream(baos.ToArray());
-    	pkg = OPCPackage.Open(bais);
-
-    	partA = pkg.GetPart(PackagingUriHelper.CreatePartName("/partA"));
+            // reference itself
+            PackageRelationship rel1 = partA.AddRelationship(partA.PartName, TargetMode.Internal, "partA");
 
 
-    	// Check the relations
-    	Assert.AreEqual(1, partA.Relationships.Size);
+            // Save, and re-load
+            pkg.Close();
+            MemoryStream bais = new MemoryStream(baos.ToArray());
+            pkg = OPCPackage.Open(bais);
 
-       PackageRelationship rel2 = partA.Relationships.GetRelationship(0);
+            partA = pkg.GetPart(PackagingUriHelper.CreatePartName("/partA"));
 
-    	Assert.AreEqual(rel1.RelationshipType, rel2.RelationshipType);
-       Assert.AreEqual(rel1.Id, rel2.Id);
-       Assert.AreEqual(rel1.SourceUri, rel2.SourceUri);
-       Assert.AreEqual(rel1.TargetUri, rel2.TargetUri);
-       Assert.AreEqual(rel1.TargetMode, rel2.TargetMode);
+
+            // Check the relations
+            Assert.AreEqual(1, partA.Relationships.Size);
+
+            PackageRelationship rel2 = partA.Relationships.GetRelationship(0);
+
+            Assert.AreEqual(rel1.RelationshipType, rel2.RelationshipType);
+            Assert.AreEqual(rel1.Id, rel2.Id);
+            Assert.AreEqual(rel1.SourceUri, rel2.SourceUri);
+            Assert.AreEqual(rel1.TargetUri, rel2.TargetUri);
+            Assert.AreEqual(rel1.TargetMode, rel2.TargetMode);
+        }
+        [Test]
+        public void TestTrailingSpacesInURI_53282()
+        {
+            Stream is1 = OpenXml4NetTestDataSamples.OpenSampleStream("53282.xlsx");
+            OPCPackage pkg = OPCPackage.Open(is1);
+            is1.Close();
+
+            PackageRelationshipCollection sheetRels = pkg.GetPartsByName(new Regex("/xl/worksheets/sheet1.xml"))[0].Relationships;
+            Assert.AreEqual(3, sheetRels.Size);
+            PackageRelationship rId1 = sheetRels.GetRelationshipByID("rId1");
+            Assert.AreEqual(TargetMode.External, rId1.TargetMode);
+            Uri targetUri = rId1.TargetUri;
+            Assert.AreEqual("mailto:nobody@nowhere.uk%C2%A0", targetUri.OriginalString);
+            Assert.AreEqual("nobody@nowhere.uk\u00A0", targetUri.Scheme);
+
+            MemoryStream out1 = new MemoryStream();
+            pkg.Save(out1);
+
+
+            pkg = OPCPackage.Open(new ByteArrayInputStream(out1.ToArray()));
+            out1.Close();
+            sheetRels = pkg.GetPartsByName(new Regex("/xl/worksheets/sheet1.xml"))[(0)].Relationships;
+            Assert.AreEqual(3, sheetRels.Size);
+            rId1 = sheetRels.GetRelationshipByID("rId1");
+            Assert.AreEqual(TargetMode.External, rId1.TargetMode);
+            targetUri = rId1.TargetUri;
+            Assert.AreEqual("mailto:nobody@nowhere.uk%C2%A0", targetUri.OriginalString);
+            Assert.AreEqual("nobody@nowhere.uk\u00A0", targetUri.Scheme);
+
         }
     }
 }

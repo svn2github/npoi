@@ -20,6 +20,7 @@ using NPOI.OpenXml4Net.OPC;
 using System.Text;
 using NPOI.SS.UserModel;
 using System.Collections;
+using System.Globalization;
 namespace NPOI.XSSF.Extractor
 {
     /**
@@ -85,7 +86,11 @@ namespace NPOI.XSSF.Extractor
         {
             this.includeHeadersFooters = includeHeadersFooters;
         }
+        public void SetLocale(CultureInfo locale) {
+            this.locale = locale;
+        }
 
+        private CultureInfo locale=null;
         /**
          * Retreives the text contents of the file
          */
@@ -93,6 +98,16 @@ namespace NPOI.XSSF.Extractor
         {
             get
             {
+                DataFormatter formatter;
+                if (locale == null)
+                {
+                    formatter = new DataFormatter();
+                }
+                else
+                {
+                    formatter = new DataFormatter(locale);
+                }
+
                 StringBuilder text = new StringBuilder();
 
                 for (int i = 0; i < workbook.NumberOfSheets; i++)
@@ -136,18 +151,32 @@ namespace NPOI.XSSF.Extractor
                             ICell cell = (ICell)ri.Current;
 
                             // Is it a formula one?
-                            if (cell.CellType == CellType.FORMULA && formulasNotResults)
+                            if (cell.CellType == CellType.Formula)
                             {
-                                text.Append(cell.CellFormula);
+                                if (formulasNotResults)
+                                {
+                                    text.Append(cell.CellFormula);
+                                }
+                                else
+                                {
+                                    if (cell.CachedFormulaResultType == CellType.String)
+                                    {
+                                        HandleStringCell(text, cell);
+                                    }
+                                    else
+                                    {
+                                        HandleNonStringCell(text, cell, formatter);
+                                    }
+                                }
+
                             }
-                            else if (cell.CellType == CellType.STRING)
+                            else if (cell.CellType == CellType.String)
                             {
-                                text.Append(cell.RichStringCellValue.String);
+                                HandleStringCell(text, cell);
                             }
                             else
                             {
-                                XSSFCell xc = (XSSFCell)cell;
-                                text.Append(xc.GetRawValue());
+                                HandleNonStringCell(text, cell, formatter);
                             }
 
                             // Output the comment, if requested and exists
@@ -182,7 +211,35 @@ namespace NPOI.XSSF.Extractor
                 return text.ToString();
             }
         }
+        private void HandleStringCell(StringBuilder text, ICell cell)
+        {
+            text.Append(cell.RichStringCellValue.String);
+        }
+        private void HandleNonStringCell(StringBuilder text, ICell cell, DataFormatter formatter)
+        {
+            CellType type = cell.CellType;
+            if (type == CellType.Formula)
+            {
+                type = cell.CachedFormulaResultType;
+            }
 
+            if (type == CellType.Numeric)
+            {
+                ICellStyle cs = cell.CellStyle;
+
+                if (cs.GetDataFormatString()!= null)
+                {
+                    text.Append(formatter.FormatRawCellContents(
+                          cell.NumericCellValue, cs.DataFormat, cs.GetDataFormatString()
+                    ));
+                    return;
+                }
+            }
+
+            // No supported styling applies to this cell
+            XSSFCell xcell = (XSSFCell)cell;
+            text.Append(xcell.GetRawValue());
+        }
         private String ExtractHeaderFooter(IHeaderFooter hf)
         {
             return NPOI.HSSF.Extractor.ExcelExtractor.ExtractHeaderFooter(hf);

@@ -112,7 +112,7 @@ namespace NPOI.XSSF.UserModel.Helpers
                 String formula = name.RefersToFormula;
                 int sheetIndex = name.SheetIndex;
 
-                Ptg[] ptgs = FormulaParser.Parse(formula, fpb, FormulaType.NAMEDRANGE, sheetIndex);
+                Ptg[] ptgs = FormulaParser.Parse(formula, fpb, FormulaType.NamedRange, sheetIndex);
                 if (shifter.AdjustFormula(ptgs, sheetIndex))
                 {
                     String shiftedFmla = FormulaRenderer.ToFormulaString(fpb, ptgs);
@@ -194,7 +194,7 @@ namespace NPOI.XSSF.UserModel.Helpers
             IWorkbook wb = sheet.Workbook;
             int sheetIndex = wb.GetSheetIndex(sheet);
             XSSFEvaluationWorkbook fpb = XSSFEvaluationWorkbook.Create(wb);
-            Ptg[] ptgs = FormulaParser.Parse(formula, fpb, FormulaType.CELL, sheetIndex);
+            Ptg[] ptgs = FormulaParser.Parse(formula, fpb, FormulaType.Cell, sheetIndex);
             String ShiftedFmla = null;
             if (Shifter.AdjustFormula(ptgs, sheetIndex))
             {
@@ -214,11 +214,9 @@ namespace NPOI.XSSF.UserModel.Helpers
             CT_ConditionalFormatting cf = cfList[j];
 
             List<CellRangeAddress> cellRanges = new List<CellRangeAddress>();
-            foreach (Object stRef in cf.sqref) {
-                String[] regions = stRef.ToString().Split(new char[]{' '});
-                for (int i = 0; i < regions.Length; i++) {
-                    cellRanges.Add(CellRangeAddress.ValueOf(regions[i]));
-                }
+            String[] regions = cf.sqref.ToString().Split(new char[] { ' ' });
+            for (int i = 0; i < regions.Length; i++) {
+                cellRanges.Add(CellRangeAddress.ValueOf(regions[i]));
             }
 
             bool Changed = false;
@@ -242,16 +240,22 @@ namespace NPOI.XSSF.UserModel.Helpers
                     cfList.RemoveAt(j);
                     continue;
                 }
-                List<String> refs = new List<String>();
-                foreach(CellRangeAddress a in temp) refs.Add(a.FormatAsString());
-                cf.sqref=(refs);
+                string refs = string.Empty;
+                foreach (CellRangeAddress a in temp)
+                {
+                    if (refs.Length == 0)
+                        refs = a.FormatAsString();
+                    else
+                        refs += " " + a.FormatAsString();
+                }
+                cf.sqref = refs;
             }
 
             foreach(CT_CfRule cfRule in cf.cfRule){
                 List<String> formulas = cfRule.formula;
                 for (int i = 0; i < formulas.Count; i++) {
                     String formula = formulas[i];
-                    Ptg[] ptgs = FormulaParser.Parse(formula, fpb, FormulaType.CELL, sheetIndex);
+                    Ptg[] ptgs = FormulaParser.Parse(formula, fpb, FormulaType.Cell, sheetIndex);
                     if (Shifter.AdjustFormula(ptgs, sheetIndex)) {
                         String ShiftedFmla = FormulaRenderer.ToFormulaString(fpb, ptgs);
                         formulas[i] =  ShiftedFmla;

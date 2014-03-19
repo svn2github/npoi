@@ -5,9 +5,12 @@
 //  </auto-generated>
 // ------------------------------------------------------------------------------
 
+using NPOI.OpenXml4Net.Util;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
+using System.Xml;
 using System.Xml.Serialization;
 
 namespace NPOI.OpenXmlFormats.Dml
@@ -19,12 +22,12 @@ namespace NPOI.OpenXmlFormats.Dml
     public class CT_OfficeArtExtension
     {
 
-        private System.Xml.XmlElement anyField; // 1..1
+        private string anyField; // 1..1
 
         private string uriField = null;
         private bool uriSpecifiedField;
-        [XmlAnyElement(Order = 0)]
-        public System.Xml.XmlElement Any
+        [XmlText]
+        public string Any
         {
             get
             {
@@ -47,12 +50,29 @@ namespace NPOI.OpenXmlFormats.Dml
                 this.uriField = value;
             }
         }
-        [XmlIgnore]
-        public bool uriSpecified
+
+        public static CT_OfficeArtExtension Parse(XmlNode node, XmlNamespaceManager namespaceManager)
         {
-            get { return (null != uriField); }
-            set { uriSpecifiedField = value; }
+            if (node == null)
+                return null;
+            CT_OfficeArtExtension ctObj = new CT_OfficeArtExtension();
+            ctObj.uri = XmlHelper.ReadString(node.Attributes["uri"]);
+            ctObj.Any = node.InnerXml.Replace(" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\"","");
+            return ctObj;
         }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "uri", this.uri);
+            sw.Write(">");
+            if (!string.IsNullOrEmpty(this.anyField))
+                sw.Write(this.anyField);
+            sw.Write(string.Format("</a:{0}>", nodeName));
+        }
+
 
     }
 
@@ -226,6 +246,29 @@ namespace NPOI.OpenXmlFormats.Dml
         private long xField;
 
         private long yField;
+
+        public static CT_Point2D Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_Point2D ctObj = new CT_Point2D();
+            ctObj.x = XmlHelper.ReadLong(node.Attributes["x"]);
+            ctObj.y = XmlHelper.ReadLong(node.Attributes["y"]);
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "x", this.x, true);
+            XmlHelper.WriteAttribute(sw, "y", this.y, true);
+            sw.Write(">");
+            sw.Write(string.Format("</a:{0}>", nodeName));
+        }
+
+
         [XmlAttribute]
         public long x
         {
@@ -261,6 +304,26 @@ namespace NPOI.OpenXmlFormats.Dml
         private long cxField;
 
         private long cyField;
+        public static CT_PositiveSize2D Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_PositiveSize2D ctObj = new CT_PositiveSize2D();
+            ctObj.cx = XmlHelper.ReadLong(node.Attributes["cx"]);
+            ctObj.cy = XmlHelper.ReadLong(node.Attributes["cy"]);
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "cx", this.cx, true);
+            XmlHelper.WriteAttribute(sw, "cy", this.cy, true);
+            sw.Write(">");
+            sw.Write(string.Format("</a:{0}>", nodeName));
+        }
 
         [XmlAttribute]
         public long cx
@@ -330,7 +393,7 @@ namespace NPOI.OpenXmlFormats.Dml
     public class CT_ScRgbColor
     {
 
-        private List<object> itemsField;
+        private List<string> itemsValueField;
 
         private List<EG_ColorTransform> itemsElementNameField;
 
@@ -343,66 +406,117 @@ namespace NPOI.OpenXmlFormats.Dml
         public CT_ScRgbColor()
         {
             this.itemsElementNameField = new List<EG_ColorTransform>();
-            this.itemsField = new List<object>();
+            this.itemsValueField = new List<string>();
+        }
+        public static CT_ScRgbColor Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_ScRgbColor ctObj = new CT_ScRgbColor();
+            ctObj.r = XmlHelper.ReadInt(node.Attributes["r"]);
+            ctObj.g = XmlHelper.ReadInt(node.Attributes["g"]);
+            ctObj.b = XmlHelper.ReadInt(node.Attributes["b"]);
+            foreach (XmlNode childNode in node.ChildNodes)
+            {
+                if (childNode.LocalName == "alpha")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.alpha);
+                else if (childNode.LocalName == "alphaMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.alphaMod);
+                else if (childNode.LocalName == "alphaOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.alphaOff);
+                else if (childNode.LocalName == "blue")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.blue);
+                else if (childNode.LocalName == "blueMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.blueMod);
+                else if (childNode.LocalName == "blueOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.blueOff);
+                else if (childNode.LocalName == "comp")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.comp);
+                else if (childNode.LocalName == "gamma")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.gamma);
+                else if (childNode.LocalName == "gray")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.gray);
+                else if (childNode.LocalName == "green")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.green);
+                else if (childNode.LocalName == "greenMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.greenMod);
+                else if (childNode.LocalName == "greenOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.greenOff);
+                else if (childNode.LocalName == "hue")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.hue);
+                else if (childNode.LocalName == "hueMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.hueMod);
+                else if (childNode.LocalName == "hueOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.hueOff);
+                else if (childNode.LocalName == "inv")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.inv);
+                else if (childNode.LocalName == "invGamma")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.invGamma);
+                else if (childNode.LocalName == "lum")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.lum);
+                else if (childNode.LocalName == "lumMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.lumMod);
+                else if (childNode.LocalName == "lumOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.lumOff);
+                else if (childNode.LocalName == "red")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.red);
+                else if (childNode.LocalName == "redMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.redMod);
+                else if (childNode.LocalName == "redOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.redOff);
+                else if (childNode.LocalName == "sat")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.sat);
+                else if (childNode.LocalName == "satMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.satMod);
+                else if (childNode.LocalName == "satOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.satOff);
+                else if (childNode.LocalName == "shade")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.shade);
+                else if (childNode.LocalName == "tint")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.tint);
+
+                if (childNode.Attributes["val"] != null)
+                    ctObj.itemsValueField.Add(childNode.Attributes["val"].Value);
+                else
+                    ctObj.itemsValueField.Add(null);
+            }
+            return ctObj;
         }
 
-        [XmlElement("alpha", typeof(CT_PositiveFixedPercentage), Order = 0)]
-        [XmlElement("alphaMod", typeof(CT_PositivePercentage), Order = 0)]
-        [XmlElement("alphaOff", typeof(CT_FixedPercentage), Order = 0)]
-        [XmlElement("blue", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("blueMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("blueOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("comp", typeof(CT_ComplementTransform), Order = 0)]
-        [XmlElement("gamma", typeof(CT_GammaTransform), Order = 0)]
-        [XmlElement("gray", typeof(CT_GrayscaleTransform), Order = 0)]
-        [XmlElement("green", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("greenMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("greenOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("hue", typeof(CT_PositiveFixedAngle), Order = 0)]
-        [XmlElement("hueMod", typeof(CT_PositivePercentage), Order = 0)]
-        [XmlElement("hueOff", typeof(CT_Angle), Order = 0)]
-        [XmlElement("inv", typeof(CT_InverseTransform), Order = 0)]
-        [XmlElement("invGamma", typeof(CT_InverseGammaTransform), Order = 0)]
-        [XmlElement("lum", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("lumMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("lumOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("red", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("redMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("redOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("sat", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("satMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("satOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("shade", typeof(CT_PositiveFixedPercentage), Order = 0)]
-        [XmlElement("tint", typeof(CT_PositiveFixedPercentage), Order = 0)]
-        [XmlChoiceIdentifier("ItemsElementName")]
-        public object[] Items
+
+        internal void Write(StreamWriter sw, string nodeName)
         {
-            get
+            sw.Write(string.Format("<a:{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "r", this.r);
+            XmlHelper.WriteAttribute(sw, "g", this.g);
+            XmlHelper.WriteAttribute(sw, "b", this.b);
+            sw.Write(">");
+            if (this.ItemsElementName != null)
             {
-                return this.itemsField.ToArray();
+                for (int i = 0; i < itemsElementNameField.Count; i++)
+                {
+                    EG_ColorTransform x = itemsElementNameField[i];
+                    string value = itemsValueField[i];
+
+                    sw.Write(string.Format("<a:{0}", x));
+                    if (value != null)
+                        sw.Write(" val=\"" + value + "\"");
+                    sw.Write("/>");
+                }
             }
-            set
-            {
-                if (value == null || value.Length == 0)
-                    this.itemsField = new List<object>();
-                else
-                    this.itemsField = new List<object>(value);
-            }
+            sw.Write(string.Format("</a:{0}>", nodeName));
         }
-        [XmlElement("ItemsElementName", Order = 1)]
+
         [XmlIgnore]
-        public EG_ColorTransform[] ItemsElementName
+        public List<EG_ColorTransform> ItemsElementName
         {
             get
             {
-                return this.itemsElementNameField.ToArray();
+                return this.itemsElementNameField;
             }
             set
             {
-                if (value == null || value.Length == 0)
-                    this.itemsElementNameField = new List<EG_ColorTransform>();
-                else
-                    this.itemsElementNameField = new List<EG_ColorTransform>(value);
+               this.itemsElementNameField = value;
             }
         }
 
@@ -543,9 +657,7 @@ namespace NPOI.OpenXmlFormats.Dml
     [XmlRoot(Namespace = "http://schemas.openxmlformats.org/drawingml/2006/main", IsNullable = true)]
     public class CT_SRgbColor
     {
-
-        private List<object> itemsField;
-
+        private List<string> itemsValueField;
         private List<EG_ColorTransform> itemsElementNameField;
 
         private byte[] valField;
@@ -553,67 +665,19 @@ namespace NPOI.OpenXmlFormats.Dml
         public CT_SRgbColor()
         {
             this.itemsElementNameField = new List<EG_ColorTransform>();
-            this.itemsField = new List<object>();
+            this.itemsValueField = new List<string>();
         }
 
-        [XmlElement("alpha", typeof(CT_PositiveFixedPercentage), Order = 0)]
-        [XmlElement("alphaMod", typeof(CT_PositivePercentage), Order = 0)]
-        [XmlElement("alphaOff", typeof(CT_FixedPercentage), Order = 0)]
-        [XmlElement("blue", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("blueMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("blueOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("comp", typeof(CT_ComplementTransform), Order = 0)]
-        [XmlElement("gamma", typeof(CT_GammaTransform), Order = 0)]
-        [XmlElement("gray", typeof(CT_GrayscaleTransform), Order = 0)]
-        [XmlElement("green", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("greenMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("greenOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("hue", typeof(CT_PositiveFixedAngle), Order = 0)]
-        [XmlElement("hueMod", typeof(CT_PositivePercentage), Order = 0)]
-        [XmlElement("hueOff", typeof(CT_Angle), Order = 0)]
-        [XmlElement("inv", typeof(CT_InverseTransform), Order = 0)]
-        [XmlElement("invGamma", typeof(CT_InverseGammaTransform), Order = 0)]
-        [XmlElement("lum", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("lumMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("lumOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("red", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("redMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("redOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("sat", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("satMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("satOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("shade", typeof(CT_PositiveFixedPercentage), Order = 0)]
-        [XmlElement("tint", typeof(CT_PositiveFixedPercentage), Order = 0)]
-        [XmlChoiceIdentifier("ItemsElementName")]
-        public object[] Items
-        {
-            get
-            {
-                return this.itemsField.ToArray();
-            }
-            set
-            {
-                if (value == null || value.Length == 0)
-                    this.itemsField = new List<object>();
-                else
-                    this.itemsField = new List<object>(value);
-            }
-        }
-
-        [XmlElement("ItemsElementName", Order = 1)]
         [XmlIgnore]
-        public EG_ColorTransform[] ItemsElementName
+        public List<EG_ColorTransform> ItemsElementName
         {
             get
             {
-                return this.itemsElementNameField.ToArray();
+                return this.itemsElementNameField;
             }
             set
             {
-                if (value == null || value.Length == 0)
-                    this.itemsElementNameField = new List<EG_ColorTransform>();
-                else
-                    this.itemsElementNameField = new List<EG_ColorTransform>(value);
+                this.itemsElementNameField = value;
             }
         }
 
@@ -629,6 +693,103 @@ namespace NPOI.OpenXmlFormats.Dml
                 this.valField = value;
             }
         }
+
+        public static CT_SRgbColor Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_SRgbColor ctObj = new CT_SRgbColor();
+            ctObj.val = XmlHelper.ReadBytes(node.Attributes["val"]);
+            foreach (XmlNode childNode in node.ChildNodes)
+            {
+                if (childNode.LocalName == "alpha")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.alpha);
+                else if (childNode.LocalName == "alphaMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.alphaMod);
+                else if (childNode.LocalName == "alphaOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.alphaOff);
+                else if (childNode.LocalName == "blue")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.blue);
+                else if (childNode.LocalName == "blueMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.blueMod);
+                else if (childNode.LocalName == "blueOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.blueOff);
+                else if (childNode.LocalName == "comp")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.comp);
+                else if (childNode.LocalName == "gamma")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.gamma);
+                else if (childNode.LocalName == "gray")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.gray);
+                else if (childNode.LocalName == "green")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.green);
+                else if (childNode.LocalName == "greenMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.greenMod);
+                else if (childNode.LocalName == "greenOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.greenOff);
+                else if (childNode.LocalName == "hue")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.hue);
+                else if (childNode.LocalName == "hueMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.hueMod);
+                else if (childNode.LocalName == "hueOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.hueOff);
+                else if (childNode.LocalName == "inv")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.inv);
+                else if (childNode.LocalName == "invGamma")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.invGamma);
+                else if (childNode.LocalName == "lum")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.lum);
+                else if (childNode.LocalName == "lumMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.lumMod);
+                else if (childNode.LocalName == "lumOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.lumOff);
+                else if (childNode.LocalName == "red")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.red);
+                else if (childNode.LocalName == "redMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.redMod);
+                else if (childNode.LocalName == "redOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.redOff);
+                else if (childNode.LocalName == "sat")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.sat);
+                else if (childNode.LocalName == "satMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.satMod);
+                else if (childNode.LocalName == "satOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.satOff);
+                else if (childNode.LocalName == "shade")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.shade);
+                else if (childNode.LocalName == "tint")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.tint);
+
+                if (childNode.Attributes["val"] != null)
+                    ctObj.itemsValueField.Add(childNode.Attributes["val"].Value);
+                else
+                    ctObj.itemsValueField.Add(null);
+            }
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "val", this.val);
+            sw.Write(">");
+            if (this.ItemsElementName != null)
+            {
+                for (int i = 0; i < itemsElementNameField.Count; i++)
+                {
+                    EG_ColorTransform x = itemsElementNameField[i];
+                    string value = itemsValueField[i];
+
+                    sw.Write(string.Format("<a:{0}", x));
+                    if (value != null)
+                        sw.Write(" val=\"" + value + "\"");
+                    sw.Write("/>");
+                }
+            }
+            sw.Write(string.Format("</a:{0}>", nodeName));
+        }
+
     }
 
     [Serializable]
@@ -637,7 +798,7 @@ namespace NPOI.OpenXmlFormats.Dml
     public class CT_HslColor
     {
 
-        private List<object> itemsField;
+        private List<string> itemsValueField;
 
         private List<EG_ColorTransform> itemsElementNameField;
 
@@ -650,67 +811,20 @@ namespace NPOI.OpenXmlFormats.Dml
         public CT_HslColor()
         {
             this.itemsElementNameField = new List<EG_ColorTransform>();
-            this.itemsField = new List<object>();
-        }
-
-        [XmlElement("alpha", typeof(CT_PositiveFixedPercentage), Order = 0)]
-        [XmlElement("alphaMod", typeof(CT_PositivePercentage), Order = 0)]
-        [XmlElement("alphaOff", typeof(CT_FixedPercentage), Order = 0)]
-        [XmlElement("blue", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("blueMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("blueOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("comp", typeof(CT_ComplementTransform), Order = 0)]
-        [XmlElement("gamma", typeof(CT_GammaTransform), Order = 0)]
-        [XmlElement("gray", typeof(CT_GrayscaleTransform), Order = 0)]
-        [XmlElement("green", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("greenMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("greenOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("hue", typeof(CT_PositiveFixedAngle), Order = 0)]
-        [XmlElement("hueMod", typeof(CT_PositivePercentage), Order = 0)]
-        [XmlElement("hueOff", typeof(CT_Angle), Order = 0)]
-        [XmlElement("inv", typeof(CT_InverseTransform), Order = 0)]
-        [XmlElement("invGamma", typeof(CT_InverseGammaTransform), Order = 0)]
-        [XmlElement("lum", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("lumMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("lumOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("red", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("redMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("redOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("sat", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("satMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("satOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("shade", typeof(CT_PositiveFixedPercentage), Order = 0)]
-        [XmlElement("tint", typeof(CT_PositiveFixedPercentage), Order = 0)]
-        [XmlChoiceIdentifier("ItemsElementName")]
-        public object[] Items
-        {
-            get
-            {
-                return this.itemsField.ToArray();
-            }
-            set
-            {
-                if (value == null || value.Length == 0)
-                    this.itemsField = new List<object>();
-                else
-                    this.itemsField = new List<object>(value);
-            }
+            this.itemsValueField = new List<string>();
         }
 
         [XmlElement("ItemsElementName", Order = 1)]
         [XmlIgnore]
-        public EG_ColorTransform[] ItemsElementName
+        public List<EG_ColorTransform> ItemsElementName
         {
             get
             {
-                return this.itemsElementNameField.ToArray();
+                return this.itemsElementNameField;
             }
             set
             {
-                if (value == null || value.Length == 0)
-                    this.itemsElementNameField = new List<EG_ColorTransform>();
-                else
-                    this.itemsElementNameField = new List<EG_ColorTransform>(value);
+                this.itemsElementNameField = value;
             }
         }
 
@@ -752,6 +866,107 @@ namespace NPOI.OpenXmlFormats.Dml
                 this.lumField = value;
             }
         }
+
+        public static CT_HslColor Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_HslColor ctObj = new CT_HslColor();
+            ctObj.hue = XmlHelper.ReadInt(node.Attributes["hue"]);
+            ctObj.sat = XmlHelper.ReadInt(node.Attributes["sat"]);
+            ctObj.lum = XmlHelper.ReadInt(node.Attributes["lum"]);
+            foreach (XmlNode childNode in node.ChildNodes)
+            {
+                if (childNode.LocalName == "alpha")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.alpha);
+                else if (childNode.LocalName == "alphaMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.alphaMod);
+                else if (childNode.LocalName == "alphaOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.alphaOff);
+                else if (childNode.LocalName == "blue")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.blue);
+                else if (childNode.LocalName == "blueMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.blueMod);
+                else if (childNode.LocalName == "blueOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.blueOff);
+                else if (childNode.LocalName == "comp")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.comp);
+                else if (childNode.LocalName == "gamma")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.gamma);
+                else if (childNode.LocalName == "gray")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.gray);
+                else if (childNode.LocalName == "green")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.green);
+                else if (childNode.LocalName == "greenMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.greenMod);
+                else if (childNode.LocalName == "greenOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.greenOff);
+                else if (childNode.LocalName == "hue")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.hue);
+                else if (childNode.LocalName == "hueMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.hueMod);
+                else if (childNode.LocalName == "hueOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.hueOff);
+                else if (childNode.LocalName == "inv")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.inv);
+                else if (childNode.LocalName == "invGamma")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.invGamma);
+                else if (childNode.LocalName == "lum")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.lum);
+                else if (childNode.LocalName == "lumMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.lumMod);
+                else if (childNode.LocalName == "lumOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.lumOff);
+                else if (childNode.LocalName == "red")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.red);
+                else if (childNode.LocalName == "redMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.redMod);
+                else if (childNode.LocalName == "redOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.redOff);
+                else if (childNode.LocalName == "sat")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.sat);
+                else if (childNode.LocalName == "satMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.satMod);
+                else if (childNode.LocalName == "satOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.satOff);
+                else if (childNode.LocalName == "shade")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.shade);
+                else if (childNode.LocalName == "tint")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.tint);
+
+                if (childNode.Attributes["val"] != null)
+                    ctObj.itemsValueField.Add(childNode.Attributes["val"].Value);
+                else
+                    ctObj.itemsValueField.Add(null);
+            }
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "hue", this.hue);
+            XmlHelper.WriteAttribute(sw, "sat", this.sat);
+            XmlHelper.WriteAttribute(sw, "lum", this.lum);
+            sw.Write(">");
+            if (this.ItemsElementName != null)
+            {
+                for (int i = 0; i < itemsElementNameField.Count; i++)
+                {
+                    EG_ColorTransform x = itemsElementNameField[i];
+                    string value = itemsValueField[i];
+
+                    sw.Write(string.Format("<a:{0}", x));
+                    if (value != null)
+                        sw.Write(" val=\"" + value + "\"");
+                    sw.Write("/>");
+                }
+            }
+            sw.Write(string.Format("</a:{0}>", nodeName));
+        }
+
     }
 
     [Serializable]
@@ -760,7 +975,7 @@ namespace NPOI.OpenXmlFormats.Dml
     public class CT_SystemColor
     {
 
-        private List<object> itemsField;
+        private List<string> itemsValueField;
 
         private List<EG_ColorTransform> itemsElementNameField;
 
@@ -770,68 +985,117 @@ namespace NPOI.OpenXmlFormats.Dml
 
         public CT_SystemColor()
         {
-            this.itemsElementNameField = new List<EG_ColorTransform>();
-            this.itemsField = new List<object>();
+            this.ItemsElementName = new List<EG_ColorTransform>();
+            this.itemsValueField = new List<string>();
         }
 
-        [XmlElement("alpha", typeof(CT_PositiveFixedPercentage), Order = 0)]
-        [XmlElement("alphaMod", typeof(CT_PositivePercentage), Order = 0)]
-        [XmlElement("alphaOff", typeof(CT_FixedPercentage), Order = 0)]
-        [XmlElement("blue", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("blueMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("blueOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("comp", typeof(CT_ComplementTransform), Order = 0)]
-        [XmlElement("gamma", typeof(CT_GammaTransform), Order = 0)]
-        [XmlElement("gray", typeof(CT_GrayscaleTransform), Order = 0)]
-        [XmlElement("green", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("greenMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("greenOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("hue", typeof(CT_PositiveFixedAngle), Order = 0)]
-        [XmlElement("hueMod", typeof(CT_PositivePercentage), Order = 0)]
-        [XmlElement("hueOff", typeof(CT_Angle), Order = 0)]
-        [XmlElement("inv", typeof(CT_InverseTransform), Order = 0)]
-        [XmlElement("invGamma", typeof(CT_InverseGammaTransform), Order = 0)]
-        [XmlElement("lum", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("lumMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("lumOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("red", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("redMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("redOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("sat", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("satMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("satOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("shade", typeof(CT_PositiveFixedPercentage), Order = 0)]
-        [XmlElement("tint", typeof(CT_PositiveFixedPercentage), Order = 0)]
-        [XmlChoiceIdentifier("ItemsElementName")]
-        public object[] Items
+        public static CT_SystemColor Parse(XmlNode node, XmlNamespaceManager namespaceManager)
         {
-            get
+            if (node == null)
+                return null;
+            CT_SystemColor ctObj = new CT_SystemColor();
+            if (node.Attributes["val"] != null)
+                ctObj.val = (ST_SystemColorVal)Enum.Parse(typeof(ST_SystemColorVal), node.Attributes["val"].Value);
+            ctObj.lastClr = XmlHelper.ReadBytes(node.Attributes["lastClr"]);
+
+            foreach (XmlNode childNode in node.ChildNodes)
             {
-                return this.itemsField.ToArray();
-            }
-            set
-            {
-                if (value == null || value.Length == 0)
-                    this.itemsField = new List<object>();
+                if (childNode.LocalName == "alpha")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.alpha);
+                else if (childNode.LocalName == "alphaMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.alphaMod);
+                else if (childNode.LocalName == "alphaOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.alphaOff);
+                else if (childNode.LocalName == "blue")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.blue);
+                else if (childNode.LocalName == "blueMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.blueMod);
+                else if (childNode.LocalName == "blueOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.blueOff);
+                else if (childNode.LocalName == "comp")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.comp);
+                else if (childNode.LocalName == "gamma")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.gamma);
+                else if (childNode.LocalName == "gray")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.gray);
+                else if (childNode.LocalName == "green")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.green);
+                else if (childNode.LocalName == "greenMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.greenMod);
+                else if (childNode.LocalName == "greenOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.greenOff);
+                else if (childNode.LocalName == "hue")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.hue);
+                else if (childNode.LocalName == "hueMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.hueMod);
+                else if (childNode.LocalName == "hueOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.hueOff);
+                else if (childNode.LocalName == "inv")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.inv);
+                else if (childNode.LocalName == "invGamma")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.invGamma);
+                else if (childNode.LocalName == "lum")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.lum);
+                else if (childNode.LocalName == "lumMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.lumMod);
+                else if (childNode.LocalName == "lumOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.lumOff);
+                else if (childNode.LocalName == "red")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.red);
+                else if (childNode.LocalName == "redMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.redMod);
+                else if (childNode.LocalName == "redOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.redOff);
+                else if (childNode.LocalName == "sat")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.sat);
+                else if (childNode.LocalName == "satMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.satMod);
+                else if (childNode.LocalName == "satOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.satOff);
+                else if (childNode.LocalName == "shade")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.shade);
+                else if (childNode.LocalName == "tint")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.tint);
+
+                if (childNode.Attributes["val"]!=null)
+                    ctObj.itemsValueField.Add(childNode.Attributes["val"].Value);
                 else
-                    this.itemsField = new List<object>(value);
+                    ctObj.itemsValueField.Add(null);
             }
+            return ctObj;
         }
 
-        [XmlElement("ItemsElementName", Order = 1)]
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "val", this.val.ToString());
+            XmlHelper.WriteAttribute(sw, "lastClr", this.lastClr);
+            sw.Write(">");
+            if (this.ItemsElementName != null)
+            {
+                for (int i = 0; i < itemsElementNameField.Count;i++ )
+                {
+                    EG_ColorTransform x = itemsElementNameField[i];
+                    string value = itemsValueField[i];
+
+                    sw.Write(string.Format("<a:{0}", x));
+                    if(value!=null)
+                        sw.Write(" val=\""+value+"\"");
+                    sw.Write("/>");
+                }
+            }
+            sw.Write(string.Format("</a:{0}>", nodeName));
+        }
         [XmlIgnore]
-        public EG_ColorTransform[] ItemsElementName
+        public List<EG_ColorTransform> ItemsElementName
         {
             get
             {
-                return this.itemsElementNameField.ToArray();
+                return this.itemsElementNameField;
             }
             set
             {
-                if (value == null || value.Length == 0)
-                    this.itemsElementNameField = new List<EG_ColorTransform>();
-                else
-                    this.itemsElementNameField = new List<EG_ColorTransform>(value);
+                this.itemsElementNameField = value;
             }
         }
 
@@ -965,9 +1229,7 @@ namespace NPOI.OpenXmlFormats.Dml
     [XmlRoot(Namespace = "http://schemas.openxmlformats.org/drawingml/2006/main", IsNullable = true)]
     public class CT_SchemeColor
     {
-
-        private List<object> itemsField;
-
+        private List<string> itemsValueField;
         private List<EG_ColorTransform> itemsElementNameField;
 
         private ST_SchemeColorVal valField;
@@ -975,74 +1237,122 @@ namespace NPOI.OpenXmlFormats.Dml
         public CT_SchemeColor()
         {
             this.itemsElementNameField = new List<EG_ColorTransform>();
-            this.itemsField = new List<object>();
+            this.itemsValueField = new List<string>();
         }
 
         public CT_PositiveFixedPercentage AddNewShade()
         {
-            
             CT_PositiveFixedPercentage obj = new CT_PositiveFixedPercentage();
             this.itemsElementNameField.Add(EG_ColorTransform.shade);
-            this.itemsField.Add(obj);
+            this.itemsValueField.Add(null);
             return obj;
         }
-        [XmlElement("alpha", typeof(CT_PositiveFixedPercentage), Order = 0)]
-        [XmlElement("alphaMod", typeof(CT_PositivePercentage), Order = 0)]
-        [XmlElement("alphaOff", typeof(CT_FixedPercentage), Order = 0)]
-        [XmlElement("blue", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("blueMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("blueOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("comp", typeof(CT_ComplementTransform), Order = 0)]
-        [XmlElement("gamma", typeof(CT_GammaTransform), Order = 0)]
-        [XmlElement("gray", typeof(CT_GrayscaleTransform), Order = 0)]
-        [XmlElement("green", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("greenMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("greenOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("hue", typeof(CT_PositiveFixedAngle), Order = 0)]
-        [XmlElement("hueMod", typeof(CT_PositivePercentage), Order = 0)]
-        [XmlElement("hueOff", typeof(CT_Angle), Order = 0)]
-        [XmlElement("inv", typeof(CT_InverseTransform), Order = 0)]
-        [XmlElement("invGamma", typeof(CT_InverseGammaTransform), Order = 0)]
-        [XmlElement("lum", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("lumMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("lumOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("red", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("redMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("redOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("sat", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("satMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("satOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("shade", typeof(CT_PositiveFixedPercentage), Order = 0)]
-        [XmlElement("tint", typeof(CT_PositiveFixedPercentage), Order = 0)]
-        [XmlChoiceIdentifier("ItemsElementName")]
-        public object[] Items
+        public static CT_SchemeColor Parse(XmlNode node, XmlNamespaceManager namespaceManager)
         {
-            get
+            if (node == null)
+                return null;
+            CT_SchemeColor ctObj = new CT_SchemeColor();
+            if (node.Attributes["val"] != null)
+                ctObj.val = (ST_SchemeColorVal)Enum.Parse(typeof(ST_SchemeColorVal), node.Attributes["val"].Value);
+            foreach (XmlNode childNode in node.ChildNodes)
             {
-                return this.itemsField.ToArray();
-            }
-            set
-            {
-                if (value == null || value.Length == 0)
-                    this.itemsField = new List<object>();
+                if (childNode.LocalName == "alpha")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.alpha);
+                else if (childNode.LocalName == "alphaMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.alphaMod);
+                else if (childNode.LocalName == "alphaOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.alphaOff);
+                else if (childNode.LocalName == "blue")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.blue);
+                else if (childNode.LocalName == "blueMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.blueMod);
+                else if (childNode.LocalName == "blueOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.blueOff);
+                else if (childNode.LocalName == "comp")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.comp);
+                else if (childNode.LocalName == "gamma")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.gamma);
+                else if (childNode.LocalName == "gray")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.gray);
+                else if (childNode.LocalName == "green")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.green);
+                else if (childNode.LocalName == "greenMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.greenMod);
+                else if (childNode.LocalName == "greenOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.greenOff);
+                else if (childNode.LocalName == "hue")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.hue);
+                else if (childNode.LocalName == "hueMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.hueMod);
+                else if (childNode.LocalName == "hueOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.hueOff);
+                else if (childNode.LocalName == "inv")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.inv);
+                else if (childNode.LocalName == "invGamma")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.invGamma);
+                else if (childNode.LocalName == "lum")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.lum);
+                else if (childNode.LocalName == "lumMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.lumMod);
+                else if (childNode.LocalName == "lumOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.lumOff);
+                else if (childNode.LocalName == "red")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.red);
+                else if (childNode.LocalName == "redMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.redMod);
+                else if (childNode.LocalName == "redOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.redOff);
+                else if (childNode.LocalName == "sat")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.sat);
+                else if (childNode.LocalName == "satMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.satMod);
+                else if (childNode.LocalName == "satOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.satOff);
+                else if (childNode.LocalName == "shade")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.shade);
+                else if (childNode.LocalName == "tint")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.tint);
+
+                if (childNode.Attributes["val"] != null)
+                    ctObj.itemsValueField.Add(childNode.Attributes["val"].Value);
                 else
-                    this.itemsField = new List<object>(value);
+                    ctObj.itemsValueField.Add(null);
             }
+            return ctObj;
         }
-        [XmlElement("ItemsElementName", Order = 1)]
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "val", this.val.ToString());
+            sw.Write(">");
+            if (this.ItemsElementName != null)
+            {
+                for (int i = 0; i < itemsElementNameField.Count; i++)
+                {
+                    EG_ColorTransform x = itemsElementNameField[i];
+                    string value = itemsValueField[i];
+
+                    sw.Write(string.Format("<a:{0}", x));
+                    if (value != null)
+                        sw.Write(" val=\"" + value + "\"");
+                    sw.Write("/>");
+                }
+            }
+            sw.Write(string.Format("</a:{0}>", nodeName));
+        }
+
         [XmlIgnore]
-        public EG_ColorTransform[] ItemsElementName
+        public List<EG_ColorTransform> ItemsElementName
         {
             get
             {
-                return this.itemsElementNameField.ToArray();
+                return this.itemsElementNameField;
             }
             set
             {
-                if (value == null || value.Length == 0)
-                    this.itemsElementNameField = new List<EG_ColorTransform>();
-                else
-                    this.itemsElementNameField = new List<EG_ColorTransform>(value);
+                this.itemsElementNameField = value;
             }
         }
         [XmlAttribute]
@@ -1123,9 +1433,7 @@ namespace NPOI.OpenXmlFormats.Dml
     [XmlRoot(Namespace = "http://schemas.openxmlformats.org/drawingml/2006/main", IsNullable = true)]
     public class CT_PresetColor
     {
-
-        private List<object> itemsField;
-
+        private List<string> itemsValueField;
         private List<EG_ColorTransform> itemsElementNameField;
 
         private ST_PresetColorVal valField;
@@ -1135,66 +1443,19 @@ namespace NPOI.OpenXmlFormats.Dml
         public CT_PresetColor()
         {
             this.itemsElementNameField = new List<EG_ColorTransform>();
-            this.itemsField = new List<object>();
+            this.itemsValueField = new List<string>();
         }
 
-        [XmlElement("alpha", typeof(CT_PositiveFixedPercentage), Order = 0)]
-        [XmlElement("alphaMod", typeof(CT_PositivePercentage), Order = 0)]
-        [XmlElement("alphaOff", typeof(CT_FixedPercentage), Order = 0)]
-        [XmlElement("blue", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("blueMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("blueOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("comp", typeof(CT_ComplementTransform), Order = 0)]
-        [XmlElement("gamma", typeof(CT_GammaTransform), Order = 0)]
-        [XmlElement("gray", typeof(CT_GrayscaleTransform), Order = 0)]
-        [XmlElement("green", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("greenMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("greenOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("hue", typeof(CT_PositiveFixedAngle), Order = 0)]
-        [XmlElement("hueMod", typeof(CT_PositivePercentage), Order = 0)]
-        [XmlElement("hueOff", typeof(CT_Angle), Order = 0)]
-        [XmlElement("inv", typeof(CT_InverseTransform), Order = 0)]
-        [XmlElement("invGamma", typeof(CT_InverseGammaTransform), Order = 0)]
-        [XmlElement("lum", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("lumMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("lumOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("red", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("redMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("redOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("sat", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("satMod", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("satOff", typeof(CT_Percentage), Order = 0)]
-        [XmlElement("shade", typeof(CT_PositiveFixedPercentage), Order = 0)]
-        [XmlElement("tint", typeof(CT_PositiveFixedPercentage), Order = 0)]
-        [XmlChoiceIdentifier("ItemsElementName")]
-        public object[] Items
-        {
-            get
-            {
-                return this.itemsField.ToArray();
-            }
-            set
-            {
-                if (value == null || value.Length == 0)
-                    this.itemsField = new List<object>();
-                else
-                    this.itemsField = new List<object>(value);
-            }
-        }
-        [XmlElement("ItemsElementName", Order = 1)]
         [XmlIgnore]
-        public EG_ColorTransform[] ItemsElementName
+        public List<EG_ColorTransform> ItemsElementName
         {
             get
             {
-                return this.itemsElementNameField.ToArray();
+                return this.itemsElementNameField;
             }
             set
             {
-                if (value == null || value.Length == 0)
-                    this.itemsElementNameField = new List<EG_ColorTransform>();
-                else
-                    this.itemsElementNameField = new List<EG_ColorTransform>(value);
+               this.itemsElementNameField = value;
             }
         }
 
@@ -1222,6 +1483,103 @@ namespace NPOI.OpenXmlFormats.Dml
             {
                 this.valFieldSpecified = value;
             }
+        }
+
+        public static CT_PresetColor Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_PresetColor ctObj = new CT_PresetColor();
+            if (node.Attributes["val"] != null)
+                ctObj.val = (ST_PresetColorVal)Enum.Parse(typeof(ST_PresetColorVal), node.Attributes["val"].Value);
+            foreach (XmlNode childNode in node.ChildNodes)
+            {
+                if (childNode.LocalName == "alpha")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.alpha);
+                else if (childNode.LocalName == "alphaMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.alphaMod);
+                else if (childNode.LocalName == "alphaOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.alphaOff);
+                else if (childNode.LocalName == "blue")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.blue);
+                else if (childNode.LocalName == "blueMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.blueMod);
+                else if (childNode.LocalName == "blueOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.blueOff);
+                else if (childNode.LocalName == "comp")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.comp);
+                else if (childNode.LocalName == "gamma")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.gamma);
+                else if (childNode.LocalName == "gray")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.gray);
+                else if (childNode.LocalName == "green")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.green);
+                else if (childNode.LocalName == "greenMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.greenMod);
+                else if (childNode.LocalName == "greenOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.greenOff);
+                else if (childNode.LocalName == "hue")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.hue);
+                else if (childNode.LocalName == "hueMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.hueMod);
+                else if (childNode.LocalName == "hueOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.hueOff);
+                else if (childNode.LocalName == "inv")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.inv);
+                else if (childNode.LocalName == "invGamma")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.invGamma);
+                else if (childNode.LocalName == "lum")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.lum);
+                else if (childNode.LocalName == "lumMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.lumMod);
+                else if (childNode.LocalName == "lumOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.lumOff);
+                else if (childNode.LocalName == "red")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.red);
+                else if (childNode.LocalName == "redMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.redMod);
+                else if (childNode.LocalName == "redOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.redOff);
+                else if (childNode.LocalName == "sat")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.sat);
+                else if (childNode.LocalName == "satMod")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.satMod);
+                else if (childNode.LocalName == "satOff")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.satOff);
+                else if (childNode.LocalName == "shade")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.shade);
+                else if (childNode.LocalName == "tint")
+                    ctObj.ItemsElementName.Add(EG_ColorTransform.tint);
+
+                if (childNode.Attributes["val"] != null)
+                    ctObj.itemsValueField.Add(childNode.Attributes["val"].Value);
+                else
+                    ctObj.itemsValueField.Add(null);
+            }
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "val", this.val.ToString());
+            sw.Write(">");
+            if (this.ItemsElementName != null)
+            {
+                for (int i = 0; i < itemsElementNameField.Count; i++)
+                {
+                    EG_ColorTransform x = itemsElementNameField[i];
+                    string value = itemsValueField[i];
+
+                    sw.Write(string.Format("<a:{0}", x));
+                    if (value != null)
+                        sw.Write(" val=\"" + value + "\"");
+                    sw.Write("/>");
+                }
+            }
+            sw.Write(string.Format("</a:{0}>", nodeName));
         }
     }
 
@@ -1663,6 +2021,35 @@ namespace NPOI.OpenXmlFormats.Dml
         {
             this.extField = new List<CT_OfficeArtExtension>();
         }
+        public static CT_OfficeArtExtensionList Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_OfficeArtExtensionList ctObj = new CT_OfficeArtExtensionList();
+            ctObj.ext = new List<CT_OfficeArtExtension>();
+            foreach (XmlNode childNode in node.ChildNodes)
+            {
+                if (childNode.LocalName == "ext")
+                    ctObj.ext.Add(CT_OfficeArtExtension.Parse(childNode, namespaceManager));
+            }
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            sw.Write(">");
+            if (this.ext != null)
+            {
+                foreach (CT_OfficeArtExtension x in this.ext)
+                {
+                    x.Write(sw, "ext");
+                }
+            }
+            sw.Write(string.Format("</a:{0}>", nodeName));
+        }
 
         [XmlElement("ext", Order = 0)]
         public List<CT_OfficeArtExtension> ext
@@ -1736,6 +2123,39 @@ namespace NPOI.OpenXmlFormats.Dml
         private bool? flipHField = null;
 
         private bool? flipVField = null;
+        public static CT_Transform2D Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_Transform2D ctObj = new CT_Transform2D();
+            ctObj.rot = XmlHelper.ReadInt(node.Attributes["rot"]);
+            ctObj.flipH = XmlHelper.ReadBool(node.Attributes["flipH"]);
+            ctObj.flipV = XmlHelper.ReadBool(node.Attributes["flipV"]);
+            foreach (XmlNode childNode in node.ChildNodes)
+            {
+                if (childNode.LocalName == "off")
+                    ctObj.off = CT_Point2D.Parse(childNode, namespaceManager);
+                else if (childNode.LocalName == "ext")
+                    ctObj.ext = CT_PositiveSize2D.Parse(childNode, namespaceManager);
+            }
+            return ctObj;
+        }
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "rot", this.rot);
+            XmlHelper.WriteAttribute(sw, "flipH", this.flipH, false);
+            XmlHelper.WriteAttribute(sw, "flipV", this.flipV,false);
+            sw.Write(">");
+            if (this.off != null)
+                this.off.Write(sw, "off");
+            if (this.ext != null)
+                this.ext.Write(sw, "ext");
+            sw.Write(string.Format("</a:{0}>", nodeName));
+        }
+
 
         public CT_PositiveSize2D AddNewExt()
         {
@@ -1787,11 +2207,6 @@ namespace NPOI.OpenXmlFormats.Dml
                 this.rotField = value;
             }
         }
-        [XmlIgnore]
-        public bool rotSpecified
-        {
-            get { return (null != rotField); }
-        }
 
         [XmlAttribute]
         [DefaultValue(false)]
@@ -1806,12 +2221,6 @@ namespace NPOI.OpenXmlFormats.Dml
                 this.flipHField = value;
             }
         }
-        [XmlIgnore]
-        public bool flipHSpecified
-        {
-            get { return (null != flipHField); }
-        }
-
         [XmlAttribute]
         [DefaultValue(false)]
         public bool flipV
@@ -1824,11 +2233,6 @@ namespace NPOI.OpenXmlFormats.Dml
             {
                 this.flipVField = value;
             }
-        }
-        [XmlIgnore]
-        public bool flipVSpecified
-        {
-            get { return (null != flipVField); }
         }
     }
 
@@ -1861,6 +2265,47 @@ namespace NPOI.OpenXmlFormats.Dml
             this.rotField = 0;
             this.flipHField = false;
             this.flipVField = false;
+        }
+        public static CT_GroupTransform2D Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_GroupTransform2D ctObj = new CT_GroupTransform2D();
+            ctObj.rot = XmlHelper.ReadInt(node.Attributes["rot"]);
+            ctObj.flipH = XmlHelper.ReadBool(node.Attributes["flipH"]);
+            ctObj.flipV = XmlHelper.ReadBool(node.Attributes["flipV"]);
+            foreach (XmlNode childNode in node.ChildNodes)
+            {
+                if (childNode.LocalName == "off")
+                    ctObj.off = CT_Point2D.Parse(childNode, namespaceManager);
+                else if (childNode.LocalName == "ext")
+                    ctObj.ext = CT_PositiveSize2D.Parse(childNode, namespaceManager);
+                else if (childNode.LocalName == "chOff")
+                    ctObj.chOff = CT_Point2D.Parse(childNode, namespaceManager);
+                else if (childNode.LocalName == "chExt")
+                    ctObj.chExt = CT_PositiveSize2D.Parse(childNode, namespaceManager);
+            }
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "rot", this.rot);
+            XmlHelper.WriteAttribute(sw, "flipH", this.flipH, false);
+            XmlHelper.WriteAttribute(sw, "flipV", this.flipV,false);
+            sw.Write(">");
+            if (this.off != null)
+                this.off.Write(sw, "off");
+            if (this.ext != null)
+                this.ext.Write(sw, "ext");
+            if (this.chOff != null)
+                this.chOff.Write(sw, "chOff");
+            if (this.chExt != null)
+                this.chExt.Write(sw, "chExt");
+            sw.Write(string.Format("</a:{0}>", nodeName));
         }
 
         public CT_PositiveSize2D AddNewExt()
@@ -1990,6 +2435,28 @@ namespace NPOI.OpenXmlFormats.Dml
         private long yField;
 
         private long zField;
+        public static CT_Point3D Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_Point3D ctObj = new CT_Point3D();
+            ctObj.x = XmlHelper.ReadLong(node.Attributes["x"]);
+            ctObj.y = XmlHelper.ReadLong(node.Attributes["y"]);
+            ctObj.z = XmlHelper.ReadLong(node.Attributes["z"]);
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "x", this.x);
+            XmlHelper.WriteAttribute(sw, "y", this.y);
+            XmlHelper.WriteAttribute(sw, "z", this.z);
+            sw.Write(">");
+            sw.Write(string.Format("</a:{0}>", nodeName));
+        }
 
         [XmlAttribute]
         public long x
@@ -2042,6 +2509,28 @@ namespace NPOI.OpenXmlFormats.Dml
         private long dyField;
 
         private long dzField;
+        public static CT_Vector3D Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_Vector3D ctObj = new CT_Vector3D();
+            ctObj.dx = XmlHelper.ReadLong(node.Attributes["dx"]);
+            ctObj.dy = XmlHelper.ReadLong(node.Attributes["dy"]);
+            ctObj.dz = XmlHelper.ReadLong(node.Attributes["dz"]);
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "dx", this.dx);
+            XmlHelper.WriteAttribute(sw, "dy", this.dy);
+            XmlHelper.WriteAttribute(sw, "dz", this.dz);
+            sw.Write(">");
+            sw.Write(string.Format("</a:{0}>", nodeName));
+        }
 
         [XmlAttribute]
         public long dx
@@ -2094,6 +2583,28 @@ namespace NPOI.OpenXmlFormats.Dml
         private int lonField;
 
         private int revField;
+        public static CT_SphereCoords Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_SphereCoords ctObj = new CT_SphereCoords();
+            ctObj.lat = XmlHelper.ReadInt(node.Attributes["lat"]);
+            ctObj.lon = XmlHelper.ReadInt(node.Attributes["lon"]);
+            ctObj.rev = XmlHelper.ReadInt(node.Attributes["rev"]);
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "lat", this.lat);
+            XmlHelper.WriteAttribute(sw, "lon", this.lon);
+            XmlHelper.WriteAttribute(sw, "rev", this.rev);
+            sw.Write(">");
+            sw.Write(string.Format("</a:{0}>", nodeName));
+        }
 
         [XmlAttribute]
         public int lat
@@ -2144,12 +2655,40 @@ namespace NPOI.OpenXmlFormats.Dml
         private int? tField;
         private int? rField;
         private int? bField;
+        public static CT_RelativeRect Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_RelativeRect ctObj = new CT_RelativeRect();
+            ctObj.l = XmlHelper.ReadInt(node.Attributes["l"]);
+            ctObj.t = XmlHelper.ReadInt(node.Attributes["t"]);
+            ctObj.r = XmlHelper.ReadInt(node.Attributes["r"]);
+            ctObj.b = XmlHelper.ReadInt(node.Attributes["b"]);
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "l", this.l);
+            XmlHelper.WriteAttribute(sw, "t", this.t);
+            XmlHelper.WriteAttribute(sw, "r", this.r);
+            XmlHelper.WriteAttribute(sw, "b", this.b);
+            sw.Write(">");
+            sw.Write(string.Format("</a:{0}>", nodeName));
+        }
 
         [XmlAttribute]
         [DefaultValue(0)]
         public int l
         {
-            get { return (int)this.lField; }
+            get {
+                if (this.lField == null)
+                    return 0; 
+                return (int)this.lField; 
+            }
             set { this.lField = value; }
         }
         [XmlIgnore]
@@ -2161,7 +2700,11 @@ namespace NPOI.OpenXmlFormats.Dml
         [DefaultValue(0)]
         public int t
         {
-            get { return (int)this.tField; }
+            get {
+                if (this.tField == null)
+                    return 0; 
+                return (int)this.tField; 
+            }
             set { this.tField = value; }
         }
         [XmlIgnore]
@@ -2173,7 +2716,12 @@ namespace NPOI.OpenXmlFormats.Dml
         [DefaultValue(0)]
         public int r
         {
-            get { return (int)this.rField; }
+            get
+            {
+                if (this.rField == null)
+                    return 0; 
+                return (int)this.rField;
+            }
             set { this.rField = value; }
         }
         [XmlIgnore]
@@ -2185,7 +2733,11 @@ namespace NPOI.OpenXmlFormats.Dml
         [DefaultValue(0)]
         public int b
         {
-            get { return (int)this.bField; }
+            get {
+                if (this.bField == null)
+                    return 0;
+                return (int)this.bField; 
+            }
             set { this.bField = value; }
         }
         [XmlIgnore]
@@ -2213,14 +2765,58 @@ namespace NPOI.OpenXmlFormats.Dml
 
         private CT_PresetColor prstClrField;
 
+        public static CT_Color Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_Color ctObj = new CT_Color();
+            foreach (XmlNode childNode in node.ChildNodes)
+            {
+                if (childNode.LocalName == "scrgbClr")
+                    ctObj.scrgbClr = CT_ScRgbColor.Parse(childNode, namespaceManager);
+                else if (childNode.LocalName == "srgbClr")
+                    ctObj.srgbClr = CT_SRgbColor.Parse(childNode, namespaceManager);
+                else if (childNode.LocalName == "hslClr")
+                    ctObj.hslClr = CT_HslColor.Parse(childNode, namespaceManager);
+                else if (childNode.LocalName == "sysClr")
+                    ctObj.sysClr = CT_SystemColor.Parse(childNode, namespaceManager);
+                else if (childNode.LocalName == "schemeClr")
+                    ctObj.schemeClr = CT_SchemeColor.Parse(childNode, namespaceManager);
+                else if (childNode.LocalName == "prstClr")
+                    ctObj.prstClr = CT_PresetColor.Parse(childNode, namespaceManager);
+            }
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            sw.Write(">");
+            if (this.scrgbClr != null)
+                this.scrgbClr.Write(sw, "scrgbClr");
+            if (this.srgbClr != null)
+                this.srgbClr.Write(sw, "srgbClr");
+            if (this.hslClr != null)
+                this.hslClr.Write(sw, "hslClr");
+            if (this.sysClr != null)
+                this.sysClr.Write(sw, "sysClr");
+            if (this.schemeClr != null)
+                this.schemeClr.Write(sw, "schemeClr");
+            if (this.prstClr != null)
+                this.prstClr.Write(sw, "prstClr");
+            sw.Write(string.Format("</a:{0}>", nodeName));
+        }
+
         public CT_Color()
         {
-            this.prstClrField = new CT_PresetColor();
-            this.schemeClrField = new CT_SchemeColor();
-            this.sysClrField = new CT_SystemColor();
-            this.hslClrField = new CT_HslColor();
-            //this.srgbClrField = new CT_SRgbColor();
-            this.scrgbClrField = new CT_ScRgbColor();
+            //this.prstClrField = new CT_PresetColor();
+            //this.schemeClrField = new CT_SchemeColor();
+            //this.sysClrField = new CT_SystemColor();
+            //this.hslClrField = new CT_HslColor();
+            ////this.srgbClrField = new CT_SRgbColor();
+            //this.scrgbClrField = new CT_ScRgbColor();
         }
 
         [XmlElement(Order = 0)]
@@ -2351,6 +2947,28 @@ namespace NPOI.OpenXmlFormats.Dml
             this.nameField = "";
             this.builtInField = false;
         }
+        public static CT_EmbeddedWAVAudioFile Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_EmbeddedWAVAudioFile ctObj = new CT_EmbeddedWAVAudioFile();
+            ctObj.embed = XmlHelper.ReadString(node.Attributes["embed"]);
+            ctObj.name = XmlHelper.ReadString(node.Attributes["name"]);
+            ctObj.builtIn = XmlHelper.ReadBool(node.Attributes["builtIn"]);
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "embed", this.embed);
+            XmlHelper.WriteAttribute(sw, "name", this.name);
+            XmlHelper.WriteAttribute(sw, "builtIn", this.builtIn);
+            sw.Write(">");
+            sw.Write(string.Format("</a:{0}>", nodeName));
+        }
 
         [XmlAttribute(Form = System.Xml.Schema.XmlSchemaForm.Qualified, Namespace = "http://schemas.openxmlformats.org/officeDocument/2006/relationships")]
         public string embed
@@ -2419,11 +3037,53 @@ namespace NPOI.OpenXmlFormats.Dml
         private bool highlightClickField;
 
         private bool endSndField;
+        public static CT_Hyperlink Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_Hyperlink ctObj = new CT_Hyperlink();
+            ctObj.id = XmlHelper.ReadString(node.Attributes["id"]);
+            ctObj.invalidUrl = XmlHelper.ReadString(node.Attributes["invalidUrl"]);
+            ctObj.action = XmlHelper.ReadString(node.Attributes["action"]);
+            ctObj.tgtFrame = XmlHelper.ReadString(node.Attributes["tgtFrame"]);
+            ctObj.tooltip = XmlHelper.ReadString(node.Attributes["tooltip"]);
+            ctObj.history = XmlHelper.ReadBool(node.Attributes["history"]);
+            ctObj.highlightClick = XmlHelper.ReadBool(node.Attributes["highlightClick"]);
+            ctObj.endSnd = XmlHelper.ReadBool(node.Attributes["endSnd"]);
+            foreach (XmlNode childNode in node.ChildNodes)
+            {
+                if (childNode.LocalName == "snd")
+                    ctObj.snd = CT_EmbeddedWAVAudioFile.Parse(childNode, namespaceManager);
+                else if (childNode.LocalName == "extLst")
+                    ctObj.extLst = CT_OfficeArtExtensionList.Parse(childNode, namespaceManager);
+            }
+            return ctObj;
+        }
 
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "id", this.id);
+            XmlHelper.WriteAttribute(sw, "invalidUrl", this.invalidUrl);
+            XmlHelper.WriteAttribute(sw, "action", this.action);
+            XmlHelper.WriteAttribute(sw, "tgtFrame", this.tgtFrame);
+            XmlHelper.WriteAttribute(sw, "tooltip", this.tooltip);
+            XmlHelper.WriteAttribute(sw, "history", this.history);
+            XmlHelper.WriteAttribute(sw, "highlightClick", this.highlightClick);
+            XmlHelper.WriteAttribute(sw, "endSnd", this.endSnd);
+            sw.Write(">");
+            if (this.snd != null)
+                this.snd.Write(sw, "snd");
+            if (this.extLst != null)
+                this.extLst.Write(sw, "extLst");
+            sw.Write(string.Format("</a:{0}>", nodeName));
+        }
         public CT_Hyperlink()
         {
-            this.extLstField = new CT_OfficeArtExtensionList();
-            this.sndField = new CT_EmbeddedWAVAudioFile();
+            //this.extLstField = new CT_OfficeArtExtensionList();
+            //this.sndField = new CT_EmbeddedWAVAudioFile();
             this.invalidUrlField = "";
             this.actionField = "";
             this.tgtFrameField = "";
@@ -2572,7 +3232,7 @@ namespace NPOI.OpenXmlFormats.Dml
     }
     public enum ST_BlackWhiteMode
     {
-        NONE,
+        none,
 
         clr,
 

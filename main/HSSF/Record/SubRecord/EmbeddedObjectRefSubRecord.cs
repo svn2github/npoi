@@ -20,11 +20,9 @@ namespace NPOI.HSSF.Record
 {
 
     using System;
-    using System.Collections;
     using System.Text;
     using System.IO;
 
-    using NPOI.SS.Formula;
     using NPOI.Util;
 
     using NPOI.SS.Formula.PTG;
@@ -39,6 +37,7 @@ namespace NPOI.HSSF.Record
     public class EmbeddedObjectRefSubRecord
        : SubRecord
     {
+        private static POILogger logger = POILogFactory.GetLogger(typeof(EmbeddedObjectRefSubRecord));
         public const short sid = 0x9;
         private static byte[] EMPTY_BYTE_ARRAY = { };
 
@@ -156,7 +155,7 @@ namespace NPOI.HSSF.Record
 
             if (nUnexpectedPadding > 0)
             {
-                Console.WriteLine("Discarding " + nUnexpectedPadding + " unexpected padding bytes ");
+                logger.Log(POILogger.ERROR, "Discarding " + nUnexpectedPadding + " unexpected padding bytes ");
                 ReadRawData(in1, nUnexpectedPadding);
                 remaining -= nUnexpectedPadding;
             }

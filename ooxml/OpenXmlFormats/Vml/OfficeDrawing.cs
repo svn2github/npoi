@@ -2591,7 +2591,7 @@ namespace NPOI.OpenXmlFormats.Vml.Office
         {
             get { return ST_Ext.NONE != this.extField; }
         }
-        internal static XmlSerializerNamespaces namespaces = new XmlSerializerNamespaces(new[] {
+        internal static XmlSerializerNamespaces namespaces = new XmlSerializerNamespaces(new XmlQualifiedName[] {
             new XmlQualifiedName("o", "urn:schemas-microsoft-com:office:office"),
             new XmlQualifiedName("x", "urn:schemas-microsoft-com:office:excel"),
             new XmlQualifiedName("v", "urn:schemas-microsoft-com:vml")
@@ -2601,12 +2601,11 @@ namespace NPOI.OpenXmlFormats.Vml.Office
         {
             using (StringWriter stringWriter = new StringWriter())
             {
-                var settings = new XmlWriterSettings
-                {
-                    Encoding = Encoding.UTF8,
-                    OmitXmlDeclaration = true
-                };
-                using (var writer = XmlWriter.Create(stringWriter, settings))
+                XmlWriterSettings settings = new XmlWriterSettings();
+
+                settings.Encoding = Encoding.UTF8;
+                settings.OmitXmlDeclaration = true;
+                using (XmlWriter writer = XmlWriter.Create(stringWriter, settings))
                 {
                     serializer.Serialize(writer, this, namespaces);
                 }

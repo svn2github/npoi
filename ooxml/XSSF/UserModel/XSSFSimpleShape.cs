@@ -18,6 +18,8 @@
 using NPOI.OpenXmlFormats.Dml;
 using NPOI.OpenXmlFormats.Dml.Spreadsheet;
 using NPOI.OpenXmlFormats.Spreadsheet;
+using NPOI.HSSF.Util;
+using System.Xml;
 
 namespace NPOI.XSSF.UserModel
 {
@@ -45,6 +47,13 @@ namespace NPOI.XSSF.UserModel
             this.ctShape = ctShape;
         }
 
+
+        public XSSFSimpleShape(XSSFDrawing drawing, XmlNode spNode)
+        {
+            this.drawing = drawing;
+            this.ctShape = CT_Shape.Parse(spNode, null);
+        }
+
         /**
          * Prototype with the default structure of a new auto-shape.
          */
@@ -56,13 +65,13 @@ namespace NPOI.XSSF.UserModel
 
 
                 CT_ShapeNonVisual nv = shape.AddNewNvSpPr();
-                CT_NonVisualDrawingProps nvp = nv.AddNewCNvPr();
+                NPOI.OpenXmlFormats.Dml.Spreadsheet.CT_NonVisualDrawingProps nvp = nv.AddNewCNvPr();
                 nvp.id = (1);
                 nvp.name = ("Shape 1");
                 nv.AddNewCNvSpPr();
 
-                CT_ShapeProperties sp = shape.AddNewSpPr();
-                CT_Transform2D t2d = sp.AddNewXfrm();
+                NPOI.OpenXmlFormats.Dml.Spreadsheet.CT_ShapeProperties sp = shape.AddNewSpPr();
+                NPOI.OpenXmlFormats.Dml.CT_Transform2D t2d = sp.AddNewXfrm();
                 CT_PositiveSize2D p1 = t2d.AddNewExt();
                 p1.cx = (0);
                 p1.cy = (0);
@@ -74,7 +83,7 @@ namespace NPOI.XSSF.UserModel
                 geom.prst = (ST_ShapeType.rect);
                 geom.AddNewAvLst();
 
-                CT_ShapeStyle style = shape.AddNewStyle();
+                NPOI.OpenXmlFormats.Dml.Spreadsheet.CT_ShapeStyle style = shape.AddNewStyle();
                 CT_SchemeColor scheme = style.AddNewLnRef().AddNewSchemeClr();
                 scheme.val = (ST_SchemeColorVal.accent1);
                 scheme.AddNewShade().val = 50000;
@@ -92,7 +101,7 @@ namespace NPOI.XSSF.UserModel
                 fontRef.idx = (ST_FontCollectionIndex.minor);
                 fontRef.AddNewSchemeClr().val = (ST_SchemeColorVal.lt1);
 
-                CT_TextBody body = shape.AddNewTxBody();
+                NPOI.OpenXmlFormats.Dml.Spreadsheet.CT_TextBody body = shape.AddNewTxBody();
                 CT_TextBodyProperties bodypr = body.AddNewBodyPr();
                 bodypr.anchor = (ST_TextAnchoringType.ctr);
                 bodypr.rtlCol = (false);
@@ -138,7 +147,7 @@ namespace NPOI.XSSF.UserModel
             ctShape.spPr.prstGeom.prst = ((ST_ShapeType)(type));
         }
 
-        protected override CT_ShapeProperties GetShapeProperties()
+        protected internal override NPOI.OpenXmlFormats.Dml.Spreadsheet.CT_ShapeProperties GetShapeProperties()
         {
             return ctShape.spPr;
         }
@@ -182,17 +191,57 @@ namespace NPOI.XSSF.UserModel
 
         /**
          *
-         * CT_RPrElt --> CTFont adapter
+         * org.openxmlformats.schemas.spreadsheetml.x2006.main.CTRPrElt to
+         * org.openxmlformats.schemas.drawingml.x2006.main.CTFont adapter
          */
         private static void ApplyAttributes(CT_RPrElt pr, CT_TextCharacterProperties rPr)
         {
 
             if (pr.sizeOfBArray() > 0) rPr.b = (pr.GetBArray(0).val);
-            //if(pr.sizeOfUArray() > 0) rPr.SetU(pr.GetUArray(0).GetVal());
+            if (pr.sizeOfUArray() > 0)
+            {
+                ST_UnderlineValues u1 = pr.GetUArray(0).val;
+                if (u1 == ST_UnderlineValues.single) rPr.u = (ST_TextUnderlineType.sng);
+                else if (u1 == ST_UnderlineValues.@double) rPr.u = (ST_TextUnderlineType.dbl);
+                else if (u1 == ST_UnderlineValues.none) rPr.u = (ST_TextUnderlineType.none);
+            }
             if (pr.sizeOfIArray() > 0) rPr.i = (pr.GetIArray(0).val);
 
-            CT_TextFont rFont = rPr.AddNewLatin();
-            rFont.typeface = (pr.sizeOfRFontArray() > 0 ? pr.GetRFontArray(0).val : "Arial");
+            if (pr.sizeOfFamilyArray() > 0)
+            {
+                CT_TextFont rFont = rPr.AddNewLatin();
+                rFont.typeface = (pr.GetRFontArray(0).val);
+            }
+
+            if (pr.sizeOfSzArray() > 0)
+            {
+                int sz = (int)(pr.GetSzArray(0).val * 100);
+                rPr.sz = (sz);
+            }
+
+            if (pr.sizeOfColorArray() > 0)
+            {
+                CT_SolidColorFillProperties fill = rPr.IsSetSolidFill() ? rPr.solidFill : rPr.AddNewSolidFill();
+                NPOI.OpenXmlFormats.Spreadsheet.CT_Color xlsColor = pr.GetColorArray(0);
+                if (xlsColor.IsSetRgb())
+                {
+                    CT_SRgbColor clr = fill.IsSetSrgbClr() ? fill.srgbClr : fill.AddNewSrgbClr();
+                    clr.val = (xlsColor.rgb);
+                }
+                else if (xlsColor.IsSetIndexed())
+                {
+                    HSSFColor indexed = HSSFColor.GetIndexHash()[(int)xlsColor.indexed] as HSSFColor;
+                    if (indexed != null)
+                    {
+                        byte[] rgb = new byte[3];
+                        rgb[0] = (byte)indexed.GetTriplet()[0];
+                        rgb[1] = (byte)indexed.GetTriplet()[1];
+                        rgb[2] = (byte)indexed.GetTriplet()[2];
+                        CT_SRgbColor clr = fill.IsSetSrgbClr() ? fill.srgbClr : fill.AddNewSrgbClr();
+                        clr.val = (rgb);
+                    }
+                }
+            }
         }
     }
 

@@ -195,7 +195,7 @@ namespace TestCases.SS.Util
             decimal bd = new decimal(newFrac.LongValue());
             if (gg > 0)
             {
-                bd = bd/(new decimal((BigInteger.ONE << gg).LongValue()));
+                bd = bd/(new decimal((BigInteger.One << gg).LongValue()));
             }
             else
             {
@@ -234,7 +234,7 @@ namespace TestCases.SS.Util
                 throw new AssertionException("Expected '" + origDigs + "' but got '" + sigDigs + "'.");
             }
 
-            double dO = Double.Parse("0." + origDigs.Substring(sigDigs.Length));
+            double dO = Double.Parse("0" + System.Globalization.NumberFormatInfo.CurrentInfo.NumberDecimalSeparator + origDigs.Substring(sigDigs.Length));
             double d1 = Double.Parse(result.GetFractionalPart().ToString());
             BigInteger subDigsO = new BigInteger((int)(dO * 32768 + 0.5));
             BigInteger subDigsB = new BigInteger((int)(d1 * 32768 + 0.5));

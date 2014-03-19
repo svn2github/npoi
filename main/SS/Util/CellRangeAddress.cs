@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 using NPOI.Util;
 using NPOI.HSSF.Record;
@@ -10,7 +9,7 @@ namespace NPOI.SS.Util
 {
     public class CellRangeAddress : CellRangeAddressBase
     {
-        public static int ENCODED_SIZE = 8;
+        public const int ENCODED_SIZE = 8;
 
         public CellRangeAddress(int firstRow, int lastRow, int firstCol, int lastCol)
             : base(firstRow, lastRow, firstCol, lastCol)
@@ -32,15 +31,6 @@ namespace NPOI.SS.Util
                 throw new Exception("Ran out of data readin1g CellRangeAddress");
             }
             return in1.ReadUShort();
-        }
-        [Obsolete]
-        public int Serialize(int offset, byte[] data)
-        {
-            LittleEndian.PutUShort(data, offset + 0, FirstRow);
-            LittleEndian.PutUShort(data, offset + 2, LastRow);
-            LittleEndian.PutUShort(data, offset + 4, FirstColumn);
-            LittleEndian.PutUShort(data, offset + 6, LastColumn);
-            return ENCODED_SIZE;
         }
         public void Serialize(ILittleEndianOutput out1)
         {

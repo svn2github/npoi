@@ -70,8 +70,8 @@ namespace NPOI.XSSF.Model
         internal StylesTable(PackagePart part, PackageRelationship rel)
             : base(part, rel)
         {
-
-            ReadFrom(part.GetInputStream());
+            XmlDocument xmldoc = ConvertStreamToXml(part.GetInputStream());
+            ReadFrom(xmldoc);
         }
 
         public ThemesTable GetTheme()
@@ -102,11 +102,12 @@ namespace NPOI.XSSF.Model
          * @throws IOException if an error occurs while Reading.
          */
 
-        protected void ReadFrom(Stream is1)
+        protected void ReadFrom(XmlDocument xmldoc)
         {
             try
             {
-                doc = StyleSheetDocument.Parse(is1);
+                
+                doc = StyleSheetDocument.Parse(xmldoc, NamespaceManager);
 
                 CT_Stylesheet styleSheet = doc.GetStyleSheet();
 
@@ -360,7 +361,7 @@ namespace NPOI.XSSF.Model
         /**
          * For unit testing only
          */
-        public int _GetNumberFormatSize()
+        public int GetNumberFormatSize()
         {
             return numberFormats.Count;
         }
@@ -368,14 +369,14 @@ namespace NPOI.XSSF.Model
         /**
          * For unit testing only
          */
-        public int _GetXfsSize()
+        public int GetXfsSize()
         {
             return xfs.Count;
         }
         /**
          * For unit testing only
          */
-        public int _GetStyleXfsSize()
+        public int GetStyleXfsSize()
         {
             return styleXfs.Count;
         }
@@ -386,7 +387,7 @@ namespace NPOI.XSSF.Model
         {
             return doc.GetStyleSheet();
         }
-        public int _GetDXfsSize()
+        public int GetDXfsSize()
         {
             return dxfs.Count;
         }
@@ -419,21 +420,20 @@ namespace NPOI.XSSF.Model
             }
             styleSheet.numFmts = (ctFormats);
 
-            int idx;
             // Fonts
             CT_Fonts ctFonts = new CT_Fonts();
             ctFonts.count = (uint)fonts.Count;
             if (ctFonts.count > 0)
                 ctFonts.countSpecified = true;
-            CT_Font[] ctfnt = new CT_Font[fonts.Count];
-            idx = 0;
+            List<CT_Font> ctfnt = new List<CT_Font>(fonts.Count);
+
             foreach (XSSFFont f in fonts)
-                ctfnt[idx++] = f.GetCTFont();
+                ctfnt.Add(f.GetCTFont());
             ctFonts.SetFontArray(ctfnt);
             styleSheet.fonts = (ctFonts);
 
             // Fills
-            var ctf = new List<CT_Fill>(fills.Count);
+            List<CT_Fill> ctf = new List<CT_Fill>(fills.Count);
             foreach (XSSFCellFill f in fills)
                 ctf.Add( f.GetCTFill());
             CT_Fills ctFills = new CT_Fills();
@@ -445,7 +445,6 @@ namespace NPOI.XSSF.Model
 
             // Borders
             List<CT_Border> ctb = new List<CT_Border>(borders.Count);
-            idx = 0;
             foreach (XSSFCellBorder b in borders) 
                 ctb.Add(b.GetCTBorder());
             CT_Borders ctBorders = new CT_Borders();
@@ -592,7 +591,7 @@ namespace NPOI.XSSF.Model
         /**
          * Finds a font that matches the one with the supplied attributes
          */
-        public XSSFFont FindFont(short boldWeight, short color, short fontHeight, String name, bool italic, bool strikeout, short typeOffset, byte underline)
+        public XSSFFont FindFont(short boldWeight, short color, short fontHeight, String name, bool italic, bool strikeout, FontSuperScript typeOffset,FontUnderlineType underline)
         {
             foreach (XSSFFont font in fonts)
             {

@@ -28,13 +28,13 @@ namespace NPOI.HSSF.UserModel
     using NPOI.HSSF.Record;
     using NPOI.POIFS.FileSystem;
     using NPOI.SS.Formula;
-    using NPOI.SS.Formula.PTG;
     using NPOI.SS.Formula.Udf;
     using NPOI.SS.UserModel;
     using NPOI.SS.Util;
     using NPOI.Util;
     using System.Globalization;
     using System.Security.Cryptography;
+    using System.Reflection;
 
 
     /// <summary>
@@ -49,8 +49,6 @@ namespace NPOI.HSSF.UserModel
     public class HSSFWorkbook : POIDocument, IWorkbook
     {
         //private static int DEBUG = POILogger.DEBUG;
-        private const int MAX_ROW = 0xFFFF;
-        private const short MAX_COLUMN = (short)0x00FF;
 
         /**
          * The maximum number of cell styles in a .xls workbook.
@@ -209,7 +207,7 @@ namespace NPOI.HSSF.UserModel
          * Normally, the Workbook will be in a POIFS Stream
          * called "Workbook". However, some weird XLS generators use "WORKBOOK"
          */
-        private static String[] WORKBOOK_DIR_ENTRY_NAMES = {
+        private static readonly string[] WORKBOOK_DIR_ENTRY_NAMES = {
             "Workbook", // as per BIFF8 spec
             "WORKBOOK",
         };
@@ -740,7 +738,7 @@ namespace NPOI.HSSF.UserModel
                 names.Add(newName);
             }
             // TODO - maybe same logic required for other/all built-in name records
-            workbook.CloneDrawings(((HSSFSheet)clonedSheet).Sheet);
+            //workbook.CloneDrawings(((HSSFSheet)clonedSheet).Sheet);
             return clonedSheet;
         }
         /// <summary>
@@ -858,6 +856,7 @@ namespace NPOI.HSSF.UserModel
                 if (sheetname.Equals(name, StringComparison.OrdinalIgnoreCase))
                 {
                     retval = (HSSFSheet)_sheets[k];
+                    break;
                 }
             }
             return retval;
@@ -962,91 +961,29 @@ namespace NPOI.HSSF.UserModel
         /// To remove all repeating rows and columns for a sheet.
         /// workbook.SetRepeatingRowsAndColumns(0,-1,-1,-1,-1);
         /// </example>
+        [Obsolete("use HSSFSheet#setRepeatingRows(CellRangeAddress) or HSSFSheet#setRepeatingColumns(CellRangeAddress)")]
         public void SetRepeatingRowsAndColumns(int sheetIndex,
                                                int startColumn, int endColumn,
                                                int startRow, int endRow)
         {
-            // Check arguments
-            if (startColumn == -1 && endColumn != -1) throw new ArgumentException("Invalid column range specification");
-            if (startRow == -1 && endRow != -1) throw new ArgumentException("Invalid row range specification");
-            if (startColumn < -1 || startColumn >= 0xFF) throw new ArgumentException("Invalid column range specification");
-            if (endColumn < -1 || endColumn >= 0xFF) throw new ArgumentException("Invalid column range specification");
-            if (startRow < -1 || startRow > 65535) throw new ArgumentException("Invalid row range specification");
-            if (endRow < -1 || endRow > 65535) throw new ArgumentException("Invalid row range specification");
-            if (startColumn > endColumn) throw new ArgumentException("Invalid column range specification");
-            if (startRow > endRow) throw new ArgumentException("Invalid row range specification");
-
             HSSFSheet sheet = (HSSFSheet)GetSheetAt(sheetIndex);
-            int externSheetIndex = Workbook.CheckExternSheet(sheetIndex);
 
-            bool settingRowAndColumn =
-                    startColumn != -1 && endColumn != -1 && startRow != -1 && endRow != -1;
-            bool removingRange =
-                    startColumn == -1 && endColumn == -1 && startRow == -1 && endRow == -1;
+            CellRangeAddress rows = null;
+            CellRangeAddress cols = null;
 
-            bool IsNewRecord = false;
-
-
-            int rowColHeaderNameIndex = FindExistingBuiltinNameRecordIdx(sheetIndex, NameRecord.BUILTIN_PRINT_TITLE);
-            if (removingRange)
+            if (startRow != -1)
             {
-                if (rowColHeaderNameIndex >= 0)
-                {
-                    workbook.RemoveName(rowColHeaderNameIndex);
-                }
-                return;
+                rows = new CellRangeAddress(startRow, endRow, -1, -1);
             }
-            NameRecord nameRecord;
-            if (rowColHeaderNameIndex < 0)
+            if (startColumn != -1)
             {
-                //does a lot of the house keeping for builtin records, like setting lengths to zero etc
-                nameRecord = workbook.CreateBuiltInName(NameRecord.BUILTIN_PRINT_TITLE, sheetIndex + 1);
-                IsNewRecord = true;
-            }
-            else
-            {
-                nameRecord = workbook.GetNameRecord(rowColHeaderNameIndex);
-                IsNewRecord = false;
+                cols = new CellRangeAddress(-1, -1, startColumn, endColumn);
             }
 
-
-            ArrayList temp = new ArrayList();
-            if (settingRowAndColumn)
-            {
-                int exprsSize = 2 * 11 + 1; // 2 * Area3DPtg.SIZE + UnionPtg.SIZE
-                temp.Add(new MemFuncPtg(exprsSize));
-            }
-            if (startColumn >= 0)
-            {
-                Area3DPtg colArea = new Area3DPtg(0, MAX_ROW, startColumn, endColumn,
-                        false, false, false, false, externSheetIndex);
-                temp.Add(colArea);
-            }
-            if (startRow >= 0)
-            {
-                Area3DPtg rowArea = new Area3DPtg(startRow, endRow, 0, MAX_COLUMN,
-                        false, false, false, false, externSheetIndex);
-                temp.Add(rowArea);
-            }
-            if (settingRowAndColumn)
-            {
-                temp.Add(UnionPtg.instance);
-            }
-            Ptg[] ptgs = (Ptg[])temp.ToArray(typeof(Ptg));
-            nameRecord.NameDefinition = ptgs;
-
-            if (IsNewRecord)
-            {
-                HSSFName newName = new HSSFName(this, nameRecord);
-                names.Add(newName);
-            }
-
-            NPOI.SS.UserModel.IPrintSetup printSetup = sheet.PrintSetup;
-            printSetup.ValidSettings = (false);
-
-            sheet.IsActive = (true);
+            sheet.RepeatingRows = (rows);
+            sheet.RepeatingColumns = (cols);
         }
-        private int FindExistingBuiltinNameRecordIdx(int sheetIndex, byte builtinCode)
+        internal int FindExistingBuiltinNameRecordIdx(int sheetIndex, byte builtinCode)
         {
             for (int defNameIndex = 0; defNameIndex < names.Count; defNameIndex++)
             {
@@ -1065,6 +1002,29 @@ namespace NPOI.HSSF.UserModel
                 }
             }
             return -1;
+        }
+
+        internal HSSFName CreateBuiltInName(byte builtinCode, int sheetIndex)
+        {
+            NameRecord nameRecord =
+              workbook.CreateBuiltInName(builtinCode, sheetIndex + 1);
+            HSSFName newName = new HSSFName(this, nameRecord, null);
+            names.Add(newName);
+            return newName;
+        }
+
+
+        internal HSSFName GetBuiltInName(byte builtinCode, int sheetIndex)
+        {
+            int index = FindExistingBuiltinNameRecordIdx(sheetIndex, builtinCode);
+            if (index < 0)
+            {
+                return null;
+            }
+            else
+            {
+                return names[(index)];
+            }
         }
 
         private bool IsRowColHeaderRecord(NameRecord r)
@@ -1115,7 +1075,7 @@ namespace NPOI.HSSF.UserModel
         /// <returns></returns>
         public NPOI.SS.UserModel.IFont FindFont(short boldWeight, short color, short fontHeight,
                          String name, bool italic, bool strikeout,
-                         short typeOffset, byte Underline)
+                         FontSuperScript typeOffset, FontUnderlineType underline)
         {
             //        Console.WriteLine( boldWeight + ", " + color + ", " + fontHeight + ", " + name + ", " + italic + ", " + strikeout + ", " + typeOffset + ", " + Underline );
             for (short i = 0; i <= this.NumberOfFonts; i++)
@@ -1133,7 +1093,7 @@ namespace NPOI.HSSF.UserModel
                         && hssfFont.IsItalic == italic
                         && hssfFont.IsStrikeout == strikeout
                         && hssfFont.TypeOffset == typeOffset
-                        && hssfFont.Underline == Underline)
+                        && hssfFont.Underline == underline)
                 {
                     //                Console.WriteLine( "Found font" );
                     return hssfFont;
@@ -1257,7 +1217,25 @@ namespace NPOI.HSSF.UserModel
         {
             byte[] bytes = GetBytes();
             POIFSFileSystem fs = new POIFSFileSystem();
-            
+
+            if (this.DocumentSummaryInformation == null)
+            {
+                this.DocumentSummaryInformation = HPSF.PropertySetFactory.CreateDocumentSummaryInformation();
+            }
+            NPOI.HPSF.CustomProperties cp = this.DocumentSummaryInformation.CustomProperties;
+            if(cp==null)
+            {
+                cp= new NPOI.HPSF.CustomProperties();
+            }
+            cp.Put("Generator", "NPOI");
+            cp.Put("Generator Version", Assembly.GetExecutingAssembly().GetName().Version.ToString(3));
+            this.DocumentSummaryInformation.CustomProperties = cp;
+            if (this.SummaryInformation == null)
+            {
+                this.SummaryInformation = HPSF.PropertySetFactory.CreateSummaryInformation();
+            }            
+            this.SummaryInformation.ApplicationName = "NPOI";
+
             // For tracking what we've written out, used if we're
             //  going to be preserving nodes
             List<string> excepts = new List<string>(1);
@@ -1309,9 +1287,11 @@ namespace NPOI.HSSF.UserModel
 
             // before Getting the workbook size we must tell the sheets that
             // serialization Is about to occur.
+            workbook.PreSerialize();
             for (int i = 0; i < nSheets; i++)
             {
                 sheets[i].Sheet.Preserialize();
+                sheets[i].PreSerialize();
             }
 
             int totalsize = workbook.Size;
@@ -1443,7 +1423,10 @@ namespace NPOI.HSSF.UserModel
 
             return result;
         }
-
+        public NameRecord GetNameRecord(int nameIndex)
+        {
+            return Workbook.GetNameRecord(nameIndex);
+        }
         /// <summary>
         /// TODO - make this less cryptic / move elsewhere
         /// </summary>
@@ -1482,7 +1465,7 @@ namespace NPOI.HSSF.UserModel
                 sb.Append("!");
                 sb.Append(parts[i]);
             }
-            name.NameDefinition =(HSSFFormulaParser.Parse(sb.ToString(), this, FormulaType.NAMEDRANGE, sheetIndex));
+            name.NameDefinition =(HSSFFormulaParser.Parse(sb.ToString(), this, FormulaType.NamedRange, sheetIndex));
         }
 
         /// <summary>
@@ -1570,6 +1553,24 @@ namespace NPOI.HSSF.UserModel
             return retval;
         }
 
+        //
+        /// <summary>
+        /// As GetNameIndex(String) is not necessarily unique 
+        /// (name + sheet index is unique), this method is more accurate.
+        /// </summary>
+        /// <param name="name">the name whose index in the list of names of this workbook should be looked up.</param>
+        /// <returns>an index value >= 0 if the name was found; -1, if the name was not found</returns>
+        public int GetNameIndex(HSSFName name)
+        {
+            for (int k = 0; k < names.Count; k++)
+            {
+                if (name == names[(k)])
+                {
+                    return k;
+                }
+            }
+            return -1;
+        }
 
         /// <summary>
         /// Remove the named range by his index
@@ -1604,6 +1605,17 @@ namespace NPOI.HSSF.UserModel
 
         }
 
+        //
+        /// <summary>
+        ///  As #removeName(String) is not necessarily unique (name + sheet index is unique), 
+        ///  this method is more accurate.
+        /// </summary>
+        /// <param name="name">the name to remove.</param>
+        public void RemoveName(HSSFName name)
+        {
+            int index = GetNameIndex(name);
+            RemoveName(index);
+        }
         public HSSFPalette GetCustomPalette()
         {
             return new HSSFPalette(workbook.CustomPalette);
@@ -1724,7 +1736,7 @@ namespace NPOI.HSSF.UserModel
             r.UID = uid;
             r.Tag = (short)0xFF;
             r.Size = pictureData.Length + 25;
-            r.Ref = 1;
+            r.Ref = 0;
             r.Offset = 0;
             r.BlipRecord = blipRecord;
 
@@ -1832,7 +1844,7 @@ namespace NPOI.HSSF.UserModel
             List<HSSFObjectData> objects = new List<HSSFObjectData>();
             for (int i = 0; i < NumberOfSheets; i++)
             {
-                GetAllEmbeddedObjects(((HSSFSheet)GetSheetAt(i)).Sheet.Records, objects);
+                GetAllEmbeddedObjects((HSSFSheet)GetSheetAt(i), objects);
             }
             return objects;
         }
@@ -1842,25 +1854,18 @@ namespace NPOI.HSSF.UserModel
         /// </summary>
         /// <param name="records">the list of records to search.</param>
         /// <param name="objects">the list of embedded objects to populate.</param>
-        private void GetAllEmbeddedObjects(IList records, IList objects)
+        private void GetAllEmbeddedObjects(HSSFSheet sheet, List<HSSFObjectData> objects)
         {
-            IEnumerator recordIter = records.GetEnumerator();
-            while (recordIter.MoveNext())
+            HSSFPatriarch patriarch = sheet.DrawingPatriarch as HSSFPatriarch;
+            if (null == patriarch)
             {
-                Object obj = recordIter.Current;
-                if (obj is ObjRecord)
+                return;
+            }
+            foreach (HSSFShape shape in patriarch.Children)
+            {
+                if (shape is HSSFObjectData)
                 {
-                    // TODO: More convenient way of determining if there Is stored binary.
-                    // TODO: Link to the data stored in the other stream.
-                    IEnumerator subRecordIter = ((ObjRecord)obj).SubRecords.GetEnumerator();
-                    while (subRecordIter.MoveNext())
-                    {
-                        Object sub = subRecordIter.Current;
-                        if (sub is EmbeddedObjectRefSubRecord)
-                        {
-                            objects.Add(new HSSFObjectData((ObjRecord)obj, directory));
-                        }
-                    }
+                    objects.Add((HSSFObjectData)shape);
                 }
             }
         }
@@ -1922,6 +1927,100 @@ namespace NPOI.HSSF.UserModel
             }
         }
 
+        /**
+	     * Changes an external referenced file to another file.
+	     * A formular in Excel which refers a cell in another file is saved in two parts: 
+	     * The referenced file is stored in an reference table. the row/cell information is saved separate.
+	     * This method invokation will only change the reference in the lookup-table itself.
+	     * @param oldUrl The old URL to search for and which is to be replaced
+	     * @param newUrl The URL replacement
+	     * @return true if the oldUrl was found and replaced with newUrl. Otherwise false
+	     */
+        public bool ChangeExternalReference(String oldUrl, String newUrl)
+        {
+            return workbook.ChangeExternalReference(oldUrl, newUrl);
+        }
 
+        public DirectoryNode RootDirectory
+        {
+            get
+            {
+                return directory;
+            }
+        }
+
+        public int IndexOf(ISheet item)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Insert(int index, ISheet item)
+        {
+            this._sheets.Insert(index, (HSSFSheet)item);
+        }
+
+        public void RemoveAt(int index)
+        {
+            this._sheets.RemoveAt(index);
+        }
+
+        public ISheet this[int index]
+        {
+            get
+            {
+                return this.GetSheetAt(index);
+            }
+            set
+            {
+                if (this._sheets[index] != null)
+                {
+                    this._sheets[index] = (HSSFSheet)value;
+                }
+                else
+                {
+                    this._sheets.Insert(index, (HSSFSheet)value);
+                }
+            }
+        }
+
+        public void Add(ISheet item)
+        {
+            this._sheets.Add((HSSFSheet)item);
+        }
+
+        public void Clear()
+        {
+            this._sheets.Clear();
+        }
+
+        public bool Contains(ISheet item)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void CopyTo(ISheet[] array, int arrayIndex)
+        {
+            throw new NotImplementedException();
+        }
+
+        public int Count
+        {
+            get { return this.NumberOfSheets; }
+        }
+
+        public bool IsReadOnly
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        public bool Remove(ISheet item)
+        {
+            return this._sheets.Remove((HSSFSheet)item);
+        }
+
+        IEnumerator<ISheet> IEnumerable<ISheet>.GetEnumerator()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

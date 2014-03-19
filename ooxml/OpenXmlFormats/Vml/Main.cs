@@ -273,7 +273,7 @@ namespace NPOI.OpenXmlFormats.Vml
                 this.styleField = value;
             }
         }
-        internal static XmlSerializerNamespaces namespaces = new XmlSerializerNamespaces(new[] {
+        internal static XmlSerializerNamespaces namespaces = new XmlSerializerNamespaces(new XmlQualifiedName[] {
             new XmlQualifiedName("o", "urn:schemas-microsoft-com:office:office"),
             new XmlQualifiedName("x", "urn:schemas-microsoft-com:office:excel"),
             new XmlQualifiedName("v", "urn:schemas-microsoft-com:vml")
@@ -283,12 +283,12 @@ namespace NPOI.OpenXmlFormats.Vml
         {
             using (StringWriter stringWriter = new StringWriter())
             {
-                var settings = new XmlWriterSettings
-                {
-                    Encoding = Encoding.UTF8,
-                    OmitXmlDeclaration = true
-                };
-                using (var writer = XmlWriter.Create(stringWriter, settings))
+                XmlWriterSettings settings = new XmlWriterSettings();
+                
+                settings.Encoding = Encoding.UTF8;
+                settings.OmitXmlDeclaration = true;
+
+                using (XmlWriter writer = XmlWriter.Create(stringWriter, settings))
                 {
                     serializer.Serialize(writer, this, namespaces);
                 }
@@ -2644,7 +2644,7 @@ namespace NPOI.OpenXmlFormats.Vml
                 this.pathField = new CT_Path();
             return this.pathField;
         }
-        internal static XmlSerializerNamespaces namespaces = new XmlSerializerNamespaces(new[] {
+        internal static XmlSerializerNamespaces namespaces = new XmlSerializerNamespaces(new XmlQualifiedName[] {
             new XmlQualifiedName("o", "urn:schemas-microsoft-com:office:office"),
             new XmlQualifiedName("x", "urn:schemas-microsoft-com:office:excel"),
             new XmlQualifiedName("v", "urn:schemas-microsoft-com:vml")
@@ -2654,12 +2654,11 @@ namespace NPOI.OpenXmlFormats.Vml
         {
             using (StringWriter stringWriter = new StringWriter())
             {
-                var settings = new XmlWriterSettings
-                {
-                    Encoding = Encoding.UTF8,
-                    OmitXmlDeclaration = true
-                };
-                using (var writer = XmlWriter.Create(stringWriter, settings))
+                XmlWriterSettings settings = new XmlWriterSettings();
+                settings.Encoding = Encoding.UTF8;
+                settings.OmitXmlDeclaration = true;
+
+                using (XmlWriter writer = XmlWriter.Create(stringWriter, settings))
                 {
                     serializer.Serialize(writer, this, namespaces);
                 }
@@ -2671,32 +2670,36 @@ namespace NPOI.OpenXmlFormats.Vml
         {
             if (this.formulasField == null)
                 this.formulasField = new List<CT_Formulas>();
-            this.formulasField.Add(new CT_Formulas());
-            return this.formulasField[this.formulasField.Count - 1];
+            CT_Formulas obj = new CT_Formulas();
+            this.formulasField.Add(obj);
+            return obj;
         }
 
         public CT_TextPath AddNewTextpath()
         {
             if (this.textpathField == null)
                 this.textpathField = new List<CT_TextPath>();
-            this.textpathField.Add(new CT_TextPath());
-            return this.textpathField[this.textpathField.Count - 1];
+            CT_TextPath obj = new CT_TextPath();
+            this.textpathField.Add(obj);
+            return obj;
         }
 
         public CT_Handles AddNewHandles()
         {
             if (this.handlesField == null)
                 this.handlesField = new List<CT_Handles>();
-            this.handlesField.Add(new CT_Handles());
-            return this.handlesField[this.handlesField.Count - 1];
+            CT_Handles obj = new CT_Handles();
+            this.handlesField.Add(obj);
+            return obj;
         }
 
         public CT_Lock AddNewLock()
         {
             if (this.lockField == null)
                 this.lockField = new List<CT_Lock>();
-            this.lockField.Add(new CT_Lock());
-            return this.lockField[this.lockField.Count - 1];
+            CT_Lock obj = new CT_Lock();
+            this.lockField.Add(obj);
+            return obj;
         }
     }
     

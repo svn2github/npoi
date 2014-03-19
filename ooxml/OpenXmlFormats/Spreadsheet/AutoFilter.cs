@@ -12,6 +12,9 @@ using System.Collections;
 using System.Xml.Schema;
 using System.ComponentModel;
 using System.Collections.Generic;
+using System.Xml;
+using NPOI.OpenXml4Net.Util;
+using System.IO;
 
 namespace NPOI.OpenXmlFormats.Spreadsheet
 {
@@ -82,12 +85,53 @@ namespace NPOI.OpenXmlFormats.Spreadsheet
                 this.refField = value;
             }
         }
+
+        public static CT_AutoFilter Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_AutoFilter ctObj = new CT_AutoFilter();
+            ctObj.@ref = XmlHelper.ReadString(node.Attributes["ref"]);
+            ctObj.filterColumn = new List<CT_FilterColumn>();
+            foreach (XmlNode childNode in node.ChildNodes)
+            {
+                if (childNode.LocalName == "sortState")
+                    ctObj.sortState = CT_SortState.Parse(childNode, namespaceManager);
+                else if (childNode.LocalName == "extLst")
+                    ctObj.extLst = CT_ExtensionList.Parse(childNode, namespaceManager);
+                else if (childNode.LocalName == "filterColumn")
+                    ctObj.filterColumn.Add(CT_FilterColumn.Parse(childNode, namespaceManager));
+            }
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "ref", this.@ref);
+            sw.Write(">");
+            if (this.sortState != null)
+                this.sortState.Write(sw, "sortState");
+            if (this.extLst != null)
+                this.extLst.Write(sw, "extLst");
+            if (this.filterColumn != null)
+            {
+                foreach (CT_FilterColumn x in this.filterColumn)
+                {
+                    x.Write(sw, "filterColumn");
+                }
+            }
+            sw.Write(string.Format("</{0}>", nodeName));
+        }
+
     }
 
     public class CT_FilterColumn
     {
 
-        private object itemField;
+        //private object itemField;
 
         private uint colIdField;
 
@@ -100,19 +144,19 @@ namespace NPOI.OpenXmlFormats.Spreadsheet
             this.hiddenButtonField = false;
             this.showButtonField = true;
         }
-
-        public object Item
-        {
-            get
-            {
-                return this.itemField;
-            }
-            set
-            {
-                this.itemField = value;
-            }
-        }
-
+        //[XmlAttribute]
+        //public object Item
+        //{
+        //    get
+        //    {
+        //        return this.itemField;
+        //    }
+        //    set
+        //    {
+        //        this.itemField = value;
+        //    }
+        //}
+        [XmlAttribute]
         public uint colId
         {
             get
@@ -124,7 +168,7 @@ namespace NPOI.OpenXmlFormats.Spreadsheet
                 this.colIdField = value;
             }
         }
-
+        [XmlAttribute]
         [DefaultValue(false)]
         public bool hiddenButton
         {
@@ -137,7 +181,7 @@ namespace NPOI.OpenXmlFormats.Spreadsheet
                 this.hiddenButtonField = value;
             }
         }
-
+        [XmlAttribute]
         [DefaultValue(true)]
         public bool showButton
         {
@@ -150,6 +194,36 @@ namespace NPOI.OpenXmlFormats.Spreadsheet
                 this.showButtonField = value;
             }
         }
+
+        public static CT_FilterColumn Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_FilterColumn ctObj = new CT_FilterColumn();
+            ctObj.colId = XmlHelper.ReadUInt(node.Attributes["colId"]);
+            ctObj.hiddenButton = XmlHelper.ReadBool(node.Attributes["hiddenButton"]);
+            ctObj.showButton = XmlHelper.ReadBool(node.Attributes["showButton"]);
+            //TODO: implement http://www.schemacentral.com/sc/ooxml/t-ssml_CT_FilterColumn.html
+            //foreach (XmlNode childNode in node.ChildNodes)
+            //{
+            //    if (childNode.LocalName == "Item")
+            //        ctObj.Item = new Object();
+            //}
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "colId", this.colId);
+            XmlHelper.WriteAttribute(sw, "hiddenButton", this.hiddenButton);
+            XmlHelper.WriteAttribute(sw, "showButton", this.showButton);
+            sw.Write(">");
+            sw.Write(string.Format("</{0}>", nodeName));
+        }
+
     }
 
     public class CT_ColorFilter
@@ -1076,6 +1150,50 @@ namespace NPOI.OpenXmlFormats.Spreadsheet
                 this.refField = value;
             }
         }
+
+        public static CT_SortState Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_SortState ctObj = new CT_SortState();
+            ctObj.columnSort = XmlHelper.ReadBool(node.Attributes["columnSort"]);
+            ctObj.caseSensitive = XmlHelper.ReadBool(node.Attributes["caseSensitive"]);
+            if (node.Attributes["sortMethod"] != null)
+                ctObj.sortMethod = (ST_SortMethod)Enum.Parse(typeof(ST_SortMethod), node.Attributes["sortMethod"].Value);
+            ctObj.@ref = XmlHelper.ReadString(node.Attributes["ref"]);
+            ctObj.sortCondition = new List<CT_SortCondition>();
+            foreach (XmlNode childNode in node.ChildNodes)
+            {
+                if (childNode.LocalName == "extLst")
+                    ctObj.extLst = CT_ExtensionList.Parse(childNode, namespaceManager);
+                else if (childNode.LocalName == "sortCondition")
+                    ctObj.sortCondition.Add(CT_SortCondition.Parse(childNode, namespaceManager));
+            }
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "columnSort", this.columnSort);
+            XmlHelper.WriteAttribute(sw, "caseSensitive", this.caseSensitive);
+            XmlHelper.WriteAttribute(sw, "sortMethod", this.sortMethod.ToString());
+            XmlHelper.WriteAttribute(sw, "ref", this.@ref);
+            sw.Write(">");
+            if (this.extLst != null)
+                this.extLst.Write(sw, "extLst");
+            if (this.sortCondition != null)
+            {
+                foreach (CT_SortCondition x in this.sortCondition)
+                {
+                    x.Write(sw, "sortCondition");
+                }
+            }
+            sw.Write(string.Format("</{0}>", nodeName));
+        }
+
     }
 
     public class CT_SortCondition
@@ -1218,6 +1336,40 @@ namespace NPOI.OpenXmlFormats.Spreadsheet
                 this.iconIdFieldSpecified = value;
             }
         }
+
+        public static CT_SortCondition Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_SortCondition ctObj = new CT_SortCondition();
+            ctObj.descending = XmlHelper.ReadBool(node.Attributes["descending"]);
+            if (node.Attributes["sortBy"] != null)
+                ctObj.sortBy = (ST_SortBy)Enum.Parse(typeof(ST_SortBy), node.Attributes["sortBy"].Value);
+            ctObj.@ref = XmlHelper.ReadString(node.Attributes["ref"]);
+            ctObj.customList = XmlHelper.ReadString(node.Attributes["customList"]);
+            ctObj.dxfId = XmlHelper.ReadUInt(node.Attributes["dxfId"]);
+            if (node.Attributes["iconSet"] != null)
+                ctObj.iconSet = (ST_IconSetType)Enum.Parse(typeof(ST_IconSetType), node.Attributes["iconSet"].Value);
+            ctObj.iconId = XmlHelper.ReadUInt(node.Attributes["iconId"]);
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "descending", this.descending);
+            XmlHelper.WriteAttribute(sw, "sortBy", this.sortBy.ToString());
+            XmlHelper.WriteAttribute(sw, "ref", this.@ref);
+            XmlHelper.WriteAttribute(sw, "customList", this.customList);
+            XmlHelper.WriteAttribute(sw, "dxfId", this.dxfId);
+            XmlHelper.WriteAttribute(sw, "iconSet", this.iconSet.ToString());
+            XmlHelper.WriteAttribute(sw, "iconId", this.iconId);
+            sw.Write(">");
+            sw.Write(string.Format("</{0}>", nodeName));
+        }
+
     }
 
     public enum ST_SortBy

@@ -62,7 +62,7 @@ namespace NPOI.XSSF.UserModel
             // If it has a location, it's internal
             if (ctHyperlink.location != null)
             {
-                _type = HyperlinkType.DOCUMENT;
+                _type = HyperlinkType.Document;
                 _location = ctHyperlink.location;
             }
             else
@@ -73,28 +73,31 @@ namespace NPOI.XSSF.UserModel
                 {
                     if (ctHyperlink.id != null)
                     {
-                        throw new InvalidOperationException("The hyperlink for cell " + 
+                        throw new InvalidOperationException("The hyperlink for cell " +
                             ctHyperlink.@ref + " references relation " + ctHyperlink.id + ", but that didn't exist!");
                     }
-                    throw new InvalidOperationException("A sheet hyperlink must either have a location, or a relationship. Found:\n" + ctHyperlink);
-                }
-
-                Uri target = _externalRel.TargetUri;
-                _location = target.ToString();
-
-                // Try to figure out the type
-                if (_location.StartsWith("http://") || _location.StartsWith("https://")
-                        || _location.StartsWith("ftp://"))
-                {
-                    _type = HyperlinkType.URL;
-                }
-                else if (_location.StartsWith("mailto:"))
-                {
-                    _type = HyperlinkType.EMAIL;
+                    // hyperlink is internal and is not related to other parts
+                    _type = HyperlinkType.Document;
                 }
                 else
                 {
-                    _type = HyperlinkType.FILE;
+                    Uri target = _externalRel.TargetUri;
+                    _location = target.ToString();
+
+                    // Try to figure out the type
+                    if (_location.StartsWith("http://") || _location.StartsWith("https://")
+                            || _location.StartsWith("ftp://"))
+                    {
+                        _type = HyperlinkType.Url;
+                    }
+                    else if (_location.StartsWith("mailto:"))
+                    {
+                        _type = HyperlinkType.Email;
+                    }
+                    else
+                    {
+                        _type = HyperlinkType.File;
+                    }
                 }
             }
         }
@@ -113,7 +116,7 @@ namespace NPOI.XSSF.UserModel
          */
         public bool NeedsRelationToo()
         {
-            return (_type != HyperlinkType.DOCUMENT);
+            return (_type != HyperlinkType.Document);
         }
 
         /**
@@ -121,7 +124,7 @@ namespace NPOI.XSSF.UserModel
          */
         internal void GenerateRelationIfNeeded(PackagePart sheetPart)
         {
-            if (NeedsRelationToo())
+            if (_externalRel == null && NeedsRelationToo())
             {
                 // Generate the relation
                 PackageRelationship rel =
@@ -155,7 +158,7 @@ namespace NPOI.XSSF.UserModel
         }
 
         /**
-         * Hypelink Address. Depending on the hyperlink type it can be URL, e-mail, path to a file
+         * Hyperlink Address. Depending on the hyperlink type it can be URL, e-mail, path to a file
          *
          * @return the Address of this hyperlink
          */
@@ -165,17 +168,30 @@ namespace NPOI.XSSF.UserModel
             {
                 return _location;
             }
-            set 
+            set
             {
+                Validate(value);
                 _location = value;
                 //we must Set location for internal hyperlinks
-                if (_type == HyperlinkType.DOCUMENT)
+                if (_type == HyperlinkType.Document)
                 {
-                    this.Location= value;
+                    this.Location = value;
                 }
             }
         }
-
+        private void Validate(String address)
+        {
+            switch (_type)
+            {
+                // email, path to file and url must be valid URIs
+                case HyperlinkType.Email:
+                case HyperlinkType.File:
+                case HyperlinkType.Url:
+                        if(!Uri.IsWellFormedUriString(address,UriKind.RelativeOrAbsolute))
+                            throw new ArgumentException("Address of hyperlink must be a valid URI:" + address);
+                    break;
+            }
+        }
         /**
          * Return text label for this hyperlink
          *
@@ -187,7 +203,7 @@ namespace NPOI.XSSF.UserModel
             {
                 return _ctHyperlink.display;
             }
-            set 
+            set
             {
                 _ctHyperlink.display = value;
             }
@@ -206,7 +222,7 @@ namespace NPOI.XSSF.UserModel
                 return _ctHyperlink.location;
             }
 
-            set 
+            set
             {
                 _ctHyperlink.location = value;
             }
@@ -238,7 +254,7 @@ namespace NPOI.XSSF.UserModel
             {
                 return buildCellReference().Col;
             }
-            set 
+            set
             {
                 _ctHyperlink.@ref =
                     new CellReference(
@@ -259,7 +275,7 @@ namespace NPOI.XSSF.UserModel
             {
                 return buildCellReference().Col;
             }
-            set 
+            set
             {
                 this.FirstColumn = value;
             }
@@ -276,7 +292,7 @@ namespace NPOI.XSSF.UserModel
             {
                 return buildCellReference().Row;
             }
-            set 
+            set
             {
                 _ctHyperlink.@ref =
                     new CellReference(
@@ -297,7 +313,7 @@ namespace NPOI.XSSF.UserModel
             {
                 return buildCellReference().Row;
             }
-            set 
+            set
             {
                 this.FirstRow = value;
             }
@@ -305,11 +321,26 @@ namespace NPOI.XSSF.UserModel
 
         public string TextMark
         {
-            get 
-            { throw new NotImplementedException();}
+            get
+            { throw new NotImplementedException(); }
             set
             { throw new NotImplementedException(); }
         }
+        /// <summary>
+        /// get or set additional text to help the user understand more about the hyperlink
+        /// </summary>
+        public String Tooltip
+        {
+            get
+            {
+                return _ctHyperlink.tooltip;
+            }
+            set
+            {
+                _ctHyperlink.tooltip = (value);
+            }
+        }
+
     }
 
 }

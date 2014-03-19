@@ -163,8 +163,8 @@ namespace NPOI.XSSF.UserModel
         {
             XSSFCell cell = ((XSSFEvaluationCell)EvalCell).GetXSSFCell();
             XSSFEvaluationWorkbook frBook = XSSFEvaluationWorkbook.Create(_uBook);
-            String formulaText = CleanXSSFFormulaText(cell.CellFormula);
-            return FormulaParser.Parse(formulaText, frBook, FormulaType.CELL, _uBook.GetSheetIndex(cell.Sheet));
+            
+            return FormulaParser.Parse(cell.CellFormula, frBook, FormulaType.Cell, _uBook.GetSheetIndex(cell.Sheet));
         }
 
         public UDFFinder GetUDFFinder()
@@ -206,7 +206,7 @@ namespace NPOI.XSSF.UserModel
                 {
 
                     return FormulaParser.Parse(_nameRecord.RefersToFormula, _fpBook, 
-                        FormulaType.NAMEDRANGE, _nameRecord.SheetIndex);
+                        FormulaType.NamedRange, _nameRecord.SheetIndex);
                 }
             }
 

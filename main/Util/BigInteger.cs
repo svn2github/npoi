@@ -88,23 +88,33 @@ namespace NPOI.Util
          * This mask is used to obtain the value of an int as if it were unsigned.
          */
         public const long LONG_MASK = 0xffffffffL;
-        public static long INFLATED = long.MinValue;
-        public const int MIN_RADIX = 2;
-        public const int MAX_RADIX = 36;
-        private static String[] zeros = new String[64];
+        public const long INFLATED = long.MinValue;
+        public const int Min_RADIX = 2;
+        public const int Max_RADIX = 36;
+        private static BigInteger[] posConst = new BigInteger[Max_CONSTANT + 1];
+        private static BigInteger[] negConst = new BigInteger[Max_CONSTANT + 1];
+        private static readonly String[] zeros = new String[64];
         //Constructors
         static BigInteger()
         {
-            for (int i = 1; i <= MAX_CONSTANT; i++)
+            Init();
+        }
+        static void Init()
+        {
+            if (zeros[63] == null)
             {
-                int[] magnitude = new int[1];
-                magnitude[0] = i;
-                posConst[i] = new BigInteger(magnitude, 1);
-                negConst[i] = new BigInteger(magnitude, -1);
+                for (int i = 1; i <= Max_CONSTANT; i++)
+                {
+                    int[] magnitude = new int[1];
+                    magnitude[0] = i;
+                    posConst[i] = new BigInteger(magnitude, 1);
+                    negConst[i] = new BigInteger(magnitude, -1);
+                }
+
+                zeros[63] = "000000000000000000000000000000000000000000000000000000000000000";
+                for (int i = 0; i < 63; i++)
+                    zeros[i] = zeros[63].Substring(0, i);
             }
-            zeros[63] = "000000000000000000000000000000000000000000000000000000000000000";
-            for (int i = 0; i < 63; i++)
-                zeros[i] = zeros[63].Substring(0, i);
         }
         /**
          * This internal constructor differs from its public cousin
@@ -160,7 +170,7 @@ namespace NPOI.Util
             }
             else
             {
-                mag = trustedStripLeadingZeroInts(val);
+                mag = TrustedStripLeadingZeroInts(val);
                 _signum = (mag.Length == 0 ? 0 : 1);
             }
         }
@@ -198,7 +208,7 @@ namespace NPOI.Util
             int cursor = 0, numDigits;
             int len = val.Length;
 
-            if (radix < MIN_RADIX || radix > MAX_RADIX)
+            if (radix < Min_RADIX || radix > Max_RADIX)
                 throw new FormatException("Radix out of range");
             if (len == 0)
                 throw new FormatException("Zero length BigInteger");
@@ -263,16 +273,16 @@ namespace NPOI.Util
                 groupVal = int.Parse(group, CultureInfo.InvariantCulture);
                 if (groupVal < 0)
                     throw new FormatException("Illegal digit");
-                destructiveMulAdd(magnitude, superRadix, groupVal);
+                DestructiveMulAdd(magnitude, superRadix, groupVal);
             }
             // Required for cases where the array was overallocated.
-            mag = trustedStripLeadingZeroInts(magnitude);
+            mag = TrustedStripLeadingZeroInts(magnitude);
         }
         /**
          * Returns the input array stripped of any leading zero bytes.
          * Since the source is trusted the copying may be skipped.
          */
-        private static int[] trustedStripLeadingZeroInts(int[] val)
+        private static int[] TrustedStripLeadingZeroInts(int[] val)
         {
             int vlen = val.Length;
             int keep;
@@ -284,7 +294,7 @@ namespace NPOI.Util
         }
 
         // Multiply x array times word y in place, and add word z
-        private static void destructiveMulAdd(int[] x, int y, int z)
+        private static void DestructiveMulAdd(int[] x, int y, int z)
         {
             // Perform the multiplication word by word
             long ylong = y & LONG_MASK;
@@ -314,7 +324,7 @@ namespace NPOI.Util
         /**
          * Returns the String representation of this BigInteger in the
          * given radix.  If the radix is outside the range from {@link
-         * Character#MIN_RADIX} to {@link Character#MAX_RADIX} inclusive,
+         * Character#Min_RADIX} to {@link Character#Max_RADIX} inclusive,
          * it will default to 10 (as is the case for
          * {@code Integer.toString}).  The digit-to-character mapping
          * provided by {@code Character.forDigit} is used, and a minus
@@ -332,7 +342,7 @@ namespace NPOI.Util
         {
             if (_signum == 0)
                 return "0";
-            if (radix < MIN_RADIX || radix > MAX_RADIX)
+            if (radix < Min_RADIX || radix > Max_RADIX)
                 radix = 10;
 
             //now this method only support 10 radix rendering
@@ -384,26 +394,27 @@ namespace NPOI.Util
          *
          * @since   1.2
          */
-        public static BigInteger ZERO = new BigInteger(new int[0], 0);
+        public static readonly BigInteger ZERO = new BigInteger(new int[0], 0);
 
         /**
          * The BigInteger constant one.
          *
          * @since   1.2
          */
-        public static BigInteger ONE = ValueOf(1);
+        public static readonly BigInteger One = ValueOf(1);
 
         /**
          * The BigInteger constant two.  (Not exported.)
          */
-        private static BigInteger TWO = ValueOf(2);
+        private static readonly BigInteger Two = ValueOf(2);
 
         /**
          * The BigInteger constant ten.
          *
          * @since   1.5
          */
-        public static BigInteger TEN = ValueOf(10);
+        public static readonly BigInteger TEN = ValueOf(10);
+
         /**
          * Returns a BigInteger whose value is equal to that of the
          * specified {@code long}.  This "static factory method" is
@@ -415,25 +426,25 @@ namespace NPOI.Util
          */
         public static BigInteger ValueOf(long val)
         {
-            // If -MAX_CONSTANT < val < MAX_CONSTANT, return stashed constant
+            Init();
+           // If -Max_CONSTANT < val < Max_CONSTANT, return stashed constant
             if (val == 0)
                 return ZERO;
-            if (val > 0 && val <= MAX_CONSTANT)
+            if (val > 0 && val <= Max_CONSTANT)
                 return posConst[(int)val];
-            else if (val < 0 && val >= -MAX_CONSTANT)
+            else if (val < 0 && val >= -Max_CONSTANT)
                 return negConst[(int)-val];
 
             return new BigInteger(val);
         }
-        private static int MAX_CONSTANT = 16;
-        private static BigInteger[] posConst = new BigInteger[MAX_CONSTANT + 1];
-        private static BigInteger[] negConst = new BigInteger[MAX_CONSTANT + 1];
+        private const int Max_CONSTANT = 16;
+
         /**
          * Returns a BigInteger with the given two's complement representation.
          * Assumes that the input array will not be modified (the returned
          * BigInteger will reference the input array if feasible).
          */
-        private static BigInteger valueOf(int[] val)
+        private static BigInteger ValueOf(int[] val)
         {
             return (val[0] > 0 ? new BigInteger(val, 1) : new BigInteger(val));
         }
@@ -555,7 +566,7 @@ namespace NPOI.Util
             if (exponent < 0)
                 throw new ArithmeticException("Negative exponent");
             if (_signum == 0)
-                return (exponent == 0 ? ONE : this);
+                return (exponent == 0 ? One : this);
 
             // Perform exponentiation using repeated squaring trick
             int newSign = (_signum < 0 && (exponent & 1) == 1 ? -1 : 1);
@@ -566,15 +577,15 @@ namespace NPOI.Util
             {
                 if ((exponent & 1) == 1)
                 {
-                    result = multiplyToLen(result, result.Length,
+                    result = MultiplyToLen(result, result.Length,
                                            baseToPow2, baseToPow2.Length, null);
-                    result = trustedStripLeadingZeroInts(result);
+                    result = TrustedStripLeadingZeroInts(result);
                 }
                 exponent = Operator.UnsignedRightShift(exponent, 1);
                 if (exponent != 0)
                 {
                     baseToPow2 = squareToLen(baseToPow2, baseToPow2.Length, null);
-                    baseToPow2 = trustedStripLeadingZeroInts(baseToPow2);
+                    baseToPow2 = TrustedStripLeadingZeroInts(baseToPow2);
                 }
             }
             return new BigInteger(result, newSign);
@@ -583,7 +594,7 @@ namespace NPOI.Util
          * Multiplies int arrays x and y to the specified lengths and places
          * the result into z. There will be no leading zeros in the resultant array.
          */
-        private int[] multiplyToLen(int[] x, int xlen, int[] y, int ylen, int[] z)
+        private int[] MultiplyToLen(int[] x, int xlen, int[] y, int ylen, int[] z)
         {
             int xstart = xlen - 1;
             int ystart = ylen - 1;
@@ -778,7 +789,7 @@ namespace NPOI.Util
             {
                 if (bytesCopied == 4)
                 {
-                    nextInt = getInt(intIndex++);
+                    nextInt = GetInt(intIndex++);
                     bytesCopied = 1;
                 }
                 else
@@ -816,7 +827,7 @@ namespace NPOI.Util
          * be arbitrarily high (values are logically preceded by infinitely many
          * sign ints).
          */
-        private int getInt(int n)
+        private int GetInt(int n)
         {
             if (n < 0)
                 return 0;
@@ -937,11 +948,11 @@ namespace NPOI.Util
          * nonsense values in their 0 and 1 elements, as radixes 0 and 1 are not
          * used.
          */
-        private static int[] digitsPerLong = {0, 0,
+        private static readonly int[] digitsPerLong = {0, 0,
         62, 39, 31, 27, 24, 22, 20, 19, 18, 18, 17, 17, 16, 16, 15, 15, 15, 14,
         14, 14, 14, 13, 13, 13, 13, 13, 13, 12, 12, 12, 12, 12, 12, 12, 12};
 
-        private static BigInteger[] longRadix = {null, null,
+        private static readonly BigInteger[] longRadix = {null, null,
         ValueOf(0x4000000000000000L), ValueOf(0x383d9170b85ff80bL),
         ValueOf(0x4000000000000000L), ValueOf(0x6765c793fa10079dL),
         ValueOf(0x41c21cb8e1000000L), ValueOf(0x3642798750226111L),
@@ -963,7 +974,7 @@ namespace NPOI.Util
 
         // bitsPerDigit in the given radix times 1024
         // Rounded up to avoid underallocation.
-        private static long[] bitsPerDigit = { 0, 0,
+        private static readonly long[] bitsPerDigit = { 0, 0,
         1024, 1624, 2048, 2378, 2648, 2875, 3072, 3247, 3402, 3543, 3672,
         3790, 3899, 4001, 4096, 4186, 4271, 4350, 4426, 4498, 4567, 4633,
         4696, 4756, 4814, 4870, 4923, 4975, 5025, 5074, 5120, 5166, 5210,
@@ -971,11 +982,11 @@ namespace NPOI.Util
         /*
          * These two arrays are the integer analogue of above.
          */
-        private static int[] digitsPerInt = {0, 0, 30, 19, 15, 13, 11,
+        private static readonly int[] digitsPerInt = {0, 0, 30, 19, 15, 13, 11,
         11, 10, 9, 9, 8, 8, 8, 8, 7, 7, 7, 7, 7, 7, 7, 6, 6, 6, 6,
         6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5};
 
-        private static int[] intRadix = {0, 0,
+        private static readonly int[] intRadix = {0, 0,
         0x40000000, 0x4546b3db, 0x40000000, 0x48c27395, 0x159fd800,
         0x75db9c97, 0x40000000, 0x17179149, 0x3b9aca00, 0xcc6db61,
         0x19a10000, 0x309f1021, 0x57f6c100, 0xa2f1b6f,  0x10000000,
@@ -1232,7 +1243,7 @@ namespace NPOI.Util
         public int IntValue()
         {
             int result = 0;
-            result = getInt(0);
+            result = GetInt(0);
             return result;
         }
         public BigInteger ShiftLeft(int n)
@@ -1245,7 +1256,7 @@ namespace NPOI.Util
             {
                 if (n == int.MinValue)
                 {
-                    throw new ArithmeticException("Shift distance of Integer.MIN_VALUE not supported.");
+                    throw new ArithmeticException("Shift distance of Integer.Min_VALUE not supported.");
                 }
                 else
                 {
@@ -1305,7 +1316,7 @@ namespace NPOI.Util
             long result = 0;
 
             for (int i = 1; i >= 0; i--)
-                result = (result << 32) + (getInt(i) & LONG_MASK);
+                result = (result << 32) + (GetInt(i) & LONG_MASK);
             return result;
         }
         /**
@@ -1317,7 +1328,7 @@ namespace NPOI.Util
          * @param  n shift distance, in bits.
          * @return {@code this >> n}
          * @throws ArithmeticException if the shift distance is {@code
-         *         Integer.MIN_VALUE}.
+         *         Integer.Min_VALUE}.
          * @see #shiftLeft
          */
         public BigInteger ShiftRight(int n)
@@ -1328,7 +1339,7 @@ namespace NPOI.Util
             {
                 if (n == int.MinValue)
                 {
-                    throw new ArithmeticException("Shift distance of Integer.MIN_VALUE not supported.");
+                    throw new ArithmeticException("Shift distance of Integer.Min_VALUE not supported.");
                 }
                 else
                 {
@@ -1403,10 +1414,10 @@ namespace NPOI.Util
         {
             int[] result = new int[Math.Max(intLength(), val.intLength())];
             for (int i = 0; i < result.Length; i++)
-                result[i] = (getInt(result.Length - i - 1)
-                             & val.getInt(result.Length - i - 1));
+                result[i] = (GetInt(result.Length - i - 1)
+                             & val.GetInt(result.Length - i - 1));
 
-            return valueOf(result);
+            return ValueOf(result);
         }
         /**
          * Returns a BigInteger whose value is {@code (~this)}.  (This method
@@ -1419,9 +1430,9 @@ namespace NPOI.Util
         {
             int[] result = new int[intLength()];
             for (int i = 0; i < result.Length; i++)
-                result[i] = ~getInt(result.Length - i - 1);
+                result[i] = ~GetInt(result.Length - i - 1);
 
-            return valueOf(result);
+            return ValueOf(result);
         }
         /**
          * Returns a BigInteger whose value is {@code (this | val)}.  (This method
@@ -1435,16 +1446,16 @@ namespace NPOI.Util
         {
             int[] result = new int[Math.Max(intLength(), val.intLength())];
             for (int i = 0; i < result.Length; i++)
-                result[i] = (getInt(result.Length - i - 1)
-                             | val.getInt(result.Length - i - 1));
+                result[i] = (GetInt(result.Length - i - 1)
+                             | val.GetInt(result.Length - i - 1));
 
-            return valueOf(result);
+            return ValueOf(result);
         }
         /**
          * Package private methods used by BigDecimal code to multiply a BigInteger
          * with a long. Assumes v is not equal to INFLATED.
          */
-        BigInteger multiply(long v)
+        BigInteger Multiply(long v)
         {
             if (v == 0 || _signum == 0)
                 return ZERO;
@@ -1496,9 +1507,9 @@ namespace NPOI.Util
             if (val._signum == 0 || _signum == 0)
                 return ZERO;
 
-            int[] result = multiplyToLen(mag, mag.Length,
+            int[] result = MultiplyToLen(mag, mag.Length,
                                          val.mag, val.mag.Length, null);
-            result = trustedStripLeadingZeroInts(result);
+            result = TrustedStripLeadingZeroInts(result);
             return new BigInteger(result, _signum == val._signum ? 1 : -1);
         }
         /**
@@ -1519,9 +1530,9 @@ namespace NPOI.Util
             int cmp = compareMagnitude(val);
             if (cmp == 0)
                 return ZERO;
-            int[] resultMag = (cmp > 0 ? subtract(mag, val.mag)
-                               : subtract(val.mag, mag));
-            resultMag = trustedStripLeadingZeroInts(resultMag);
+            int[] resultMag = (cmp > 0 ? Subtract(mag, val.mag)
+                               : Subtract(val.mag, mag));
+            resultMag = TrustedStripLeadingZeroInts(resultMag);
 
             return new BigInteger(resultMag, cmp == _signum ? 1 : -1);
         }
@@ -1590,9 +1601,10 @@ namespace NPOI.Util
             int cmp = compareMagnitude(val);
             if (cmp == 0)
                 return ZERO;
-            int[] resultMag = (cmp > 0 ? subtract(mag, val.mag)
-                               : subtract(val.mag, mag));
-            resultMag = trustedStripLeadingZeroInts(resultMag);
+            int[] resultMag = (cmp > 0 ? Subtract(mag, val.mag)
+                               : Subtract(val.mag, mag));
+            resultMag = TrustedStripLeadingZeroInts(resultMag);
+
             return new BigInteger(resultMag, cmp == _signum ? 1 : -1);
         }
 
@@ -1602,7 +1614,7 @@ namespace NPOI.Util
          * than the second.  This method allocates the space necessary to hold the
          * answer.
          */
-        private static int[] subtract(int[] big, int[] little)
+        private static int[] Subtract(int[] big, int[] little)
         {
             int bigIndex = big.Length;
             int[] result = new int[bigIndex];
@@ -1748,7 +1760,7 @@ namespace NPOI.Util
          * BigDecimal divideAndRound to increment the quotient. Use this constant
          * only when the method is not going to modify this object.
          */
-        static MutableBigInteger ONE = new MutableBigInteger(1);
+        static readonly MutableBigInteger One = new MutableBigInteger(1);
 
         // Constructors
         private const long LONG_MASK = BigInteger.LONG_MASK;
@@ -1922,7 +1934,7 @@ namespace NPOI.Util
             if (intLen > blen)
                 return 1;
 
-            // Add Integer.MIN_VALUE to make the comparison act as unsigned integer
+            // Add Integer.Min_VALUE to make the comparison act as unsigned integer
             // comparison.
             int[] bval = b._value;
             for (int i = offset, j = b.offset; i < intLen + offset; i++, j++)

@@ -25,31 +25,45 @@ namespace NPOI.XWPF.UserModel
     [TestFixture]
     public class TestXWPFTableRow
     {
-
-
-
-
-        protected void SetUp()
-        {
-            // TODO Auto-generated method stub
-            //super.Up=();
-        }
-
         [Test]
-        public void TestSomething()
+        public void TestCreateRow()
         {
-
             CT_Row ctRow = new CT_Row();
-
+            Assert.IsNotNull(ctRow);
         }
 
-
-        protected void tearDown()
+         [Ignore]
+        public void TestSetGetCantSplitRow()
         {
-            // TODO Auto-generated method stub
-            //super.TearDown();
-        }
+            // create a table
+            XWPFDocument doc = new XWPFDocument();
+            CT_Tbl ctTable = new CT_Tbl();
+            XWPFTable table = new XWPFTable(ctTable, doc);
+            // table has a single row by default; grab it
+            XWPFTableRow tr = table.GetRow(0);
+            Assert.IsNotNull(tr);
 
+            tr.SetCantSplitRow(true);
+            bool isCant = tr.IsCantSplitRow();
+            //assert(isCant);
+            Assert.IsTrue(isCant);
+        }
+         [Ignore]
+        public void TestSetGetRepeatHeader()
+        {
+            // create a table
+            XWPFDocument doc = new XWPFDocument();
+            CT_Tbl ctTable = new CT_Tbl();
+            XWPFTable table = new XWPFTable(ctTable, doc);
+            // table has a single row by default; grab it
+            XWPFTableRow tr = table.GetRow(0);
+            Assert.IsNotNull(tr);
+
+            tr.SetRepeatHeader(true);
+            bool isRpt = tr.IsRepeatHeader();
+            //assert(isRpt);
+            Assert.IsTrue(isRpt);
+        }
     }
 
 }

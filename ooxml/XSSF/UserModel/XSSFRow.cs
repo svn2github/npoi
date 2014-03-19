@@ -153,7 +153,7 @@ namespace NPOI.XSSF.UserModel
          */
         public ICell CreateCell(int columnIndex)
         {
-            return CreateCell(columnIndex, CellType.BLANK);
+            return CreateCell(columnIndex, CellType.Blank);
         }
 
         /**
@@ -186,7 +186,7 @@ namespace NPOI.XSSF.UserModel
             }
             XSSFCell xcell = new XSSFCell(this, ctCell);
             xcell.SetCellNum(columnIndex);
-            if (type != CellType.BLANK)
+            if (type != CellType.Blank)
             {
                 xcell.SetCellType(type);
             }
@@ -240,7 +240,7 @@ namespace NPOI.XSSF.UserModel
             if (policy == MissingCellPolicy.RETURN_BLANK_AS_NULL)
             {
                 if (cell == null) return cell;
-                if (cell.CellType == CellType.BLANK)
+                if (cell.CellType == CellType.Blank)
                 {
                     return null;
                 }
@@ -250,7 +250,7 @@ namespace NPOI.XSSF.UserModel
             {
                 if (cell == null)
                 {
-                    return CreateCell(cellnum, CellType.BLANK);
+                    return CreateCell(cellnum, CellType.Blank);
                 }
                 return cell;
             }
@@ -332,7 +332,7 @@ namespace NPOI.XSSF.UserModel
             }
             set 
             {
-                if (value == -1)
+                if (value < 0)
                 {
                     if (_row.IsSetHt()) _row.unSetHt();
                     if (_row.IsSetCustomHeight()) _row.unSetCustomHeight();
@@ -466,8 +466,8 @@ namespace NPOI.XSSF.UserModel
                 {
                     if (_row.IsSetS())
                     {
-                        _row.unSetS();
-                        _row.unSetCustomFormat();
+                        _row.UnsetS();
+                        _row.UnsetCustomFormat();
                     }
                 }
                 else
@@ -511,7 +511,7 @@ namespace NPOI.XSSF.UserModel
             {
                 xcell.NotifyArrayFormulaChanging();
             }
-            if (cell.CellType == CellType.FORMULA)
+            if (cell.CellType == CellType.Formula)
             {
                 ((XSSFWorkbook)_sheet.Workbook).OnDeleteFormula(xcell);
             }
@@ -599,7 +599,8 @@ namespace NPOI.XSSF.UserModel
                 }
 
                 //remove the reference in the calculation chain
-                if (calcChain != null) calcChain.RemoveItem(sheetId, cell.GetReference());
+                if (calcChain != null) 
+                    calcChain.RemoveItem(sheetId, cell.GetReference());
 
                 CT_Cell CT_Cell = cell.GetCTCell();
                 String r = new CellReference(rownum, cell.ColumnIndex).FormatAsString();

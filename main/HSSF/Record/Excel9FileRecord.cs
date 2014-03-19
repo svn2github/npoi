@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
+﻿
 namespace NPOI.HSSF.Record
 {
     public class Excel9FileRecord:StandardRecord
@@ -15,7 +12,7 @@ namespace NPOI.HSSF.Record
         
         }
 
-        public static short sid = 0x1c0;
+        public const short sid = 0x1c0;
         public override short Sid
         {
             get { return sid; }

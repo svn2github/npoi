@@ -13,6 +13,9 @@ namespace NPOI.OpenXmlFormats.Dml
     using System.Xml.Schema;
     using System.ComponentModel;
     using System.Collections.Generic;
+    using NPOI.OpenXml4Net.Util;
+    using System.Xml;
+    using System.IO;
 
 
     [Serializable]
@@ -26,6 +29,38 @@ namespace NPOI.OpenXmlFormats.Dml
         private CT_TextCharacterProperties rPrField;
 
         private string tField;
+        public static CT_RegularTextRun Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_RegularTextRun ctObj = new CT_RegularTextRun();
+            
+            foreach (XmlNode childNode in node.ChildNodes)
+            {
+                if (childNode.LocalName == "rPr")
+                    ctObj.rPr = CT_TextCharacterProperties.Parse(childNode, namespaceManager);
+                else if (childNode.LocalName == "t")
+                    ctObj.t = childNode.InnerText;
+            }
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<a:{0}", nodeName));
+            sw.Write(">");
+            if (this.rPr != null)
+                this.rPr.Write(sw, "rPr");
+            if(this.t !=null)
+            {
+                sw.Write("<a:t>");
+                sw.Write(XmlHelper.EncodeXml(t));
+                sw.Write("</a:t>");
+            }
+            sw.Write(string.Format("</a:{0}>", nodeName));
+        }
 
         public CT_RegularTextRun()
         {

@@ -10,10 +10,21 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Xml.Serialization;
 using NPOI.OpenXmlFormats.Dml;
+using System.Xml;
+using System.IO;
+using NPOI.OpenXml4Net.Util;
 
 
 namespace NPOI.OpenXmlFormats.Spreadsheet
 {
+    [Serializable]
+    [XmlType(Namespace = "http://schemas.openxmlformats.org/spreadsheetml/2006/main")]
+    public enum ST_GradientType
+    {
+        NONE,
+        linear,
+        path,
+    }
     public class ST_UnsignedshortHex
     {
         string stringValueField = null;
@@ -35,17 +46,59 @@ namespace NPOI.OpenXmlFormats.Spreadsheet
 
         private List<CT_GradientStop> stopField = null; // 0..*
 
-        private ST_GradientType typeField = ST_GradientType.NONE;
+        private ST_GradientType typeField = ST_GradientType.linear;
 
-        private double? degreeField = null;
+        private double degreeField = 0.0;
 
-        private double? leftField = null;
+        private double leftField = 0.0;
 
-        private double? rightField = null;
+        private double rightField = 0.0;
 
-        private double? topField = null;
+        private double topField = 0.0;
 
-        private double? bottomField = null;
+        private double bottomField = 0.0;
+        public static CT_GradientFill Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_GradientFill ctObj = new CT_GradientFill();
+            if (node.Attributes["type"] != null)
+                ctObj.type = (ST_GradientType)Enum.Parse(typeof(ST_GradientType), node.Attributes["type"].Value);
+            ctObj.degree = XmlHelper.ReadDouble(node.Attributes["degree"]);
+            ctObj.left = XmlHelper.ReadDouble(node.Attributes["left"]);
+            ctObj.right = XmlHelper.ReadDouble(node.Attributes["right"]);
+            ctObj.top = XmlHelper.ReadDouble(node.Attributes["top"]);
+            ctObj.bottom = XmlHelper.ReadDouble(node.Attributes["bottom"]);
+            ctObj.stop = new List<CT_GradientStop>();
+            foreach (XmlNode childNode in node.ChildNodes)
+            {
+                if (childNode.LocalName == "stop")
+                    ctObj.stop.Add(CT_GradientStop.Parse(childNode, namespaceManager));
+            }
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "type", this.type.ToString());
+            XmlHelper.WriteAttribute(sw, "degree", this.degree);
+            XmlHelper.WriteAttribute(sw, "left", this.left);
+            XmlHelper.WriteAttribute(sw, "right", this.right);
+            XmlHelper.WriteAttribute(sw, "top", this.top);
+            XmlHelper.WriteAttribute(sw, "bottom", this.bottom);
+            sw.Write(">");
+            if (this.stop != null)
+            {
+                foreach (CT_GradientStop x in this.stop)
+                {
+                    x.Write(sw, "stop");
+                }
+            }
+            sw.Write(string.Format("</{0}>", nodeName));
+        }
 
         [XmlElement]
         public List<CT_GradientStop> stop
@@ -61,75 +114,44 @@ namespace NPOI.OpenXmlFormats.Spreadsheet
             get { return ST_GradientType.NONE == this.typeField ? ST_GradientType.linear : this.typeField; }
             set { this.typeField = value; }
         }
-        [XmlIgnore]
-        public bool typeSpecified
-        {
-            get { return (ST_GradientType.NONE != typeField); }
-        }
 
         [XmlAttribute]
         [DefaultValue(0D)]
         public double degree
         {
-            get { return null == this.degreeField ? 0.0 : (double)degreeField; }
+            get { return degreeField; }
             set { this.degreeField = value; }
         }
-        [XmlIgnore]
-        public bool degreeSpecified
-        {
-            get { return (null != degreeField); }
-        }
-
         [XmlAttribute]
         [DefaultValue(0D)]
         public double left
         {
-            get { return null == this.leftField ? 0.0 : (double)this.leftField; }
+            get { return this.leftField; }
             set { this.leftField = value; }
-        }
-        [XmlIgnore]
-        public bool Specified
-        {
-            get { return (null != leftField); }
         }
 
         [XmlAttribute]
         [DefaultValue(0D)]
         public double right
         {
-            get { return null == this.rightField ? 0.0 : (double)this.rightField; }
+            get { return this.rightField; }
             set { this.rightField = value; }
-        }
-        [XmlIgnore]
-        public bool rightSpecified
-        {
-            get { return (null != rightField); }
         }
 
         [XmlAttribute]
         [DefaultValue(0D)]
         public double top
         {
-            get { return null == this.topField ? 0.0 : (double)this.topField; }
+            get { return this.topField; }
             set { this.topField = value; }
-        }
-        [XmlIgnore]
-        public bool topSpecified
-        {
-            get { return (null != topField); }
         }
 
         [XmlAttribute]
         [DefaultValue(0D)]
         public double bottom
         {
-            get { return null == this.bottomField ? 0.0 : (double)this.bottomField; }
+            get { return this.bottomField; }
             set { this.bottomField = value; }
-        }
-        [XmlIgnore]
-        public bool bottomSpecified
-        {
-            get { return (null != bottomField); }
         }
     }
 
@@ -157,12 +179,35 @@ namespace NPOI.OpenXmlFormats.Spreadsheet
     public class CT_Extension
     {
 
-        private System.Xml.XmlElement anyField;
+        private string anyField;
 
         private string uriField = null;
 
-        [XmlAnyElement(Order = 0)]
-        public System.Xml.XmlElement Any
+        public static CT_Extension Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_Extension ctObj = new CT_Extension();
+            ctObj.uri = XmlHelper.ReadString(node.Attributes["uri"]);
+            ctObj.Any = node.InnerXml;
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<{0}", nodeName));
+            XmlHelper.WriteAttribute(sw, "uri", this.uri);
+            sw.Write(">");
+            if (this.Any != null)
+                sw.Write(this.Any);
+            sw.Write(string.Format("</{0}>", nodeName));
+        }
+
+
+        [XmlText]
+        public string Any
         {
             get
             {
@@ -190,7 +235,6 @@ namespace NPOI.OpenXmlFormats.Spreadsheet
         {
             get { return (null != uriField); }
         }
-
     }
 
     [Serializable]
@@ -221,5 +265,36 @@ namespace NPOI.OpenXmlFormats.Spreadsheet
                 this.extField = value;
             }
         }
+
+        public static CT_ExtensionList Parse(XmlNode node, XmlNamespaceManager namespaceManager)
+        {
+            if (node == null)
+                return null;
+            CT_ExtensionList ctObj = new CT_ExtensionList();
+            ctObj.ext = new List<CT_Extension>();
+            foreach (XmlNode childNode in node.ChildNodes)
+            {
+                if (childNode.LocalName == "ext")
+                    ctObj.ext.Add(CT_Extension.Parse(childNode, namespaceManager));
+            }
+            return ctObj;
+        }
+
+
+
+        internal void Write(StreamWriter sw, string nodeName)
+        {
+            sw.Write(string.Format("<{0}", nodeName));
+            sw.Write(">");
+            if (this.ext != null)
+            {
+                foreach (CT_Extension x in this.ext)
+                {
+                    x.Write(sw, "ext");
+                }
+            }
+            sw.Write(string.Format("</{0}>", nodeName));
+        }
+
     }
 }

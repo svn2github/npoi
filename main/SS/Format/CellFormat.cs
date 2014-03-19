@@ -75,9 +75,9 @@ namespace NPOI.SS.Format
         private CellFormatPart textFmt;
         private int formatPartCount;
 
-        private static Regex ONE_PART = new Regex(CellFormatPart.FORMAT_PAT.ToString() + "(;|$)", RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
+        private static readonly Regex ONE_PART = new Regex(CellFormatPart.FORMAT_PAT.ToString() + "(;|$)", RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
 
-        private static CellFormatPart DEFAULT_TEXT_FORMAT =
+        private static readonly CellFormatPart DEFAULT_TEXT_FORMAT =
                 new CellFormatPart("@");
 
         /*
@@ -85,16 +85,16 @@ namespace NPOI.SS.Format
          * format and have an invalid date or time value, are displayed as 255
          * pound signs ("#").
          */
-        private static String INVALID_VALUE_FOR_FORMAT =
+        private const string INVALID_VALUE_FOR_FORMAT =
                 "###################################################" +
                 "###################################################" +
                 "###################################################" +
                 "###################################################" +
                 "###################################################";
 
-        private static String QUOTE = "\"";
+        private const string QUOTE = "\"";
 
-        private static CellFormat GENERAL_FORMAT = new GeneralCellFormat();
+        private static readonly CellFormat GENERAL_FORMAT = new GeneralCellFormat();
         /**
          * Format a value as it would be were no format specified.  This is also
          * used when the format specified is <tt>General</tt>.
@@ -278,11 +278,11 @@ namespace NPOI.SS.Format
         {
             switch (UltimateType(c))
             {
-                case CellType.BLANK:
+                case CellType.Blank:
                     return Apply("");
-                case CellType.BOOLEAN:
+                case CellType.Boolean:
                     return Apply(c.BooleanCellValue);
-                case CellType.NUMERIC:
+                case CellType.Numeric:
                     Double value = c.NumericCellValue;
                     if (GetApplicableFormatPart(value).CellFormatType == CellFormatType.DATE)
                     {
@@ -299,7 +299,7 @@ namespace NPOI.SS.Format
                     {
                         return Apply(value);
                     }
-                case CellType.STRING:
+                case CellType.String:
                     return Apply(c.StringCellValue);
                 default:
                     return Apply("?");
@@ -358,11 +358,11 @@ namespace NPOI.SS.Format
         {
             switch (UltimateType(c))
             {
-                case CellType.BLANK:
+                case CellType.Blank:
                     return Apply(label, "");
-                case CellType.BOOLEAN:
+                case CellType.Boolean:
                     return Apply(label, c.BooleanCellValue);
-                case CellType.NUMERIC:
+                case CellType.Numeric:
                     Double value = c.NumericCellValue;
                     if (GetApplicableFormatPart(value).CellFormatType == CellFormatType.DATE)
                     {
@@ -379,7 +379,7 @@ namespace NPOI.SS.Format
                     {
                         return Apply(label, value);
                     }
-                case CellType.STRING:
+                case CellType.String:
                     return Apply(label, c.StringCellValue);
                 default:
                     return Apply(label, "?");
@@ -469,7 +469,7 @@ namespace NPOI.SS.Format
         public static CellType UltimateType(ICell cell)
         {
             CellType type = cell.CellType;
-            if (type == CellType.FORMULA)
+            if (type == CellType.Formula)
                 return cell.CachedFormulaResultType;
             else
                 return type;

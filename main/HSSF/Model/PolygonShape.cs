@@ -19,17 +19,16 @@
 namespace NPOI.HSSF.Model
 {
     using System;
-    using System.Text;
-    using System.Collections;
-    using System.Text.RegularExpressions;
 
     using NPOI.HSSF.Record;
     using NPOI.HSSF.UserModel;
     using NPOI.DDF;
     using NPOI.Util;
 
+    [Obsolete]
     public class PolygonShape: AbstractShape
     {
+        public const short OBJECT_TYPE_MICROSOFT_OFFICE_DRAWING = 30;
         private EscherContainerRecord spContainer;
         private ObjRecord objRecord;
 
@@ -62,7 +61,7 @@ namespace NPOI.HSSF.Model
             spContainer.RecordId=EscherContainerRecord.SP_CONTAINER;
             spContainer.Options=(short)0x000F;
             sp.RecordId=EscherSpRecord.RECORD_ID;
-            sp.Options=(short)((EscherAggregate.ST_DONUT << 4) | 0x2);
+            sp.Options = (short)((EscherAggregate.ST_NOT_PRIMATIVE << 4) | 0x2);
             sp.ShapeId=shapeId;
             if (hssfShape.Parent == null)
                 sp.Flags=EscherSpRecord.FLAG_HAVEANCHOR | EscherSpRecord.FLAG_HASSHAPETYPE;
@@ -135,8 +134,8 @@ namespace NPOI.HSSF.Model
 
             ObjRecord obj = new ObjRecord();
             CommonObjectDataSubRecord c = new CommonObjectDataSubRecord();
-            c.ObjectType = CommonObjectType.MICROSOFT_OFFICE_DRAWING;
-            c.ObjectId = shapeId;
+            c.ObjectType = (CommonObjectType)OBJECT_TYPE_MICROSOFT_OFFICE_DRAWING;
+            c.ObjectId = GetCmoObjectId(shapeId);
             c.IsLocked = true;
             c.IsPrintable = true;
             c.IsAutoFill = true;

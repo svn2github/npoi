@@ -31,7 +31,6 @@ namespace NPOI.HPSF
 {
     using System;
     using System.IO;
-    using System.Text;
     using System.Collections;
     using NPOI.Util;
     using NPOI.POIFS.FileSystem;
@@ -104,7 +103,7 @@ namespace NPOI.HPSF
         /**
          * The Length of the property Set stream header.
          */
-        private int OFFSet_HEADER =
+        private int OFFSET_HEADER =
             BYTE_ORDER_ASSERTION.Length + /* Byte order    */
             FORMAT_ASSERTION.Length +     /* Format        */
             LittleEndianConsts.INT_SIZE + /* OS version    */
@@ -202,7 +201,7 @@ namespace NPOI.HPSF
             length += TypeWriter.WriteToStream(out1, OSVersion);
             length += TypeWriter.WriteToStream(out1, ClassID);
             length += TypeWriter.WriteToStream(out1, nrSections);
-            int offset = OFFSet_HEADER;
+            int offset = OFFSET_HEADER;
 
             /* Write the section list, i.e. the references To the sections. Each
              * entry in the section list consist of the section's class ID and the

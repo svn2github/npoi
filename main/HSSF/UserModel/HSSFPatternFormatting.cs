@@ -17,10 +17,6 @@
 
 namespace NPOI.HSSF.UserModel
 {
-
-    using System;
-    using System.Text;
-
     using NPOI.HSSF.Record;
     using NPOI.HSSF.Record.CF;
     using NPOI.SS.UserModel;
@@ -31,45 +27,6 @@ namespace NPOI.HSSF.UserModel
     /// </summary>
     public class HSSFPatternFormatting : IPatternFormatting
     {
-        /**  No background */
-        public static short NO_Fill = PatternFormatting.NO_Fill;
-        /**  Solidly Filled */
-        public static short SOLID_FOREGROUND = PatternFormatting.SOLID_FOREGROUND;
-        /**  Small fine dots */
-        public static short FINE_DOTS = PatternFormatting.FINE_DOTS;
-        /**  Wide dots */
-        public static short ALT_BARS = PatternFormatting.ALT_BARS;
-        /**  SParse dots */
-        public static short SPARSE_DOTS = PatternFormatting.SPARSE_DOTS;
-        /**  Thick horizontal bands */
-        public static short THICK_HORZ_BANDS = PatternFormatting.THICK_HORZ_BANDS;
-        /**  Thick vertical bands */
-        public static short THICK_VERT_BANDS = PatternFormatting.THICK_VERT_BANDS;
-        /**  Thick backward facing diagonals */
-        public static short THICK_BACKWARD_DIAG = PatternFormatting.THICK_BACKWARD_DIAG;
-        /**  Thick forward facing diagonals */
-        public static short THICK_FORWARD_DIAG = PatternFormatting.THICK_FORWARD_DIAG;
-        /**  Large spots */
-        public static short BIG_SPOTS = PatternFormatting.BIG_SPOTS;
-        /**  Brick-like layout */
-        public static short BRICKS = PatternFormatting.BRICKS;
-        /**  Thin horizontal bands */
-        public static short THIN_HORZ_BANDS = PatternFormatting.THIN_HORZ_BANDS;
-        /**  Thin vertical bands */
-        public static short THIN_VERT_BANDS = PatternFormatting.THIN_VERT_BANDS;
-        /**  Thin backward diagonal */
-        public static short THIN_BACKWARD_DIAG = PatternFormatting.THIN_BACKWARD_DIAG;
-        /**  Thin forward diagonal */
-        public static short THIN_FORWARD_DIAG = PatternFormatting.THIN_FORWARD_DIAG;
-        /**  Squares */
-        public static short SQUARES = PatternFormatting.SQUARES;
-        /**  Diamonds */
-        public static short DIAMONDS = PatternFormatting.DIAMONDS;
-        /**  Less Dots */
-        public static short LESS_DOTS = PatternFormatting.LESS_DOTS;
-        /**  Least Dots */
-        public static short LEAST_DOTS = PatternFormatting.LEAST_DOTS;
-
         private CFRuleRecord cfRuleRecord;
         private PatternFormatting patternFormatting;
 
@@ -141,17 +98,13 @@ namespace NPOI.HSSF.UserModel
         /// <value>The fill pattern.</value>
         public short FillPattern
         {
-            get
-            {
-                return patternFormatting.FillPattern;
+            get {
+                return (short)patternFormatting.FillPattern;
             }
-            set
-            {
-                patternFormatting.FillPattern=(value);
+            set {
+                patternFormatting.FillPattern = (FillPattern)value;
                 if (value != 0)
-                {
-                    cfRuleRecord.IsPatternStyleModified=(true);
-                }
+                    cfRuleRecord.IsPatternStyleModified = true;
             }
         }
     }

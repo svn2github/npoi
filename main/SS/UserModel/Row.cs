@@ -17,7 +17,6 @@
 
 namespace NPOI.SS.UserModel
 {
-    using System;
     using System.Collections.Generic;
     using System.Collections;
 
@@ -34,11 +33,11 @@ namespace NPOI.SS.UserModel
             this.id = NEXT_ID++;
         }
         /// <summary>Missing cells are returned as null, Blank cells are returned as normal</summary>
-        public static MissingCellPolicy RETURN_NULL_AND_BLANK = new MissingCellPolicy();
+        public static readonly MissingCellPolicy RETURN_NULL_AND_BLANK = new MissingCellPolicy();
         /// <summary>Missing cells are returned as null, as are blank cells</summary>
-        public static MissingCellPolicy RETURN_BLANK_AS_NULL = new MissingCellPolicy();
+        public static readonly MissingCellPolicy RETURN_BLANK_AS_NULL = new MissingCellPolicy();
         /// <summary>A new, blank cell is Created for missing cells. Blank cells are returned as normal</summary>
-        public static MissingCellPolicy CREATE_NULL_AS_BLANK = new MissingCellPolicy();
+        public static readonly MissingCellPolicy CREATE_NULL_AS_BLANK = new MissingCellPolicy();
     }
 
     /// <summary>
@@ -49,7 +48,7 @@ namespace NPOI.SS.UserModel
         /// <summary>
         /// Use this to create new cells within the row and return it.
         /// 
-        /// The cell that is returned is a <see cref="ICell"/>/<see cref="CellType.BLANK"/>.
+        /// The cell that is returned is a <see cref="ICell"/>/<see cref="CellType.Blank"/>.
         /// The type can be changed either through calling <c>SetCellValue</c> or <c>SetCellType</c>.
         /// </summary>
         /// <param name="column">the column number this cell represents</param>
@@ -63,7 +62,7 @@ namespace NPOI.SS.UserModel
         /// <summary>
         /// Use this to create new cells within the row and return it.
         /// 
-        /// The cell that is returned is a <see cref="ICell"/>/<see cref="CellType.BLANK"/>. The type can be changed
+        /// The cell that is returned is a <see cref="ICell"/>/<see cref="CellType.Blank"/>. The type can be changed
         /// either through calling <code>SetCellValue</code> or <code>SetCellType</code>.
         /// </summary>
         /// <param name="column">the column number this cell represents</param>

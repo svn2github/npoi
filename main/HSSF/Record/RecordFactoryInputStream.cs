@@ -18,7 +18,6 @@ namespace NPOI.HSSF.Record
 {
     using System;
     using System.Collections.Generic;
-    using NPOI.HSSF.EventUserModel;
     using NPOI;
     using System.IO;
     using NPOI.HSSF.Record.Crypto;
@@ -60,12 +59,25 @@ namespace NPOI.HSSF.Record
                 if (rec is BOFRecord)
                 {
                     _hasBOFRecord = true;
+                    // Fetch the next record, and see if it indicates whether
+                    //  the document is encrypted or not
                     if (rs.HasNextRecord)
                     {
                         rs.NextRecord();
                         rec = RecordFactory.CreateSingleRecord(rs);
                         recSize += rec.RecordSize;
                         outputRecs.Add(rec);
+                        // Encrypted is normally BOF then FILEPASS
+					    // May sometimes be BOF, WRITEPROTECT, FILEPASS
+                        if (rec is WriteProtectRecord && rs.HasNextRecord)
+                        {
+                            rs.NextRecord();
+                            rec = RecordFactory.CreateSingleRecord(rs);
+                            recSize += rec.RecordSize;
+                            outputRecs.Add(rec);
+                        }
+                        // If it's a FILEPASS, track it specifically but
+                        //  don't include it in the main stream
                         if (rec is FilePassRecord)
                         {
                             fpr = (FilePassRecord)rec;
@@ -381,8 +393,8 @@ namespace NPOI.HSSF.Record
                 }
                 if (_lastRecord is DrawingRecord)
                 {
-                    ((DrawingRecord)_lastRecord).ProcessContinueRecord(contRec.Data);
-                    return null;
+                    //((DrawingRecord)_lastRecord).ProcessContinueRecord(contRec.Data);
+                    return contRec;
                 }
                 if (_lastRecord is CrtMlFrtRecord)
                 {

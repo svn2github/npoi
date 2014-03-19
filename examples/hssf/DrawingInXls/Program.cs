@@ -143,7 +143,7 @@ namespace DrawingInXls
                     new HSSFClientAnchor(0, 0, 900, 100, (short)4, 4, (short)5, 4 + 1));
             IFont font = wb.CreateFont();
             font.IsItalic = true;
-            font.Underline = (byte)FontUnderlineType.DOUBLE;
+            font.Underline = FontUnderlineType.Double;
             HSSFRichTextString str = new HSSFRichTextString("Woo!!!");
             str.ApplyFont(2, 5, font);
             textbox3.String = str;
@@ -195,7 +195,7 @@ namespace DrawingInXls
                 a2.SetAnchor((short)2, 2, x1, y1, (short)2, 2, x2, y2);
                 HSSFSimpleShape shape2 = patriarch.CreateSimpleShape(a2);
                 shape2.ShapeType = HSSFSimpleShape.OBJECT_TYPE_LINE;
-                shape2.SetLineStyleColor(color);
+                shape2.LineStyleColor = color;
                 y1 -= 10;
                 y2 -= 10;
                 color += 30;

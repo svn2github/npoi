@@ -127,8 +127,8 @@ namespace NPOI.XWPF.UserModel
             }
 
             Assert.AreEqual(2, paras.Length);
-            Assert.AreEqual("First paragraph for the footer", paras[0].GetText());
-            Assert.AreEqual("Second paragraph for the footer", paras[1].GetText());
+            Assert.AreEqual("First paragraph for the footer", paras[0].Text);
+            Assert.AreEqual("Second paragraph for the footer", paras[1].Text);
         }
 
         [Test]
@@ -148,29 +148,6 @@ namespace NPOI.XWPF.UserModel
             Assert.IsNotNull(policy.GetEvenPageHeader());
         }
 
-        [Test]
-        public void TestAddPictureData()
-        {
-
-        }
-
-        [Test]
-        public void TestGetAllPictures()
-        {
-
-        }
-
-        [Test]
-        public void TestGetAllPackagePictures()
-        {
-
-        }
-
-        [Test]
-        public void TestGetPictureDataById()
-        {
-
-        }
     }
 
 }

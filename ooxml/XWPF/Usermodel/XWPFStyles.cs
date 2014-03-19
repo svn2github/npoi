@@ -64,17 +64,17 @@ namespace NPOI.XWPF.UserModel
             StylesDocument stylesDoc;
             try
             {
-                Stream is1 = GetPackagePart().GetInputStream();
-                stylesDoc = StylesDocument.Parse(is1);
+                XmlDocument doc = ConvertStreamToXml(GetPackagePart().GetInputStream());
+                stylesDoc = StylesDocument.Parse(doc,NamespaceManager);
                 ctStyles = stylesDoc.Styles;
                 latentStyles = new XWPFLatentStyles(ctStyles.latentStyles, this);
 
             }
-            catch (XmlException)
+            catch (XmlException e)
             {
-                throw new POIXMLException();
+                throw new POIXMLException("Unable to read styles", e);
             }
-            //get any Style
+            // Build up all the style objects
             foreach (CT_Style style in ctStyles.GetStyleList())
             {
                 listStyle.Add(new XWPFStyle(style, this));
@@ -84,6 +84,10 @@ namespace NPOI.XWPF.UserModel
 
         protected override void Commit()
         {
+            if (ctStyles == null)
+            {
+                throw new InvalidOperationException("Unable to write out styles that were never read in!");
+            }
             /*XmlOptions xmlOptions = new XmlOptions(DEFAULT_XML_OPTIONS);
             xmlOptions.SaveSyntheticDocumentElement=(new QName(CTStyles.type.Name.NamespaceURI, "styles"));
             Dictionary<String,String> map = new Dictionary<String,String>();
@@ -91,20 +95,11 @@ namespace NPOI.XWPF.UserModel
             map.Put("http://schemas.Openxmlformats.org/wordProcessingml/2006/main", "w");
             xmlOptions.SaveSuggestedPrefixes=(map);*/
             PackagePart part = GetPackagePart();
-            Stream out1 = part.GetOutputStream();
-            StylesDocument doc = new StylesDocument(ctStyles);
-            XmlSerializerNamespaces namespaces = new XmlSerializerNamespaces(new[] {
-                new XmlQualifiedName("ve", "http://schemas.openxmlformats.org/markup-compatibility/2006"),
-                new XmlQualifiedName("r", "http://schemas.openxmlformats.org/officeDocument/2006/relationships"),
-                new XmlQualifiedName("m", "http://schemas.openxmlformats.org/officeDocument/2006/math"),
-                new XmlQualifiedName("v", "urn:schemas-microsoft-com:vml"),
-                new XmlQualifiedName("wp", "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"),
-                new XmlQualifiedName("w10", "urn:schemas-microsoft-com:office:word"),
-                new XmlQualifiedName("wne", "http://schemas.microsoft.com/office/word/2006/wordml"),
-                 new XmlQualifiedName("w", "http://schemas.openxmlformats.org/wordprocessingml/2006/main")
-             });
-            doc.Save(out1, namespaces);
-            out1.Close();
+            using (Stream out1 = part.GetOutputStream())
+            {
+                StylesDocument doc = new StylesDocument(ctStyles);
+                doc.Save(out1);
+            }
         }
 
 
@@ -126,7 +121,7 @@ namespace NPOI.XWPF.UserModel
         {
             foreach (XWPFStyle style in listStyle)
             {
-                if (style.GetStyleId().Equals(styleID))
+                if (style.StyleId.Equals(styleID))
                     return true;
             }
             return false;
@@ -152,7 +147,7 @@ namespace NPOI.XWPF.UserModel
         {
             foreach (XWPFStyle style in listStyle)
             {
-                if (style.GetStyleId().Equals(styleID))
+                if (style.StyleId.Equals(styleID))
                     return style;
             }
             return null;
@@ -178,14 +173,14 @@ namespace NPOI.XWPF.UserModel
          */
         private List<XWPFStyle> GetUsedStyleList(XWPFStyle style, List<XWPFStyle> usedStyleList)
         {
-            String basisStyleID = style.GetBasisStyleID();
+            String basisStyleID = style.BasisStyleID;
             XWPFStyle basisStyle = GetStyle(basisStyleID);
             if ((basisStyle != null) && (!usedStyleList.Contains(basisStyle)))
             {
                 usedStyleList.Add(basisStyle);
                 GetUsedStyleList(basisStyle, usedStyleList);
             }
-            String linkStyleID = style.GetLinkStyleID();
+            String linkStyleID = style.LinkStyleID;
             XWPFStyle linkStyle = GetStyle(linkStyleID);
             if ((linkStyle != null) && (!usedStyleList.Contains(linkStyle)))
             {
@@ -193,7 +188,7 @@ namespace NPOI.XWPF.UserModel
                 GetUsedStyleList(linkStyle, usedStyleList);
             }
 
-            String nextStyleID = style.GetNextStyleID();
+            String nextStyleID = style.NextStyleID;
             XWPFStyle nextStyle = GetStyle(nextStyleID);
             if ((nextStyle != null) && (!usedStyleList.Contains(nextStyle)))
             {

@@ -39,7 +39,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\solution\Lib\OOXML\.net4\</OutputPath>
+    <OutputPath>..\..\solution\Lib\.net4\</OutputPath>
     <DefineConstants>DEBUG;TRACE;HIDE_UNREACHABLE_CODE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -49,10 +49,28 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\..\solution\Lib\OOXML\.net4\</OutputPath>
+    <OutputPath>..\..\solution\Lib\.net4\</OutputPath>
     <DefineConstants>TRACE;HIDE_UNREACHABLE_CODE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == '.net 4 Release|AnyCPU'">
+    <OutputPath>..\..\solution\Lib\.net4\</OutputPath>
+    <DefineConstants>TRACE;HIDE_UNREACHABLE_CODE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == '.net 2 Release|AnyCPU'">
+    <OutputPath>..\..\solution\Lib\.net2\</OutputPath>
+    <DefineConstants>TRACE;HIDE_UNREACHABLE_CODE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
@@ -61,12 +79,12 @@
       <HintPath>..\..\solution\Lib\Release.net4\ICSharpCode.SharpZipLib.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="NPOI.TestCases, Version=1.2.5.0, Culture=neutral, PublicKeyToken=0df73ec7942b34e1, processorArchitecture=MSIL">
+    <Reference Include="nunit.framework, Version=2.6.3.13283, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\solution\Lib\.net4\NPOI.TestCases.dll</HintPath>
+      <HintPath>C:\Program Files (x86)\NUnit 2.6.3\bin\framework\nunit.framework.dll</HintPath>
     </Reference>
-    <Reference Include="nunit.framework, Version=2.6.0.12051, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL" />
     <Reference Include="System" />
+    <Reference Include="System.configuration" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
@@ -101,18 +119,21 @@
     <Compile Include="XSSF\UserModel\Charts\TestXSSFManualLayout.cs" />
     <Compile Include="XSSF\UserModel\Charts\TestXSSFScatterChartData.cs" />
     <Compile Include="XSSF\UserModel\Charts\TestXSSFValueAxis.cs" />
+    <Compile Include="XSSF\UserModel\TestFormulaEvaluatorOnXSSF.cs" />
     <Compile Include="XSSF\UserModel\TestSheetShiftRows.cs" />
     <Compile Include="XSSF\UserModel\Extensions\TestXSSFBorder.cs" />
     <Compile Include="XSSF\UserModel\Extensions\TestXSSFCellFill.cs" />
     <Compile Include="XSSF\UserModel\Helpers\TestColumnHelper.cs" />
     <Compile Include="XSSF\UserModel\Helpers\TestHeaderFooterHelper.cs" />
     <Compile Include="XSSF\UserModel\TestSheetHiding.cs" />
+    <Compile Include="XSSF\UserModel\TestXSSFBugs.cs" />
     <Compile Include="XSSF\UserModel\TestXSSFCell.cs" />
     <Compile Include="XSSF\UserModel\TestXSSFCellStyle.cs" />
     <Compile Include="XSSF\UserModel\TestXSSFChart.cs" />
     <Compile Include="XSSF\UserModel\TestXSSFChartSheet.cs" />
     <Compile Include="XSSF\UserModel\TestXSSFColor.cs" />
     <Compile Include="XSSF\UserModel\TestXSSFComment.cs" />
+    <Compile Include="XSSF\UserModel\TestXSSFConditionalFormatting.cs" />
     <Compile Include="XSSF\UserModel\TestXSSFDataFormat.cs" />
     <Compile Include="XSSF\UserModel\TestXSSFDataValidation.cs" />
     <Compile Include="XSSF\UserModel\TestXSSFDrawing.cs" />
@@ -153,8 +174,10 @@
     <Compile Include="XWPF\UserModel\TestXWPFParagraph.cs" />
     <Compile Include="XWPF\UserModel\TestXWPFPictureData.cs" />
     <Compile Include="XWPF\UserModel\TestXWPFRun.cs" />
+    <Compile Include="XWPF\UserModel\TestXWPFSmartTag.cs" />
     <Compile Include="XWPF\UserModel\TestXWPFStyles.cs" />
     <Compile Include="XWPF\UserModel\TestXWPFTable.cs" />
+    <Compile Include="XWPF\UserModel\TestXWPFTableCell.cs" />
     <Compile Include="XWPF\UserModel\TestXWPFTableRow.cs" />
     <Compile Include="XWPF\XWPFTestDataSamples.cs" />
   </ItemGroup>
@@ -174,6 +197,10 @@
     <ProjectReference Include="..\..\ooxml\OpenXmlFormats\OpenXmlFormats vs2010.csproj">
       <Project>{A6874784-2875-4F40-9E8F-8385A640F5D6}</Project>
       <Name>OpenXmlFormats vs2010</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\main\testcases vs10.csproj">
+      <Project>{a920c2ba-8bfd-4f54-8401-7d1c0730f1f0}</Project>
+      <Name>testcases vs10</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

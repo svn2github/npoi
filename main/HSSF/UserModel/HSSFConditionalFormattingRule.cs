@@ -36,7 +36,7 @@ namespace NPOI.HSSF.UserModel
 
     public class HSSFConditionalFormattingRule : IConditionalFormattingRule
     {
-        private static byte CELL_COMPARISON = CFRuleRecord.CONDITION_TYPE_CELL_VALUE_IS;
+        private const byte CELL_COMPARISON = CFRuleRecord.CONDITION_TYPE_CELL_VALUE_IS;
 
         private CFRuleRecord cfRuleRecord;
         private HSSFWorkbook workbook;
@@ -200,8 +200,8 @@ namespace NPOI.HSSF.UserModel
                     byte comparisonOperation = cfRuleRecord.ComparisonOperation;
                     switch (comparisonOperation)
                     {
-                        case (byte)NPOI.SS.UserModel.ComparisonOperator.BETWEEN:
-                        case (byte)NPOI.SS.UserModel.ComparisonOperator.NOT_BETWEEN:
+                        case (byte)NPOI.SS.UserModel.ComparisonOperator.Between:
+                        case (byte)NPOI.SS.UserModel.ComparisonOperator.NotBetween:
                             return ToFormulaString(cfRuleRecord.ParsedExpression2);
                     }
                 }

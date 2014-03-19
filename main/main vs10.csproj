@@ -4,7 +4,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>9.0.30729</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
+    <SchemaVersion>4.0</SchemaVersion>
     <ProjectGuid>{10FA8538-157A-4380-A4F6-8E2C3EE92CAE}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
@@ -40,31 +40,53 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\solution\Lib\.net4\</OutputPath>
+    <OutputPath>..\solution\Lib\</OutputPath>
     <DefineConstants>DEBUG;TRACE;HIDE_UNREACHABLE_CODE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <CodeAnalysisRuleSet>BasicCorrectnessRules.ruleset</CodeAnalysisRuleSet>
     <RunCodeAnalysis>false</RunCodeAnalysis>
     <CodeAnalysisIgnoreGeneratedCode>false</CodeAnalysisIgnoreGeneratedCode>
-    <DocumentationFile>..\solution\Lib\.net4\NPOI.XML</DocumentationFile>
+    <DocumentationFile>..\solution\Lib\NPOI.XML</DocumentationFile>
     <NoWarn>1591</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\solution\Lib\.net4\</OutputPath>
+    <OutputPath>..\solution\Lib\</OutputPath>
     <DefineConstants>TRACE;HIDE_UNREACHABLE_CODE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <CodeAnalysisRuleSet>BasicCorrectnessRules.ruleset</CodeAnalysisRuleSet>
-    <DocumentationFile>..\solution\Lib\.net4\NPOI.XML</DocumentationFile>
+    <DocumentationFile>..\solution\Lib\NPOI.XML</DocumentationFile>
     <NoWarn>1591</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == '.net 4 Release|AnyCPU'">
+    <OutputPath>..\solution\Lib\.net4\</OutputPath>
+    <DefineConstants>TRACE;HIDE_UNREACHABLE_CODE</DefineConstants>
+    <DocumentationFile>..\solution\Lib\.net4\NPOI.XML</DocumentationFile>
+    <Optimize>true</Optimize>
+    <NoWarn>1591</NoWarn>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>BasicCorrectnessRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == '.net 2 Release|AnyCPU'">
+    <OutputPath>..\solution\Lib\.net2\</OutputPath>
+    <DefineConstants>TRACE;HIDE_UNREACHABLE_CODE</DefineConstants>
+    <DocumentationFile>..\solution\Lib\.net2\NPOI.XML</DocumentationFile>
+    <Optimize>true</Optimize>
+    <NoWarn>1591</NoWarn>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>BasicCorrectnessRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="ICSharpCode.SharpZipLib, Version=0.86.0.518, Culture=neutral, PublicKeyToken=1b03e6acf1164f73, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>Lib\ICSharpCode.SharpZipLib.dll</HintPath>
+      <HintPath>..\solution\Lib\ICSharpCode.SharpZipLib.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
@@ -163,6 +185,9 @@
     <Compile Include="HSSF\Record\ContinueFrt12Record.cs" />
     <Compile Include="HSSF\Record\DConRefRecord.cs" />
     <Compile Include="HSSF\Record\RowDataRecord.cs" />
+    <Compile Include="HSSF\UserModel\HSSFCombobox.cs" />
+    <Compile Include="HSSF\UserModel\HSSFShapeFactory.cs" />
+    <Compile Include="HSSF\UserModel\HSSFShapeTypes.cs" />
     <Compile Include="POIFS\FileSystem\EntryUtils.cs" />
     <Compile Include="POIFS\FileSystem\FilteringDirectoryNode.cs" />
     <Compile Include="POIUtils.cs">
@@ -593,6 +618,7 @@
     <Compile Include="SS\UserModel\BorderDiagonal.cs" />
     <Compile Include="SS\UserModel\Charts\ChartDataSource.cs" />
     <Compile Include="SS\UserModel\Charts\DataSources.cs" />
+    <Compile Include="SS\UserModel\FontUnderline.cs" />
     <Compile Include="Util\BlockingInputStream.cs" />
     <Compile Include="Util\ByteArrayInputStream.cs" />
     <Compile Include="Util\ByteBuffer.cs" />
@@ -698,11 +724,6 @@
     <Compile Include="HSSF\Util\RangeAddress.cs" />
     <Compile Include="HSSF\Util\RKUtil.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Resource11.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Resource1.resx</DependentUpon>
-    </Compile>
     <Compile Include="SS\Formula\Atp\AnalysisToolPak.cs" />
     <Compile Include="SS\Formula\Atp\MRound.cs" />
     <Compile Include="SS\Formula\Atp\ParityFunction.cs" />
@@ -1034,13 +1055,11 @@
     <Compile Include="SS\UserModel\Drawing.cs" />
     <Compile Include="SS\UserModel\ErrorConstants.cs" />
     <Compile Include="SS\UserModel\ExcelStyleDateFormatter.cs" />
-    <Compile Include="SS\UserModel\FillPatternType.cs" />
     <Compile Include="SS\UserModel\Font.cs" />
     <Compile Include="SS\UserModel\FontCharset.cs" />
     <Compile Include="SS\UserModel\FontFamily.cs" />
     <Compile Include="SS\UserModel\FontFormatting.cs" />
     <Compile Include="SS\UserModel\FontScheme.cs" />
-    <Compile Include="SS\UserModel\FontUnderline.cs" />
     <Compile Include="SS\UserModel\Footer.cs" />
     <Compile Include="SS\UserModel\FormulaError.cs" />
     <Compile Include="SS\UserModel\FormulaEvaluator.cs" />
@@ -1127,6 +1146,7 @@
     <Compile Include="Util\NullLogger.cs" />
     <Compile Include="Util\Number.cs" />
     <Compile Include="Util\Operator.cs" />
+    <Compile Include="Util\PngUtils.cs" />
     <Compile Include="Util\POILogFactory.cs" />
     <Compile Include="Util\POILogger.cs" />
     <Compile Include="Util\PushbackStream.cs" />
@@ -1138,20 +1158,23 @@
     <Compile Include="Util\SystemOutLogger.cs" />
     <Compile Include="Util\TempFile.cs" />
     <Compile Include="Util\ULongField.cs" />
+    <Compile Include="HSSF\Record\Chart\ObjectKind.cs" />
+    <Compile Include="HSSF\Record\TextOrientation.cs" />
+    <Compile Include="SS\UserModel\FillPattern.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="npoi.snk" />
-    <None Include="Resources\font_metrics.properties" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resource1.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resource11.Designer.cs</LastGenOutput>
+    <EmbeddedResource Include="Resources\functionMetadata.txt">
+      <LogicalName>functionMetadata.txt</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\font_metrics.properties">
+      <LogicalName>font_metrics.properties</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <Content Include="Lib\Ionic.Zip.dll" />
-    <Content Include="Resources\functionMetadata.txt" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="HSSF\Dev\" />
