@@ -21,7 +21,6 @@ namespace NPOI.HSSF.Record
 {
     using System;
     using System.Text;
-    using System.Collections;
     using NPOI.Util;
 
     /**
@@ -66,7 +65,7 @@ namespace NPOI.HSSF.Record
 
         public void SetTabIdArray(short[] array)
         {
-            _tabids = array;
+            _tabids = (short[])array.Clone();
         }
 
         /**

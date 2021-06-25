@@ -48,8 +48,8 @@ namespace NPOI.HSSF.UserModel
         public HSSFColor GetColor(short index)
         {
             //Handle the special AUTOMATIC case
-            if (index == HSSFColor.AUTOMATIC.index)
-                return HSSFColor.AUTOMATIC.GetInstance();
+            if (index == HSSFColor.Automatic.Index)
+                return HSSFColor.Automatic.GetInstance();
             else
             {
                 byte[] b = palette.GetColor(index);
@@ -184,22 +184,25 @@ namespace NPOI.HSSF.UserModel
             /// Gets index to the standard palette
             /// </summary>
             /// <value></value>
-            public override short GetIndex()
+            public override short Indexed
             {
-                return byteOffset;
+                get
+                {
+                    return byteOffset;
+                }
             }
 
             /// <summary>
             /// Gets triplet representation like that in Excel
             /// </summary>
             /// <value></value>
-            public override short[] GetTriplet()
+            public override byte[] GetTriplet()
             {
-                    return new short[]
+                    return new byte[]
                     {
-                        (short) (red   & 0xff),
-                        (short) (green & 0xff),
-                        (short) (blue  & 0xff)
+                        (byte)(red   & 0xff),
+                        (byte)(green & 0xff),
+                        (byte)(blue  & 0xff)
                     };
             }
 

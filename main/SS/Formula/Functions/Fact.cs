@@ -20,8 +20,6 @@
  */
 namespace NPOI.SS.Formula.Functions
 {
-    using NPOI.SS.Formula.Eval;
-
     /**
      * @author Amol S. Deshmukh &lt; amolweb at ya hoo dot com &gt;
      *
@@ -30,7 +28,7 @@ namespace NPOI.SS.Formula.Functions
     {
         public override double Evaluate(double d)
         {
-            return MathX.factorial((int)d);
+            return MathX.Factorial((int)d);
         }
     }
 }

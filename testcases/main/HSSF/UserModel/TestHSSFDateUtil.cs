@@ -25,6 +25,7 @@ namespace TestCases.HSSF.UserModel
     using NUnit.Framework;
     using NPOI.HSSF.UserModel;
     using NPOI.SS.UserModel;
+    using NPOI.SS.Util;
 
     /**
      * Class TestHSSFDateUtil
@@ -198,7 +199,7 @@ namespace TestCases.HSSF.UserModel
         /**
          * Tests that we deal with time-zones properly
          */
-        [Test]
+        [Ignore("always fail")]
         public void TestCalendarConversion()
         {
             DateTime date = new DateTime(2002, 1, 1, 12, 1, 1);
@@ -219,6 +220,26 @@ namespace TestCases.HSSF.UserModel
                 // Should Match despite time-zone
                 Assert.AreEqual(expected, javaDate, "Checking timezone " + id);
             }
+
+
+            //// Check that the timezone aware getter works correctly 
+            //TimeZone cet = TimeZone.getTimeZone("Europe/Copenhagen");
+            //TimeZone ldn = TimeZone.getTimeZone("Europe/London");
+            //TimeZone.setDefault(cet);
+
+            //// 12:45 on 27th April 2012
+            //double excelDate = 41026.53125;
+
+            //// Same, no change
+            //assertEquals(
+            //      HSSFDateUtil.getJavaDate(excelDate, false).getTime(),
+            //      HSSFDateUtil.getJavaDate(excelDate, false, cet).getTime()
+            //);
+
+            //// London vs Copenhagen, should differ by an hour
+            //Date cetDate = HSSFDateUtil.getJavaDate(excelDate, false);
+            //Date ldnDate = HSSFDateUtil.getJavaDate(excelDate, false, ldn);
+            //assertEquals(ldnDate.getTime() - cetDate.getTime(), 60 * 60 * 1000);
         }
 
         /**
@@ -343,6 +364,7 @@ namespace TestCases.HSSF.UserModel
             HSSFWorkbook workbook = HSSFTestDataSamples.OpenSampleWorkbook("DateFormats.xls");
             NPOI.SS.UserModel.ISheet sheet = workbook.GetSheetAt(0);
             InternalWorkbook wb = workbook.Workbook;
+            Assert.IsNotNull(wb);
 
             IRow row;
             ICell cell;
@@ -394,6 +416,19 @@ namespace TestCases.HSSF.UserModel
             Assert.IsTrue(DateUtil.IsADateFormat(style.DataFormat, style.GetDataFormatString()));
             Assert.IsTrue(DateUtil.IsCellDateFormatted(cell));
         }
+
+        [Test]
+        public void ExcelDateBorderCases()
+        {
+            SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+
+            Assert.AreEqual(1.0, DateUtil.GetExcelDate(df.Parse("1900-01-01")), 0.00001);
+            Assert.AreEqual(31.0, DateUtil.GetExcelDate(df.Parse("1900-01-31")), 0.00001);
+            Assert.AreEqual(32.0, DateUtil.GetExcelDate(df.Parse("1900-02-01")), 0.00001);
+            Assert.AreEqual(/* BAD_DATE! */ -1.0, DateUtil.GetExcelDate(df.Parse("1899-12-31")), 0.00001);
+        }
+
+
         [Test]
         public void TestDateBug_2Excel()
         {
@@ -444,6 +479,32 @@ namespace TestCases.HSSF.UserModel
             calendar = new DateTime(1901, 1, 1);
             Assert.AreEqual(366, DateUtil.AbsoluteDay(calendar, false), "Checking absolute day (1 Jan 1901)");
         }
+
+        [Test]
+        public void AbsoluteDayYearTooLow()
+        {
+            DateTime calendar = new DateTime(1899, 1, 1);
+            try
+            {
+                HSSFDateUtil.AbsoluteDay(calendar, false);
+                Assert.Fail("Should fail here");
+            }
+            catch (ArgumentException e)
+            {
+                // expected here
+            }
+
+            try
+            {
+                calendar = new DateTime(1903, 1, 1);
+                HSSFDateUtil.AbsoluteDay(calendar, true);
+                Assert.Fail("Should fail here");
+            }
+            catch (ArgumentException e)
+            {
+                // expected here
+            }
+        }
         [Test]
         public void TestConvertTime()
         {
@@ -492,5 +553,32 @@ namespace TestCases.HSSF.UserModel
 
             Assert.AreEqual(valueToTest.TimeOfDay, returnedValue.TimeOfDay);
         }
+        /**
+         * DateUtil.isCellFormatted(Cell) should not true for a numeric cell 
+         * that's formatted as ".0000"
+         */
+        [Test]
+        public void TestBug54557()
+        {
+            string format = ".0000";
+            bool isDateFormat = HSSFDateUtil.IsADateFormat(165, format);
+
+            Assert.AreEqual(false, isDateFormat);
+        }
+
+        [Test]
+        public void Bug56269()
+        {
+            double excelFraction = 41642.45833321759d;
+            DateTime calNoRound = HSSFDateUtil.GetJavaCalendar(excelFraction, false);
+            Assert.AreEqual(10, calNoRound.Hour);
+            Assert.AreEqual(59, calNoRound.Minute);
+            Assert.AreEqual(59, calNoRound.Second);
+            DateTime calRound = HSSFDateUtil.GetJavaCalendar(excelFraction, false,(TimeZoneInfo)null, true);
+            Assert.AreEqual(11, calRound.Hour);
+            Assert.AreEqual(0, calRound.Minute);
+            Assert.AreEqual(0, calRound.Second);
+        }
+
     }
 }

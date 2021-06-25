@@ -28,9 +28,6 @@ namespace NPOI.SS.Formula.Atp
      */
     public class DateParser
     {
-
-        public DateParser instance = new DateParser();
-
         private DateParser()
         {
             // enforcing singleton
@@ -45,7 +42,7 @@ namespace NPOI.SS.Formula.Atp
          */
         public static DateTime ParseDate(String strVal)
         {
-            String[] parts = strVal.Split("/".ToCharArray());// Pattern.compile("/").split(strVal);
+            String[] parts = strVal.Split("-/".ToCharArray());// Pattern.compile("/").split(strVal);
             if (parts.Length != 3)
             {
                 throw new EvaluationException(ErrorEval.VALUE_INVALID);

@@ -34,13 +34,13 @@ namespace NPOI.HSSF.Record.Chart
     public class SeriesListRecord
        : StandardRecord
     {
-        public static short sid = 0x1016;
+        public const short sid = 0x1016;
         private short[] field_1_seriesNumbers;
 
 
         public SeriesListRecord(short[] seriesNumbers)
         {
-            field_1_seriesNumbers = seriesNumbers;
+            field_1_seriesNumbers = (seriesNumbers == null) ? null : (short[])seriesNumbers.Clone();
         }
 
         /**
@@ -99,11 +99,8 @@ namespace NPOI.HSSF.Record.Chart
 
         public override Object Clone()
         {
-            return new SeriesListRecord((short[])field_1_seriesNumbers.Clone());
+            return new SeriesListRecord(field_1_seriesNumbers);
         }
-
-
-
 
         /**
          * Get the series numbers field for the SeriesList record.

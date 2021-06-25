@@ -29,10 +29,13 @@ namespace NPOI.HSSF.Record
      * This record specifies Shared Features data. It is normally paired
      *  up with a {@link FeatHdrRecord}.
      */
-    public class FeatRecord : StandardRecord
+    public class FeatRecord : StandardRecord, ICloneable
     {
+        private static POILogger logger = POILogFactory.GetLogger(typeof(FeatRecord));
         public const short sid = 0x0868;
-
+        // SIDs from newer versions
+        public const short v11_sid = 0x0872;
+        public const short v12_sid = 0x0878;
         private FtrHeader futureHeader;
 
         /**
@@ -97,7 +100,7 @@ namespace NPOI.HSSF.Record
                     sharedFeature = new FeatSmartTag(in1);
                     break;
                 default:
-                    System.Console.WriteLine("Unknown Shared Feature " + isf_sharedFeatureType + " found!");
+                    logger.Log(POILogger.ERROR, "Unknown Shared Feature " + isf_sharedFeatureType + " found!");
                     break;
             }
         }

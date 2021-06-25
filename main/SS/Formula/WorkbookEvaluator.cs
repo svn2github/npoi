@@ -15,7 +15,6 @@
    limitations under the License.
 ==================================================================== */
 
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using NPOI.SS.Formula.Atp;
 
@@ -27,11 +26,12 @@ namespace NPOI.SS.Formula
     using NPOI.SS.Formula.Eval;
     using NPOI.SS.Util;
     using NPOI.SS.Formula.Functions;
-    using NPOI.SS.Formula.Udf;
+    using NPOI.SS.Formula.UDF;
     using System.Collections.Generic;
     using NPOI.SS.UserModel;
     using NPOI.SS.Formula.PTG;
     using NPOI.Util;
+    using NPOI.SS.Formula.Function;
 
     /**
      * Evaluates formula cells.<p/>
@@ -52,7 +52,7 @@ namespace NPOI.SS.Formula
         private int _workbookIx;
 
         private IEvaluationListener _evaluationListener;
-        private Hashtable _sheetIndexesBySheet;
+        private Dictionary<IEvaluationSheet, int> _sheetIndexesBySheet;
         private Dictionary<String, int> _sheetIndexesByName;
         private CollaboratingWorkbooksEnvironment _collaboratingWorkbookEnvironment;
         private IStabilityClassifier _stabilityClassifier;
@@ -71,7 +71,7 @@ namespace NPOI.SS.Formula
             _workbook = workbook;
             _evaluationListener = evaluationListener;
             _cache = new EvaluationCache(evaluationListener);
-            _sheetIndexesBySheet = new Hashtable();
+            _sheetIndexesBySheet = new Dictionary<IEvaluationSheet, int>();
             _sheetIndexesByName = new Dictionary<string, int>();
             _collaboratingWorkbookEnvironment = CollaboratingWorkbooksEnvironment.EMPTY;
             _workbookIx = 0;
@@ -114,16 +114,8 @@ namespace NPOI.SS.Formula
         /* package */
         internal IEvaluationName GetName(String name, int sheetIndex)
         {
-            NamePtg namePtg = _workbook.GetName(name, sheetIndex).CreatePtg();
-
-            if (namePtg == null)
-            {
-                return null;
-            }
-            else
-            {
-                return _workbook.GetName(namePtg);
-            }
+            IEvaluationName evalName = _workbook.GetName(name, sheetIndex);
+            return evalName;
         }
         private static bool IsDebugLogEnabled()
         {
@@ -192,6 +184,7 @@ namespace NPOI.SS.Formula
         {
             _cache.Clear();
             _sheetIndexesBySheet.Clear();
+            _workbook.ClearAllCachedResultValues();
         }
 
         /**
@@ -215,8 +208,10 @@ namespace NPOI.SS.Formula
 
         public int GetSheetIndex(IEvaluationSheet sheet)
         {
-            object result = _sheetIndexesBySheet[sheet];
-            if (result == null)
+            int result = int.MinValue;
+            if(_sheetIndexesBySheet.ContainsKey(sheet))
+                result = _sheetIndexesBySheet[sheet];
+            if (result == int.MinValue)
             {
                 int sheetIndex = _workbook.GetSheetIndex(sheet);
                 if (sheetIndex < 0)
@@ -226,7 +221,7 @@ namespace NPOI.SS.Formula
                 result = sheetIndex;
                 _sheetIndexesBySheet[sheet] = result;
             }
-            return (int)result;
+            return result;
         }
         /* package */
         internal int GetSheetIndexByExternIndex(int externSheetIndex)
@@ -274,7 +269,7 @@ namespace NPOI.SS.Formula
             bool shouldCellDependencyBeRecorded = _stabilityClassifier == null ? true
                     : !_stabilityClassifier.IsCellFinal(sheetIndex, rowIndex, columnIndex);
             ValueEval result;
-            if (srcCell == null || srcCell.CellType != CellType.FORMULA)
+            if (srcCell == null || srcCell.CellType != CellType.Formula)
             {
                 result = GetValueFromNonFormulaCell(srcCell);
                 if (shouldCellDependencyBeRecorded)
@@ -325,22 +320,22 @@ namespace NPOI.SS.Formula
                         LogInfo(re.InnerException.Message + " - Continuing with cached value!");
                         switch (srcCell.CachedFormulaResultType)
                         {
-                            case CellType.NUMERIC:
+                            case CellType.Numeric:
                                 result = new NumberEval(srcCell.NumericCellValue);
                                 break;
-                            case CellType.STRING:
+                            case CellType.String:
                                 result = new StringEval(srcCell.StringCellValue);
                                 break;
-                            case CellType.BLANK:
+                            case CellType.Blank:
                                 result = BlankEval.instance;
                                 break;
-                            case CellType.BOOLEAN:
+                            case CellType.Boolean:
                                 result = BoolEval.ValueOf(srcCell.BooleanCellValue);
                                 break;
-                            case CellType.ERROR:
+                            case CellType.Error:
                                 result = ErrorEval.ValueOf(srcCell.ErrorCellValue);
                                 break;
-                            case CellType.FORMULA:
+                            case CellType.Formula:
                             default:
                                 throw new RuntimeException("Unexpected cell type '" + srcCell.CellType + "' found!");
                         }
@@ -377,10 +372,10 @@ namespace NPOI.SS.Formula
             return result;
         }
         /**
- * Adds the current cell reference to the exception for easier debugging.
- * Would be nice to get the formula text as well, but that seems to require
- * too much digging around and casting to get the FormulaRenderingWorkbook.
- */
+         * Adds the current cell reference to the exception for easier debugging.
+         * Would be nice to get the formula text as well, but that seems to require
+         * too much digging around and casting to get the FormulaRenderingWorkbook.
+         */
         private NotImplementedException AddExceptionInfo(NotImplementedException inner, int sheetIndex, int rowIndex, int columnIndex)
         {
             try
@@ -412,15 +407,15 @@ namespace NPOI.SS.Formula
             CellType cellType = cell.CellType;
             switch (cellType)
             {
-                case CellType.NUMERIC:
+                case CellType.Numeric:
                     return new NumberEval(cell.NumericCellValue);
-                case CellType.STRING:
+                case CellType.String:
                     return new StringEval(cell.StringCellValue);
-                case CellType.BOOLEAN:
+                case CellType.Boolean:
                     return BoolEval.ValueOf(cell.BooleanCellValue);
-                case CellType.BLANK:
+                case CellType.Blank:
                     return BlankEval.instance;
-                case CellType.ERROR:
+                case CellType.Error:
                     return ErrorEval.ValueOf(cell.ErrorCellValue);
             }
             throw new Exception("Unexpected cell type (" + cellType + ")");
@@ -429,12 +424,12 @@ namespace NPOI.SS.Formula
         /**
          * whether print detailed messages about the next formula evaluation
          */
-	    private bool dbgEvaluationOutputForNextEval = false;
+        private bool dbgEvaluationOutputForNextEval = false;
 
-	    // special logger for formula evaluation output (because of possibly very large output)
-	    private POILogger EVAL_LOG = POILogFactory.GetLogger("POI.FormulaEval");
-	    // current indent level for evalution; negative value for no output
-	    private int dbgEvaluationOutputIndent = -1;
+        // special logger for formula evaluation output (because of possibly very large output)
+        private POILogger EVAL_LOG = POILogFactory.GetLogger("POI.FormulaEval");
+        // current indent level for evalution; negative value for no output
+        private int dbgEvaluationOutputIndent = -1;
 
         // visibility raised for testing
         /* package */
@@ -454,7 +449,7 @@ namespace NPOI.SS.Formula
                 dbgIndentStr = "                                                                                                    ";
                 dbgIndentStr = dbgIndentStr.Substring(0, Math.Min(dbgIndentStr.Length, dbgEvaluationOutputIndent * 2));
                 EVAL_LOG.Log(POILogger.WARN, dbgIndentStr
-                                   + "- evaluateFormula('" + ec.GetRefEvaluatorForCurrentSheet().SheetName
+                                   + "- evaluateFormula('" + ec.GetRefEvaluatorForCurrentSheet().SheetNameRange
                                    + "'/" + new CellReference(ec.RowIndex, ec.ColumnIndex).FormatAsString()
                                    + "): " + Arrays.ToString(ptgs).Replace("\\Qorg.apache.poi.ss.formula.ptg.\\E", ""));
                 dbgEvaluationOutputIndent++;
@@ -516,7 +511,7 @@ namespace NPOI.SS.Formula
                         bool evaluatedPredicate;
                         try
                         {
-                            evaluatedPredicate = If.EvaluateFirstArg(arg0, ec.RowIndex, ec.ColumnIndex);
+                            evaluatedPredicate = IfFunc.EvaluateFirstArg(arg0, ec.RowIndex, ec.ColumnIndex);
                         }
                         catch (EvaluationException e)
                         {
@@ -537,7 +532,10 @@ namespace NPOI.SS.Formula
                             int dist = attrPtg.Data;
                             i += CountTokensToBeSkipped(ptgs, i, dist);
                             Ptg nextPtg = ptgs[i + 1];
-                            if (ptgs[i] is AttrPtg && nextPtg is FuncVarPtg)
+                            if (ptgs[i] is AttrPtg && nextPtg is FuncVarPtg &&
+                                // in order to verify that there is no third param, we need to check 
+                                // if we really have the IF next or some other FuncVarPtg as third param, e.g. ROW()/COLUMN()!
+                                ((FuncVarPtg)nextPtg).FunctionIndex == FunctionMetadataRegistry.FUNCTION_INDEX_IF)
                             {
                                 // this is an if statement without a false param (as opposed to MissingArgPtg as the false param)
                                 i++;
@@ -626,11 +624,11 @@ namespace NPOI.SS.Formula
             return result;
         }
         /**
- * Calculates the number of tokens that the evaluator should skip upon reaching a tAttrSkip.
- *
- * @return the number of tokens (starting from <c>startIndex+1</c>) that need to be skipped
- * to achieve the specified <c>distInBytes</c> skip distance.
- */
+         * Calculates the number of tokens that the evaluator should skip upon reaching a tAttrSkip.
+         *
+         * @return the number of tokens (starting from <c>startIndex+1</c>) that need to be skipped
+         * to achieve the specified <c>distInBytes</c> skip distance.
+         */
         private static int CountTokensToBeSkipped(Ptg[] ptgs, int startIndex, int distInBytes)
         {
             int remBytes = distInBytes;
@@ -688,25 +686,21 @@ namespace NPOI.SS.Formula
 
             if (ptg is NamePtg)
             {
-                // named ranges, macro functions
+                // Named ranges, macro functions
                 NamePtg namePtg = (NamePtg)ptg;
                 IEvaluationName nameRecord = _workbook.GetName(namePtg);
-                if (nameRecord.IsFunctionName)
-                {
-                    return new NameEval(nameRecord.NameText);
-                }
-                if (nameRecord.HasFormula)
-                {
-                    return EvaluateNameFormula(nameRecord.NameDefinition, ec);
-                }
-
-                throw new Exception("Don't now how To evalate name '" + nameRecord.NameText + "'");
+                return GetEvalForNameRecord(nameRecord, ec);
             }
-            if (ptg is NameXPtg)
+            if (ptg is NameXPtg) 
             {
-                return ec.GetNameXEval(((NameXPtg)ptg));
+                // Externally defined named ranges or macro functions
+                return ProcessNameEval(ec.GetNameXEval((NameXPtg)ptg), ec);
             }
-
+            if (ptg is NameXPxg)
+            {
+                // Externally defined named ranges or macro functions
+                return ProcessNameEval(ec.GetNameXEval((NameXPxg)ptg), ec);
+            }
             if (ptg is IntPtg)
             {
                 return new NumberEval(((IntPtg)ptg).Value);
@@ -738,14 +732,20 @@ namespace NPOI.SS.Formula
             }
             if (ptg is Ref3DPtg)
             {
-                Ref3DPtg rptg = (Ref3DPtg)ptg;
-                return ec.GetRef3DEval(rptg.Row, rptg.Column, rptg.ExternSheetIndex);
+                return ec.GetRef3DEval((Ref3DPtg)ptg);
             }
-            if (ptg is Area3DPtg)
+
+            if (ptg is Ref3DPxg)
             {
-                Area3DPtg aptg = (Area3DPtg)ptg;
-                return ec.GetArea3DEval(aptg.FirstRow, aptg.FirstColumn, aptg.LastRow, aptg.LastColumn, aptg.ExternSheetIndex);
+                return ec.GetRef3DEval((Ref3DPxg)ptg);
             }
+            if (ptg is Area3DPtg) {
+               return ec.GetArea3DEval((Area3DPtg)ptg);
+           }
+           if (ptg is Area3DPxg) {
+               return ec.GetArea3DEval((Area3DPxg)ptg);
+           }
+
             if (ptg is RefPtg)
             {
                 RefPtg rptg = (RefPtg)ptg;
@@ -773,6 +773,29 @@ namespace NPOI.SS.Formula
             throw new RuntimeException("Unexpected ptg class (" + ptg.GetType().Name + ")");
         }
 
+        private ValueEval ProcessNameEval(ValueEval eval, OperationEvaluationContext ec)
+        {
+            if (eval is ExternalNameEval)
+            {
+                IEvaluationName name = ((ExternalNameEval)eval).Name;
+                return GetEvalForNameRecord(name, ec);
+            }
+            return eval;
+        }
+        private ValueEval GetEvalForNameRecord(IEvaluationName nameRecord, OperationEvaluationContext ec)
+        {
+            if (nameRecord.IsFunctionName)
+            {
+                return new FunctionNameEval(nameRecord.NameText);
+            }
+            if (nameRecord.HasFormula)
+            {
+                return EvaluateNameFormula(nameRecord.NameDefinition, ec);
+            }
+
+            throw new Exception("Don't now how to Evalate name '" + nameRecord.NameText + "'");
+        }
+        
         internal ValueEval EvaluateNameFormula(Ptg[] ptgs, OperationEvaluationContext ec)
         {
             if (ptgs.Length == 1)
@@ -826,12 +849,12 @@ namespace NPOI.SS.Formula
          *
          * @return names of functions supported by POI
          */
-        public static List<String> GetSupportedFunctionNames()
+        public static IList<String> GetSupportedFunctionNames()
         {
             List<String> lst = new List<String>();
             lst.AddRange(FunctionEval.GetSupportedFunctionNames());
             lst.AddRange(AnalysisToolPak.GetSupportedFunctionNames());
-            return lst;
+            return lst.AsReadOnly();
         }
 
         /**
@@ -839,12 +862,12 @@ namespace NPOI.SS.Formula
          *
          * @return names of functions NOT supported by POI
          */
-        public static List<String> GetNotSupportedFunctionNames()
+        public static IList<String> GetNotSupportedFunctionNames()
         {
             List<String> lst = new List<String>();
             lst.AddRange(FunctionEval.GetNotSupportedFunctionNames());
             lst.AddRange(AnalysisToolPak.GetNotSupportedFunctionNames());
-            return lst;
+            return lst.AsReadOnly();
         }
 
         /**

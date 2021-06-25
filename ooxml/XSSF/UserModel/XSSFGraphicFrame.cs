@@ -31,14 +31,13 @@ namespace NPOI.XSSF.UserModel
      *
      * @author Roman Kashitsyn
      */
-    public class XSSFGraphicFrame
+    public class XSSFGraphicFrame : XSSFShape
     {
 
         private static CT_GraphicalObjectFrame prototype = null;
 
         private CT_GraphicalObjectFrame graphicFrame;
-        private XSSFDrawing drawing;
-        private XSSFClientAnchor anchor;
+        private new XSSFClientAnchor anchor;
 
         /**
          * Construct a new XSSFGraphicFrame object.
@@ -63,12 +62,11 @@ namespace NPOI.XSSF.UserModel
          */
         public static CT_GraphicalObjectFrame Prototype()
         {
-            if (prototype == null)
-            {
+
                 CT_GraphicalObjectFrame graphicFrame = new CT_GraphicalObjectFrame();
 
-                CT_GraphicalObjectFrameNonVisual nvGraphic = graphicFrame.AddNewNvGraphicFramePr();
-                CT_NonVisualDrawingProps props = nvGraphic.AddNewCNvPr();
+                NPOI.OpenXmlFormats.Dml.Spreadsheet.CT_GraphicalObjectFrameNonVisual nvGraphic = graphicFrame.AddNewNvGraphicFramePr();
+                NPOI.OpenXmlFormats.Dml.Spreadsheet.CT_NonVisualDrawingProps props = nvGraphic.AddNewCNvPr();
                 props.id = (0);
                 props.name = ("Diagramm 1");
                 nvGraphic.AddNewCNvGraphicFramePr();
@@ -87,7 +85,7 @@ namespace NPOI.XSSF.UserModel
                 CT_GraphicalObject graphic = graphicFrame.AddNewGraphic();
 
                 prototype = graphicFrame;
-            }
+            
             return prototype;
         }
 
@@ -115,7 +113,7 @@ namespace NPOI.XSSF.UserModel
             }
         }
 
-        private CT_NonVisualDrawingProps GetNonVisualProperties()
+        private NPOI.OpenXmlFormats.Dml.Spreadsheet.CT_NonVisualDrawingProps GetNonVisualProperties()
         {
             CT_GraphicalObjectFrameNonVisual nvGraphic = graphicFrame.nvGraphicFramePr;
             return nvGraphic.cNvPr;
@@ -180,16 +178,24 @@ namespace NPOI.XSSF.UserModel
             String r_namespaceUri = ST_RelationshipId.NamespaceURI;
             String c_namespaceUri = XSSFDrawing.NAMESPACE_C;
 
-            //TODO: AppendChartElement
+            //AppendChartElement
+            string el = string.Format("<c:chart xmlns:c=\"{1}\" xmlns:r=\"{2}\" r:id=\"{0}\"/>", id, c_namespaceUri, r_namespaceUri);
+            data.AddChartElement(el);
+            
             //XmlCursor cursor = data.newCursor();
             //cursor.ToNextToken();
             //cursor.beginElement(new QName(c_namespaceUri, "chart", "c"));
             //cursor.insertAttributeWithValue(new QName(r_namespaceUri, "id", "r"), id);
             //cursor.dispose();
-            //data.SetUri(c_namespaceUri);
+            data.uri = c_namespaceUri;
             //throw new NotImplementedException();
         }
 
+
+        protected internal override NPOI.OpenXmlFormats.Dml.Spreadsheet.CT_ShapeProperties GetShapeProperties()
+        {
+            return null;
+        }
     }
 }
 

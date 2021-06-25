@@ -21,7 +21,6 @@ namespace NPOI.HSSF.UserModel
 
     using NPOI.SS.UserModel;
     using NPOI.SS.Util;
-    using System.Diagnostics.CodeAnalysis;
 
     /**
      * @author <a href="rjankiraman@emptoris.com">Radhakrishnan J</a>
@@ -29,13 +28,13 @@ namespace NPOI.HSSF.UserModel
      */
     public class HSSFDataValidationHelper : IDataValidationHelper
     {
-        private HSSFSheet sheet;
+        //private HSSFSheet sheet;
 
         public HSSFDataValidationHelper(HSSFSheet sheet)
             : base()
         {
 
-            this.sheet = sheet;
+            //this.sheet = sheet;
         }
 
         /*

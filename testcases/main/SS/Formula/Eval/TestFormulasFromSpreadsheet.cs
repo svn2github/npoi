@@ -111,42 +111,38 @@ namespace TestCases.SS.Formula.Eval
 
         private static void ConfirmExpectedResult(String msg, ICell expected, CellValue actual)
         {
-            if (expected == null)
-            {
-                throw new AssertionException(msg + " - Bad Setup data expected value is null");
-            }
-            if (actual == null)
-            {
-                throw new AssertionException(msg + " - actual value was null");
-            }
-
+            Assert.IsNotNull(expected, msg + " - Bad setup data expected value is null");
+            Assert.IsNotNull(actual, msg + " - actual value was null");
+            
             switch (expected.CellType)
             {
-                case CellType.BLANK:
-                    Assert.AreEqual(CellType.BLANK, actual.CellType, msg);
+                case CellType.Blank:
+                    Assert.AreEqual(CellType.Blank, actual.CellType, msg);
                     break;
-                case CellType.BOOLEAN:
-                    Assert.AreEqual(CellType.BOOLEAN, actual.CellType, msg);
+                case CellType.Boolean:
+                    Assert.AreEqual(CellType.Boolean, actual.CellType, msg);
                     Assert.AreEqual(expected.BooleanCellValue, actual.BooleanValue, msg);
                     break;
-                case CellType.ERROR:
-                    Assert.AreEqual(CellType.ERROR, actual.CellType, msg);
-                    Assert.AreEqual(msg, ErrorEval.GetText(expected.ErrorCellValue), ErrorEval.GetText(actual.ErrorValue));
+                case CellType.Error:
+                    Assert.AreEqual(CellType.Error, actual.CellType, msg);
+                    Assert.AreEqual(ErrorEval.GetText(expected.ErrorCellValue), ErrorEval.GetText(actual.ErrorValue), msg);
                     break;
-                case CellType.FORMULA: // will never be used, since we will call method After formula Evaluation
-                    throw new AssertionException("Cannot expect formula as result of formula Evaluation: " + msg);
-                case CellType.NUMERIC:
-                    Assert.AreEqual(CellType.NUMERIC, actual.CellType, msg);
-                    AbstractNumericTestCase.AssertEqual(msg, expected.NumericCellValue, actual.NumberValue, AbstractNumericTestCase.POS_ZERO, AbstractNumericTestCase.DIFF_TOLERANCE_FACTOR);
+                case CellType.Formula: // will never be used, since we will call method After formula Evaluation
+                    Assert.Fail("Cannot expect formula as result of formula Evaluation: " + msg);
                     break;
-                case CellType.STRING:
-                    Assert.AreEqual(CellType.STRING, actual.CellType, msg);
-                    Assert.AreEqual(msg, expected.RichStringCellValue.String, actual.StringValue);
+                case CellType.Numeric:
+                    Assert.AreEqual(CellType.Numeric, actual.CellType, msg);
+                    AbstractNumericTestCase.AssertEquals(msg, expected.NumericCellValue, actual.NumberValue,
+                        AbstractNumericTestCase.POS_ZERO, AbstractNumericTestCase.DIFF_TOLERANCE_FACTOR);
+                    break;
+                case CellType.String:
+                    Assert.AreEqual(CellType.String, actual.CellType, msg);
+                    Assert.AreEqual(expected.RichStringCellValue.String, actual.StringValue, msg);
                     break;
             }
         }
 
-        [TestFixtureSetUp]
+        [SetUp]
         protected void SetUp()
         {
             if (workbook == null)
@@ -173,15 +169,13 @@ namespace TestCases.SS.Formula.Eval
             String successMsg = "There were "
                     + _EvaluationSuccessCount + " successful Evaluation(s) and "
                     + _functionSuccessCount + " function(s) without error";
-            if (_functionFailureCount > 0)
-            {
-                String msg = _functionFailureCount + " function(s) failed in "
-                + _EvaluationFailureCount + " Evaluation(s).  " + successMsg;
-                throw new AssertionException(msg);
-            }
+            
+            String msg = _functionFailureCount + " function(s) failed in "
+            + _EvaluationFailureCount + " Evaluation(s).  " + successMsg;
+            Assert.AreEqual(_functionFailureCount, 0, msg);
 
 
-			Debug.WriteLine(this.GetType().Name + ": " + successMsg);
+            Debug.WriteLine(this.GetType().Name + ": " + successMsg);
 
 
         }
@@ -200,12 +194,10 @@ namespace TestCases.SS.Formula.Eval
             {
                 IRow r = sheet.GetRow(rowIndex);
                 String targetFunctionName = GetTargetFunctionName(r);
-                if (targetFunctionName == null)
-                {
-                    throw new AssertionException("Test spreadsheet cell empty on row ("
+                Assert.IsNotNull(targetFunctionName, "Test spreadsheet cell empty on row ("
                             + (rowIndex + 1) + "). Expected function name or '"
                             + SS.FUNCTION_NAMES_END_SENTINEL + "'");
-                }
+                
                 if (targetFunctionName.Equals(SS.FUNCTION_NAMES_END_SENTINEL))
                 {
                     // found end of functions list
@@ -213,15 +205,13 @@ namespace TestCases.SS.Formula.Eval
                 }
                 if (testFocusFunctionName == null || targetFunctionName.Equals(testFocusFunctionName, StringComparison.CurrentCultureIgnoreCase))
                 {
-
                     // expected results are on the row below
                     IRow expectedValuesRow = sheet.GetRow(rowIndex + 1);
-                    if (expectedValuesRow == null)
-                    {
-                        int missingRowNum = rowIndex + 2; //+1 for 1-based, +1 for next row
-                        throw new AssertionException("Missing expected values row for function '"
-                                + targetFunctionName + " (row " + missingRowNum + ")");
-                    }
+                    
+                    int missingRowNum = rowIndex + 2; //+1 for 1-based, +1 for next row
+                    Assert.IsNotNull(expectedValuesRow, "Missing expected values row for function '"
+                            + targetFunctionName + " (row " + missingRowNum + ")");
+                    
                     switch (ProcessFunctionRow(evaluator, targetFunctionName, r, expectedValuesRow))
                     {
                         case Result.ALL_EVALUATIONS_SUCCEEDED: _functionSuccessCount++; break;
@@ -230,11 +220,11 @@ namespace TestCases.SS.Formula.Eval
                             throw new SystemException("unexpected result");
                         case Result.NO_EVALUATIONS_FOUND: // do nothing
                             String uname = targetFunctionName.ToUpper();
-                        if(startRowIndex >= SS.START_FUNCTIONS_ROW_INDEX &&
-                                funcs.Contains(uname))
-                        {
-                            Debug.WriteLine(uname + ": function is supported but missing test data", "");
-                        }
+                            if (startRowIndex >= SS.START_FUNCTIONS_ROW_INDEX &&
+                                    funcs.Contains(uname))
+                            {
+                                Debug.WriteLine(uname + ": function is supported but missing test data", "");
+                            }
                             break;
                     }
                 }
@@ -258,7 +248,7 @@ namespace TestCases.SS.Formula.Eval
             for (int colnum = SS.COLUMN_INDEX_FIRST_TEST_VALUE; colnum < endcolnum; colnum++)
             {
                 ICell c = formulasRow.GetCell(colnum);
-                if (c == null || c.CellType != CellType.FORMULA)
+                if (c == null || c.CellType != CellType.Formula)
                 {
                     continue;
                 }
@@ -339,11 +329,11 @@ namespace TestCases.SS.Formula.Eval
                 System.Console.Error.WriteLine("Warning - Row " + r.RowNum + " has no cell " + SS.COLUMN_INDEX_FUNCTION_NAME + ", can't figure out function name");
                 return null;
             }
-            if (cell.CellType == CellType.BLANK)
+            if (cell.CellType == CellType.Blank)
             {
                 return null;
             }
-            if (cell.CellType == CellType.STRING)
+            if (cell.CellType == CellType.String)
             {
                 return cell.RichStringCellValue.String;
             }

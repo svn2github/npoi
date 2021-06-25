@@ -52,7 +52,7 @@ namespace NPOI.HPSF.Wellknown
         /**
          * The SummaryInformation's section's format ID.
          */
-        public static byte[] SUMMARY_INFORMATION_ID = new byte[]
+        public static readonly byte[] SUMMARY_INFORMATION_ID = new byte[]
         {
             (byte) 0xF2, (byte) 0x9F, (byte) 0x85, (byte) 0xE0,
             (byte) 0x4F, (byte) 0xF9, (byte) 0x10, (byte) 0x68,
@@ -64,14 +64,14 @@ namespace NPOI.HPSF.Wellknown
          * The DocumentSummaryInformation's first and second sections' format
          * ID.
          */
-        public static byte[] DOCUMENT_SUMMARY_INFORMATION_ID1 =
+        public static readonly byte[] DOCUMENT_SUMMARY_INFORMATION_ID1 =
         {
                 (byte) 0xD5, (byte) 0xCD, (byte) 0xD5, (byte) 0x02,
                 (byte) 0x2E, (byte) 0x9C, (byte) 0x10, (byte) 0x1B,
                 (byte) 0x93, (byte) 0x97, (byte) 0x08, (byte) 0x00,
                 (byte) 0x2B, (byte) 0x2C, (byte) 0xF9, (byte) 0xAE
             };
-        public static byte[] DOCUMENT_SUMMARY_INFORMATION_ID2 =
+        public static readonly byte[] DOCUMENT_SUMMARY_INFORMATION_ID2 =
             {
                 (byte) 0xD5, (byte) 0xCD, (byte) 0xD5, (byte) 0x05,
                 (byte) 0x2E, (byte) 0x9C, (byte) 0x10, (byte) 0x1B,
@@ -82,7 +82,7 @@ namespace NPOI.HPSF.Wellknown
         /**
          * A property without a known name is described by this string. 
          */
-        public static String UNDEFINED = "[undefined]";
+        public const string UNDEFINED = "[undefined]";
 
         /**
          * The default section ID map. It maps section format IDs To
@@ -153,22 +153,6 @@ namespace NPOI.HPSF.Wellknown
             return (PropertyIDMap)this[Encoding.UTF8.GetString(sectionFormatID)];
         }
 
-
-
-        /// <summary>
-        /// Returns the {@link PropertyIDMap} for a given section format
-        /// ID.
-        /// </summary>
-        /// <param name="sectionFormatID">A section format ID as a 
-        /// <c>byte[]</c></param>
-        /// <returns>the property ID map</returns>
-        public Object Get(Object sectionFormatID)
-        {
-            return Get((byte[])sectionFormatID);
-        }
-
-
-
         /// <summary>
         /// Associates a section format ID with a {@link
         /// PropertyIDMap}.
@@ -181,22 +165,5 @@ namespace NPOI.HPSF.Wellknown
         {
             return this[sectionFormatID] = propertyIDMap;
         }
-
-
-
-        /// <summary>
-        /// Puts the specified key.
-        /// </summary>
-        /// <param name="key">This parameter remains undocumented since the method Is
-        /// deprecated.</param>
-        /// <param name="value">This parameter remains undocumented since the method Is
-        /// deprecated.</param>
-        /// <returns>The return value remains undocumented since the method Is
-        /// deprecated.</returns>
-        public Object Put(Object key, Object value)
-        {
-            return Put((byte[])key, (PropertyIDMap)value);
-        }
-
     }
 }

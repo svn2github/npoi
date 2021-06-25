@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.IO;
 using NPOI.HSSF.UserModel;
+using NUnit.Framework;
 
 namespace TestCases
 {
@@ -23,6 +24,7 @@ namespace TestCases
         private static POIDataSamples _instHPSF;
         private static POIDataSamples _instHPBF;
         private static POIDataSamples _instHSMF;
+        private static POIDataSamples _instXmlDSign;
 
         private string _resolvedDataDir;
         /** <c>true</c> if standard system propery is not set,
@@ -99,6 +101,12 @@ namespace TestCases
             if (_instHSMF == null) _instHSMF = new POIDataSamples("hsmf");
             return _instHSMF;
         }
+        public static POIDataSamples GetXmlDSignInstance()
+        {
+            if (_instXmlDSign == null) _instXmlDSign = new POIDataSamples("xmldsign");
+            return _instXmlDSign;
+        }
+
 
         /**
  * Opens a test sample file from the 'data' sub-package of this class's package. 
@@ -115,14 +123,14 @@ namespace TestCases
             //  Some of the tests are depending on the american culture.
             System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.CreateSpecificCulture("en-US");
 
-            String dataDirName = System.Configuration.ConfigurationManager.AppSettings[TEST_PROPERTY];
+            String dataDirName = TestContext.Parameters[TEST_PROPERTY];
 
             if (dataDirName == null)
                 throw new Exception("Must set system property '"
                         + TEST_PROPERTY
                         + "' before running tests");
 
-            string dataDir = Path.Combine(dataDirName, _moduleDir);
+            string dataDir = Path.GetFullPath(Path.Combine(TestContext.CurrentContext.TestDirectory,dataDirName, _moduleDir));
             if (!Directory.Exists(dataDir))
             {
                 throw new IOException("Data dir '" + dataDir
@@ -134,12 +142,17 @@ namespace TestCases
             _resolvedDataDir = dataDir + Path.DirectorySeparatorChar;
         }
 
-        /**
- * Opens a sample file from the standard HSSF test data directory
- * 
- * @return an Open <c>Stream</c> for the specified sample file
- */
-        public Stream OpenResourceAsStream(String sampleFileName)
+        public string ResolvedDataDir
+        {
+            get { return _resolvedDataDir; }
+        }
+
+    /**
+* Opens a sample file from the standard HSSF test data directory
+* 
+* @return an Open <c>Stream</c> for the specified sample file
+*/
+    public Stream OpenResourceAsStream(String sampleFileName)
         {
             Initialise();
 
@@ -180,6 +193,18 @@ namespace TestCases
                 throw;
             }
         }
+
+        public FileInfo GetFileInfo(String sampleFileName)
+        {
+            string path = _resolvedDataDir + sampleFileName;
+            if (!File.Exists(path))
+            {
+                throw new Exception("Sample file '" + sampleFileName
+                        + "' not found in data dir '" + _resolvedDataDir + "'");
+            }
+            return new FileInfo(path);
+        }
+
         /**
          *
          * @param sampleFileName    the name of the test file

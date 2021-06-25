@@ -31,7 +31,6 @@ namespace NPOI.HPSF
 {
     using System;
     using System.IO;
-    using System.Text;
     using System.Collections;
     using NPOI.Util;
     using NPOI.POIFS.FileSystem;
@@ -92,9 +91,9 @@ namespace NPOI.HPSF
             ClearSections();
             if (sections == null)
                 sections = new List<Section>();
-            for (IEnumerator i = ps.Sections.GetEnumerator(); i.MoveNext(); )
+            foreach (Section section in ps.Sections)
             {
-                MutableSection s = new MutableSection((Section)(i.Current));
+                MutableSection s = new MutableSection(section);
                 AddSection(s);
             }
         }
@@ -104,7 +103,7 @@ namespace NPOI.HPSF
         /**
          * The Length of the property Set stream header.
          */
-        private int OFFSet_HEADER =
+        private int OFFSET_HEADER =
             BYTE_ORDER_ASSERTION.Length + /* Byte order    */
             FORMAT_ASSERTION.Length +     /* Format        */
             LittleEndianConsts.INT_SIZE + /* OS version    */
@@ -202,7 +201,7 @@ namespace NPOI.HPSF
             length += TypeWriter.WriteToStream(out1, OSVersion);
             length += TypeWriter.WriteToStream(out1, ClassID);
             length += TypeWriter.WriteToStream(out1, nrSections);
-            int offset = OFFSet_HEADER;
+            int offset = OFFSET_HEADER;
 
             /* Write the section list, i.e. the references To the sections. Each
              * entry in the section list consist of the section's class ID and the
@@ -229,25 +228,10 @@ namespace NPOI.HPSF
                 MutableSection s = (MutableSection)i.Current;
                 offset += s.Write(out1);
             }
-        }
 
-        /// <summary>
-        /// Returns the contents of this property Set stream as an input stream.
-        /// The latter can be used for example To Write the property Set into a POIFS
-        /// document. The input stream represents a snapshot of the property Set.
-        /// If the latter is modified while the input stream is still being
-        /// Read, the modifications will not be reflected in the input stream but in
-        /// the {@link MutablePropertySet} only.
-        /// </summary>
-        /// <returns>the contents of this property Set stream</returns>
-        public virtual Stream GetStream()
-        {
-            MemoryStream psStream = new MemoryStream();
-            Write(psStream);
-            psStream.Position = 0;  //tony Qu changed, otherwise this cause a bug
-            return psStream;
+            /* Indicate that we're done */
+            out1.Close();
         }
-
 
         /// <summary>
         /// Returns the contents of this property set stream as an input stream.
@@ -258,12 +242,19 @@ namespace NPOI.HPSF
         /// the {@link MutablePropertySet} only.
         /// </summary>
         /// <returns>the contents of this property set stream</returns>
-        public virtual Stream ToStream()
+        public virtual Stream ToInputStream()
         {
             using (MemoryStream psStream = new MemoryStream())
             {
-                Write(psStream);
-                psStream.Flush();
+                try
+                {
+                    Write(psStream);
+                    psStream.Flush();
+                }
+                finally
+                {
+                    psStream.Close();
+                }
                 byte[] streamData = psStream.ToArray();
                 return new MemoryStream(streamData);
             }
@@ -288,7 +279,7 @@ namespace NPOI.HPSF
                 /* Entry not found, no need To Remove it. */
             }
             /* Create the new entry. */
-            dir.CreateDocument(name, GetStream());
+            dir.CreateDocument(name, ToInputStream());
         }
 
     }

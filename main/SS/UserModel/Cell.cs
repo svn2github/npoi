@@ -18,18 +18,17 @@
 namespace NPOI.SS.UserModel
 {
     using System;
-    using NPOI.SS.Formula;
     using NPOI.SS.Util;
 
     public enum CellType : int
     {
         Unknown = -1,
-        NUMERIC = 0,
-        STRING = 1,
-        FORMULA = 2,
-        BLANK = 3,
-        BOOLEAN = 4,
-        ERROR = 5
+        Numeric = 0,
+        String = 1,
+        Formula = 2,
+        Blank = 3,
+        Boolean = 4,
+        Error = 5
     }
 
     /**
@@ -74,6 +73,13 @@ namespace NPOI.SS.UserModel
         /// <summary>
         /// Set the cells type (numeric, formula or string)
         /// </summary>
+        /// <p>If the cell currently contains a value, the value will
+        /// be converted to match the new type, if possible. Formatting
+        /// is generally lost in the process however.</p>
+        /// <p>If what you want to do is get a String value for your
+        /// numeric cell, <i>stop!</i>. This is not the way to do it.
+        /// Instead, for fetching the string value of a numeric or boolean
+        /// or date cell, use {@link DataFormatter} instead.</p> 
         CellType CellType
         {
             get;
@@ -199,7 +205,10 @@ namespace NPOI.SS.UserModel
         bool BooleanCellValue { get; }
 
         /// <summary>
-        /// Return the cell's style.
+        /// get or set the cell's style.
+        /// If set the style for the cell.  The style should be an CellStyle created/retreived from the Workbook.
+        /// To change the style of a cell without affecting other cells that use the same style,
+        /// use CellUtil#setCellStyleProperties
         /// </summary>
         ICellStyle CellStyle { get; set; }
 
@@ -208,6 +217,13 @@ namespace NPOI.SS.UserModel
         /// </summary>
         void SetAsActiveCell();
 
+        /**
+         * Gets the address of this cell
+         *
+         * @return <code>A1</code> style address of this cell
+         * @since 3.14beta2
+         */
+        CellAddress Address { get; }
         /// <summary>
         /// comment associated with this cell
         /// </summary>
@@ -224,6 +240,11 @@ namespace NPOI.SS.UserModel
         IHyperlink Hyperlink { get; set; }
 
         /// <summary>
+        /// Removes the hyperlink for this cell, if there is one.
+        /// </summary>
+        void RemoveHyperlink();
+
+        /// <summary>
         ///  Only valid for array formula cells
         /// </summary>
         /// <returns>range of the array formula group that the cell belongs to.</returns>
@@ -235,6 +256,8 @@ namespace NPOI.SS.UserModel
         bool IsPartOfArrayFormulaGroup { get; }
 
         bool IsMergedCell { get; }
+        
+        CellType GetCachedFormulaResultTypeEnum();
     }
 }
 

@@ -115,7 +115,12 @@ namespace NPOI.SS.Formula.Functions
             if (arg is RefEval)
             {
                 RefEval re = (RefEval)arg;
-                CollectValue(re.InnerValueEval, temp, true);
+                int firstSheetIndex = re.FirstSheetIndex;
+                int lastSheetIndex = re.LastSheetIndex;
+                for (int sIx = firstSheetIndex; sIx <= lastSheetIndex; sIx++)
+                {
+                    CollectValue(re.GetInnerValueEval(sIx), temp, true);
+                }
                 return;
             }
             CollectValue(arg, temp, true);

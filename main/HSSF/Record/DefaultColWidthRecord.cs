@@ -34,14 +34,14 @@ namespace NPOI.HSSF.Record
      * @version 2.0-pre
      */
 
-    public class DefaultColWidthRecord : StandardRecord
+    public class DefaultColWidthRecord : StandardRecord, ICloneable
     {
         public const short sid = 0x55;
         private int field_1_col_width;
         /**
      *  The default column width is 8 characters
      */
-        public static int DEFAULT_COLUMN_WIDTH = 0x0008;
+        public const int DEFAULT_COLUMN_WIDTH = 0x0008;
         public DefaultColWidthRecord()
         {
             field_1_col_width = DEFAULT_COLUMN_WIDTH;

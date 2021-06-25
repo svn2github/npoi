@@ -17,15 +17,10 @@
 
 namespace TestCases.SS.UserModel
 {
-    using System;
-
-    using NUnit.Framework;
-    using NPOI.SS;
-    using NPOI.SS.Util;
     using NPOI.SS.UserModel;
-    using System.Collections;
-    using System.IO;
-    using NPOI.HSSF.UserModel;
+    using NPOI.SS.Util;
+    using NUnit.Framework;
+    using System;
 
 
 
@@ -34,47 +29,32 @@ namespace TestCases.SS.UserModel
      *
      * @author Yegor Kozlov
      */
-    [TestFixture]
-    public class BaseTestSheetAutosizeColumn
+    public abstract class BaseTestSheetAutosizeColumn
     {
 
         private ITestDataProvider _testDataProvider;
-        public BaseTestSheetAutosizeColumn()
-        {
-            _testDataProvider = TestCases.HSSF.HSSFITestDataProvider.Instance;
-        }
+        //public BaseTestSheetAutosizeColumn()
+        //{
+        //    _testDataProvider = TestCases.HSSF.HSSFITestDataProvider.Instance;
+        //}
         protected BaseTestSheetAutosizeColumn(ITestDataProvider TestDataProvider)
         {
             _testDataProvider = TestDataProvider;
         }
-
-        // TODO should we have this stuff in the FormulaEvaluator?
-        private void EvaluateWorkbook(IWorkbook workbook){
-        IFormulaEvaluator eval = workbook.GetCreationHelper().CreateFormulaEvaluator();
-        for(int i=0; i < workbook.NumberOfSheets; i++) {
-            ISheet sheet = workbook.GetSheetAt(i);
-            IEnumerator rows = sheet.GetRowEnumerator();
-            for (IRow r = null; rows.MoveNext(); )
-            {
-                r = (IRow)rows.Current;
-                foreach (ICell c in r)
-                {
-                    if (c.CellType == CellType.FORMULA)
-                    {
-                        eval.EvaluateFormulaCell(c);
-                    }
-                }
-            }
+        protected virtual void TrackColumnsForAutoSizingIfSXSSF(ISheet sheet)
+        {
+            // do nothing for Sheet base class. This will be overridden for SXSSFSheets.
         }
-    }
         [Test]
-        public void TestNumericCells()
+        public void NumericCells()
         {
             System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo("en-US");
 
             IWorkbook workbook = _testDataProvider.CreateWorkbook();
+            FixFonts(workbook);
             IDataFormat df = workbook.GetCreationHelper().CreateDataFormat();
             ISheet sheet = workbook.CreateSheet();
+            TrackColumnsForAutoSizingIfSXSSF(sheet);
 
             IRow row = sheet.CreateRow(0);
             row.CreateCell(0).SetCellValue(0); // GetCachedFormulaResult() returns 0 for not Evaluated formula cells
@@ -108,12 +88,16 @@ namespace TestCases.SS.UserModel
             Assert.AreEqual(sheet.GetColumnWidth(1), sheet.GetColumnWidth(2)); // columns 1, 2 and 3 should have the same width
             Assert.AreEqual(sheet.GetColumnWidth(2), sheet.GetColumnWidth(3)); // columns 1, 2 and 3 should have the same width
             Assert.AreEqual(sheet.GetColumnWidth(4), sheet.GetColumnWidth(5)); // 10.0000 and '10.0000'
+
+            workbook.Close();
         }
         [Test]
-        public void TestBooleanCells()
+        public void BooleanCells()
         {
             IWorkbook workbook = _testDataProvider.CreateWorkbook();
+            FixFonts(workbook);
             ISheet sheet = workbook.CreateSheet();
+            TrackColumnsForAutoSizingIfSXSSF(sheet);
 
             IRow row = sheet.CreateRow(0);
             row.CreateCell(0).SetCellValue(0); // GetCachedFormulaResult() returns 0 for not Evaluated formula cells
@@ -136,12 +120,17 @@ namespace TestCases.SS.UserModel
             Assert.IsTrue(sheet.GetColumnWidth(1) > sheet.GetColumnWidth(0));  // 'true' is wider than '0'
             Assert.AreEqual(sheet.GetColumnWidth(1), sheet.GetColumnWidth(2));  // columns 1, 2 and 3 should have the same width
             Assert.AreEqual(sheet.GetColumnWidth(2), sheet.GetColumnWidth(3));  // columns 1, 2 and 3 should have the same width
+
+            workbook.Close();
         }
         [Test]
-        public void TestDateCells()
+        public void DateCells()
         {
+            System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.CreateSpecificCulture("en-US");
             IWorkbook workbook = _testDataProvider.CreateWorkbook();
+            FixFonts(workbook);
             ISheet sheet = workbook.CreateSheet();
+            TrackColumnsForAutoSizingIfSXSSF(sheet);
             IDataFormat df = workbook.GetCreationHelper().CreateDataFormat();
 
             ICellStyle style1 = workbook.CreateCellStyle();
@@ -181,7 +170,6 @@ namespace TestCases.SS.UserModel
             // autosize not-Evaluated cells, formula cells are sized as if the result is 0
             for (int i = 0; i < 8; i++) 
                 sheet.AutoSizeColumn(i);
-            System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.CreateSpecificCulture("en-US");
             Assert.AreEqual(sheet.GetColumnWidth(2), sheet.GetColumnWidth(1)); // date formatted as 'm'
             Assert.IsTrue(sheet.GetColumnWidth(3) > sheet.GetColumnWidth(1));  // 'mmm' is wider than 'm'
             Assert.AreEqual(sheet.GetColumnWidth(4), sheet.GetColumnWidth(3)); // date formatted as 'mmm'
@@ -202,12 +190,16 @@ namespace TestCases.SS.UserModel
             Assert.IsTrue(sheet.GetColumnWidth(5) > sheet.GetColumnWidth(3));  // 'mmm/dd/yyyy' is wider than 'mmm'
             Assert.AreEqual(sheet.GetColumnWidth(6), sheet.GetColumnWidth(5)); // date formatted as 'mmm/dd/yyyy'
             Assert.AreEqual(sheet.GetColumnWidth(4), sheet.GetColumnWidth(7)); // date formula formatted as 'mmm'
+
+            workbook.Close();
         }
         [Test]
-        public void TestStringCells()
+        public void StringCells()
         {
             IWorkbook workbook = _testDataProvider.CreateWorkbook();
+            FixFonts(workbook);
             ISheet sheet = workbook.CreateSheet();
+            TrackColumnsForAutoSizingIfSXSSF(sheet);
             IRow row = sheet.CreateRow(0);
 
             IFont defaultFont = workbook.GetFontAt((short)0);
@@ -233,12 +225,16 @@ namespace TestCases.SS.UserModel
             Assert.IsTrue(2 * sheet.GetColumnWidth(1) < sheet.GetColumnWidth(2));
             Assert.AreEqual(sheet.GetColumnWidth(4), sheet.GetColumnWidth(3));
             Assert.IsTrue(sheet.GetColumnWidth(5) > sheet.GetColumnWidth(4)); //larger font results in a wider column width
+
+            workbook.Close();
         }
         [Test]
-        public void TestRotatedText()
+        public void RotatedText()
         {
             IWorkbook workbook = _testDataProvider.CreateWorkbook();
+            FixFonts(workbook);
             ISheet sheet = workbook.CreateSheet();
+            TrackColumnsForAutoSizingIfSXSSF(sheet);
             IRow row = sheet.CreateRow(0);
 
             ICellStyle style1 = workbook.CreateCellStyle();
@@ -257,12 +253,16 @@ namespace TestCases.SS.UserModel
             int w1 = sheet.GetColumnWidth(1);
 
             Assert.IsTrue(w0 * 5 < w1); // rotated text occupies at least five times less horizontal space than normal text
+
+            workbook.Close();
         }
         [Test]
-        public void TestMergedCells()
+        public void MergedCells()
         {
             IWorkbook workbook = _testDataProvider.CreateWorkbook();
+            FixFonts(workbook);
             ISheet sheet = workbook.CreateSheet();
+            TrackColumnsForAutoSizingIfSXSSF(sheet);
 
             IRow row = sheet.CreateRow(0);
             sheet.AddMergedRegion(CellRangeAddress.ValueOf("A1:B1"));
@@ -277,6 +277,8 @@ namespace TestCases.SS.UserModel
 
             sheet.AutoSizeColumn(0, true);
             Assert.IsTrue(sheet.GetColumnWidth(0) > defaulWidth);
+
+            workbook.Close();
         }
 
 
@@ -285,10 +287,12 @@ namespace TestCases.SS.UserModel
          *  passed the 32767 boundary. See bug #48079
          */
         [Test]
-        public void TestLargeRowNumbers()
+        public void LargeRowNumbers()
         {
             IWorkbook workbook = _testDataProvider.CreateWorkbook();
+            FixFonts(workbook);
             ISheet sheet = workbook.CreateSheet();
+            TrackColumnsForAutoSizingIfSXSSF(sheet);
 
             IRow r0 = sheet.CreateRow(0);
             r0.CreateCell(0).SetCellValue("I am ROW 0");
@@ -319,6 +323,46 @@ namespace TestCases.SS.UserModel
             IRow r60708 = sheet.CreateRow(60708);
             r60708.CreateCell(0).SetCellValue("Near the end");
             sheet.AutoSizeColumn(0);
+
+            workbook.Close();
         }
+
+        // TODO should we have this stuff in the FormulaEvaluator?
+        private void EvaluateWorkbook(IWorkbook workbook)
+        {
+            IFormulaEvaluator eval = workbook.GetCreationHelper().CreateFormulaEvaluator();
+            for (int i = 0; i < workbook.NumberOfSheets; i++)
+            {
+                ISheet sheet = workbook.GetSheetAt(i);
+                foreach (IRow r in sheet)
+                {
+                    foreach (ICell c in r)
+                    {
+                        if (c.CellType == CellType.Formula)
+                        {
+                            eval.EvaluateFormulaCell(c);
+                        }
+                    }
+                }
+            }
+        }
+
+        internal static void FixFonts(IWorkbook workbook)
+        {
+            //if (!JvmBugs.HasLineBreakMeasurerBug()) return;
+            for (int i = workbook.NumberOfFonts - 1; i >= 0; i--)
+            {
+                IFont f = workbook.GetFontAt((short)0);
+                if ("Calibri".Equals(f.FontName))
+                {
+                    f.FontName = (/*setter*/"Lucida Sans");
+                }
+                else if ("Cambria".Equals(f.FontName))
+                {
+                    f.FontName = (/*setter*/"Lucida Bright");
+                }
+            }
+        }
+
     }
 }

@@ -18,9 +18,7 @@ namespace NPOI.HSSF.UserModel
 {
     using System;
 
-    using NPOI.HSSF.Util;
     using NPOI.HSSF.Record;
-    using NPOI.HSSF.Record.CF;
     using NPOI.HSSF.Record.Aggregates;
     using NPOI.SS.Util;
     using NPOI.SS.UserModel;
@@ -58,7 +56,7 @@ namespace NPOI.HSSF.UserModel
     /// <remarks>@author Dmitriy Kumshayev</remarks>
     public class HSSFConditionalFormatting : IConditionalFormatting
     {
-        private HSSFWorkbook _workbook;
+        private HSSFSheet sheet;
         private CFRecordsAggregate cfAggregate;
 
         /// <summary>
@@ -66,9 +64,9 @@ namespace NPOI.HSSF.UserModel
         /// </summary>
         /// <param name="workbook">The workbook.</param>
         /// <param name="cfAggregate">The cf aggregate.</param>
-        public HSSFConditionalFormatting(HSSFWorkbook workbook, CFRecordsAggregate cfAggregate)
+        public HSSFConditionalFormatting(HSSFSheet sheet, CFRecordsAggregate cfAggregate)
         {
-            if (workbook == null)
+            if (sheet == null)
             {
                 throw new ArgumentException("workbook must not be null");
             }
@@ -76,7 +74,7 @@ namespace NPOI.HSSF.UserModel
             {
                 throw new ArgumentException("cfAggregate must not be null");
             }
-            _workbook = workbook;
+            this.sheet = sheet;
             this.cfAggregate = cfAggregate;
         }
         /// <summary>
@@ -91,16 +89,6 @@ namespace NPOI.HSSF.UserModel
             }
         }
 
-        /// <summary>
-        /// Gets the array of Regions
-        /// </summary>
-        /// <returns></returns>
-        [Obsolete]
-        public Region[] GetFormattingRegions()
-        {
-            CellRangeAddress[] cellRanges = GetFormattingRanges();
-            return Region.ConvertCellRangesToRegions(cellRanges);
-        }
         /// <summary>
         /// Gets array of CellRangeAddresses
         /// </summary>
@@ -144,8 +132,8 @@ namespace NPOI.HSSF.UserModel
         /// <returns></returns>
         public IConditionalFormattingRule GetRule(int idx)
         {
-            CFRuleRecord ruleRecord = cfAggregate.GetRule(idx);
-            return new HSSFConditionalFormattingRule(_workbook, ruleRecord);
+            CFRuleBase ruleRecord = cfAggregate.GetRule(idx);
+            return new HSSFConditionalFormattingRule(sheet, ruleRecord);
         }
         /// <summary>
         /// Gets the number of Conditional Formatting rules.

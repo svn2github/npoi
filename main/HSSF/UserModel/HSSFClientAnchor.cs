@@ -19,6 +19,7 @@
 namespace NPOI.HSSF.UserModel
 {
     using NPOI.DDF;
+    using NPOI.SS;
     using NPOI.SS.UserModel;
     using System;
 
@@ -30,6 +31,9 @@ namespace NPOI.HSSF.UserModel
     /// </summary>
     public class HSSFClientAnchor : HSSFAnchor, IClientAnchor
     {
+        public static int MAX_COL = SpreadsheetVersion.EXCEL97.LastColumnIndex;
+        public static int MAX_ROW = SpreadsheetVersion.EXCEL97.LastRowIndex;
+
         private EscherClientAnchorRecord _escherClientAnchor;
         public HSSFClientAnchor(EscherClientAnchorRecord escherClientAnchorRecord)
         {
@@ -40,12 +44,17 @@ namespace NPOI.HSSF.UserModel
         /// </summary>
         public HSSFClientAnchor()
         {
+            //Is this necessary?
             this._escherClientAnchor = new EscherClientAnchorRecord();
         }
 
         /// <summary>
         /// Creates a new client anchor and Sets the top-left and bottom-right
         /// coordinates of the anchor.
+        /// 
+        /// Note: Microsoft Excel seems to sometimes disallow 
+        /// higher y1 than y2 or higher x1 than x2 in the anchor, you might need to 
+        /// reverse them and draw shapes vertically or horizontally flipped! 
         /// </summary>
         /// <param name="dx1">the x coordinate within the first cell.</param>
         /// <param name="dy1">the y coordinate within the first cell.</param>
@@ -64,15 +73,15 @@ namespace NPOI.HSSF.UserModel
             CheckRange(dx2, 0, 1023, "dx2");
             CheckRange(dy1, 0, 255, "dy1");
             CheckRange(dy2, 0, 255, "dy2");
-            CheckRange(col1, 0, 255, "col1");
-            CheckRange(col2, 0, 255, "col2");
-            CheckRange(row1, 0, 255 * 256, "row1");
-            CheckRange(row2, 0, 255 * 256, "row2");
+            CheckRange(col1, 0, MAX_COL, "col1");
+            CheckRange(col2, 0, MAX_COL, "col2");
+            CheckRange(row1, 0, MAX_ROW, "row1");
+            CheckRange(row2, 0, MAX_ROW, "row2");
 
-            this.Col1 = col1;
-            this.Row1 = row1;
-            this.Col2 = col2;
-            this.Row2 = row2;
+            Col1 = ((short)Math.Min(col1, col2));
+            Col2 = ((short)Math.Max(col1, col2));
+            Row1 = Math.Min(row1, row2);
+            Row2 = Math.Max(row1, row2);
 
             if (col1 > col2)
             {
@@ -138,7 +147,7 @@ namespace NPOI.HSSF.UserModel
             get { return _escherClientAnchor.Col1; }
             set
             {
-                CheckRange(value, 0, 255, "col1");
+                CheckRange(value, 0, MAX_COL, "col1");
                 _escherClientAnchor.Col1 = (short)value;
             }
         }
@@ -152,7 +161,7 @@ namespace NPOI.HSSF.UserModel
             get { return _escherClientAnchor.Col2; }
             set
             {
-                CheckRange(value, 0, 255, "col2");
+                CheckRange(value, 0, MAX_COL, "col2");
                 _escherClientAnchor.Col2 = (short)value;
             }
         }
@@ -163,10 +172,10 @@ namespace NPOI.HSSF.UserModel
         /// <value>The row1.</value>
         public int Row1
         {
-            get { return _escherClientAnchor.Row1; }
+            get { return unsignedValue(_escherClientAnchor.Row1); }
             set
             {
-                CheckRange(value, 0, 256 * 256, "row1");
+                CheckRange(value, 0, MAX_ROW, "row1");
                 _escherClientAnchor.Row1 = (short)value; 
             }
         }
@@ -177,10 +186,10 @@ namespace NPOI.HSSF.UserModel
         /// <value>The row2.</value>
         public int Row2
         {
-            get { return _escherClientAnchor.Row2; }
+            get { return unsignedValue(_escherClientAnchor.Row2); }
             set
             {
-                CheckRange(value, 0, 256 * 256, "row2");
+                CheckRange(value, 0, MAX_ROW, "row2");
                 _escherClientAnchor.Row2 = (short)value;
             }
         }
@@ -188,6 +197,10 @@ namespace NPOI.HSSF.UserModel
         /// <summary>
         /// Sets the top-left and bottom-right
         /// coordinates of the anchor
+        /// 
+        /// Note: Microsoft Excel seems to sometimes disallow 
+        /// higher y1 than y2 or higher x1 than x2 in the anchor, you might need to 
+        /// reverse them and draw shapes vertically or horizontally flipped! 
         /// </summary>
         /// <param name="col1">the column (0 based) of the first cell.</param>
         /// <param name="row1"> the row (0 based) of the first cell.</param>
@@ -203,10 +216,10 @@ namespace NPOI.HSSF.UserModel
             CheckRange(x2, 0, 1023, "dx2");
             CheckRange(y1, 0, 255, "dy1");
             CheckRange(y2, 0, 255, "dy2");
-            CheckRange(col1, 0, 255, "col1");
-            CheckRange(col2, 0, 255, "col2");
-            CheckRange(row1, 0, 255 * 256, "row1");
-            CheckRange(row2, 0, 255 * 256, "row2");
+            CheckRange(col1, 0, MAX_COL, "col1");
+            CheckRange(col2, 0, MAX_COL, "col2");
+            CheckRange(row1, 0, MAX_ROW, "row1");
+            CheckRange(row2, 0, MAX_ROW, "row2");
 
             this.Col1 = col1;
             this.Row1 = row1;
@@ -251,9 +264,9 @@ namespace NPOI.HSSF.UserModel
         /// 0 = Move and size with Cells, 2 = Move but don't size with cells, 3 = Don't move or size with cells.
         /// </summary>
         /// <value>The type of the anchor.</value>
-        public int AnchorType
+        public AnchorType AnchorType
         {
-            get { return _escherClientAnchor.Flag; }
+            get { return (AnchorType)_escherClientAnchor.Flag; }
             set { this._escherClientAnchor.Flag = (short)value; }
         }
 
@@ -268,7 +281,7 @@ namespace NPOI.HSSF.UserModel
         private void CheckRange(int value, int minRange, int maxRange, String varName)
         {
             if (value < minRange || value > maxRange)
-                throw new ArgumentException(varName + " must be between " + minRange + " and " + maxRange);
+                throw new ArgumentOutOfRangeException(varName + " must be between " + minRange + " and " + maxRange + ", but was: " + value);
         }
         internal override EscherRecord GetEscherAnchor()
         {
@@ -280,6 +293,37 @@ namespace NPOI.HSSF.UserModel
             _escherClientAnchor = new EscherClientAnchorRecord();
         }
 
+        /**
+         * Given a 16-bit unsigned integer stored in a short, return the unsigned value.
+         *
+         * @param s A 16-bit value intended to be interpreted as an unsigned integer.
+         * @return The value represented by <code>s</code>.
+         */
+        private static int unsignedValue(short s)
+        {
+            return (s < 0 ? 0x10000 + s : s);
+        }
+
+        public override bool Equals(Object obj)
+        {
+            if (obj == null)
+                return false;
+            if (obj == this)
+                return true;
+            if (obj.GetType() != GetType())
+                return false;
+            HSSFClientAnchor anchor = (HSSFClientAnchor)obj;
+
+            return anchor.Col1 == Col1 && anchor.Col2 == Col2 && anchor.Dx1 == Dx1
+                    && anchor.Dx2 == Dx2 && anchor.Dy1 == Dy1 && anchor.Dy2 == Dy2
+                    && anchor.Row1 == Row1 && anchor.Row2 == Row2 && anchor.AnchorType == AnchorType;
+        }
+        public override int GetHashCode()
+        {
+            return Col1.GetHashCode() ^ Col2.GetHashCode() ^ Dx1.GetHashCode()
+                   ^ Dx2.GetHashCode() ^ Dy1.GetHashCode() ^ Dy2.GetHashCode()
+                    ^Row1.GetHashCode() ^  Row2.GetHashCode() ^ AnchorType.GetHashCode();
+        }
         public override int Dx1
         {
             get

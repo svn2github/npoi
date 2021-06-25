@@ -24,6 +24,7 @@ namespace NPOI.SS.Formula.Eval
     using NPOI.SS.Formula.PTG;
     using NPOI.SS.Util;
     using System.Globalization;
+    using System.Text;
 
     /**
      * @author Amol S. Deshmukh &lt; amolweb at ya hoo dot com &gt;
@@ -32,7 +33,7 @@ namespace NPOI.SS.Formula.Eval
     public class NumberEval : NumericValueEval, StringValueEval
     {
 
-        public static NumberEval ZERO = new NumberEval(0);
+        public static readonly NumberEval ZERO = new NumberEval(0);
 
         private double _value;
         private String _stringValue;
@@ -86,6 +87,13 @@ namespace NPOI.SS.Formula.Eval
                 }
             }
         }
-
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(GetType().Name).Append(" [");
+            sb.Append(this.StringValue);
+            sb.Append("]");
+            return sb.ToString();
+        }
     }
 }

@@ -18,11 +18,11 @@
 namespace NPOI.SS.Formula.PTG
 {
     using System;
-    using NPOI.HSSF.Record;
     
     using NPOI.Util;
 
     using NPOI.HSSF.UserModel;
+    using NPOI.SS.UserModel;
 
     /**
      * AreaErr - handles deleted cell area references.
@@ -55,7 +55,7 @@ namespace NPOI.SS.Formula.PTG
 
         public override String ToFormulaString()
         {
-            return HSSFErrorConstants.GetText(HSSFErrorConstants.ERROR_REF);
+            return FormulaError.REF.String;
         }
 
         public override byte DefaultOperandClass

@@ -47,8 +47,8 @@ namespace NPOI.XWPF.Model
 
             foreach (CT_MarkupRange anchor in paragraph.GetCTP().GetCommentRangeStartList())
             {
-                if ((comment = paragraph.GetDocument().GetCommentByID(anchor.id)) != null)
-                    commentText.Append("\tComment by " + comment.GetAuthor() + ": " + comment.GetText());
+                if ((comment = paragraph.Document.GetCommentByID(anchor.id)) != null)
+                    commentText.Append("\tComment by " + comment.Author + ": " + comment.Text);
             }
         }
 
@@ -57,9 +57,12 @@ namespace NPOI.XWPF.Model
             return commentText.ToString();
         }
 
-        public override String GetText()
+        public override String Text
         {
-            return base.GetText() + commentText;
+            get
+            {
+                return base.Text + commentText;
+            }
         }
     }
 }

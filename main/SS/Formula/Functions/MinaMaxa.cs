@@ -17,22 +17,18 @@
 
 namespace NPOI.SS.Formula.Functions
 {
-    using System;
-    using NPOI.SS.Formula.Eval;
-
-
     public class Maxa : MinaMaxa
     {
         protected internal override double Evaluate(double[] values)
         {
-            return values.Length > 0 ? MathX.max(values) : 0;
+            return values.Length > 0 ? MathX.Max(values) : 0;
         }
     }
     public class Mina : MinaMaxa
     {
          protected internal override double Evaluate(double[] values)
         {
-            return values.Length > 0 ? MathX.min(values) : 0;
+            return values.Length > 0 ? MathX.Min(values) : 0;
         }
     }
     /**
@@ -48,7 +44,7 @@ namespace NPOI.SS.Formula.Functions
 
         }
 
-        public static Function MAXA = new Maxa();
-        public static Function MINA = new Mina();
+        public static readonly Function MAXA = new Maxa();
+        public static readonly Function MINA = new Mina();
     }
 }

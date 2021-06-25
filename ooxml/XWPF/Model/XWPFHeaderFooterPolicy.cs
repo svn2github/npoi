@@ -19,12 +19,12 @@ namespace NPOI.XWPF.Model
     using System;
     using NPOI.XWPF.UserModel;
     using NPOI.OpenXmlFormats.Wordprocessing;
-    using System.Collections.Generic;
     using System.IO;
     using System.Xml.Serialization;
     using System.Xml;
     using NPOI.OpenXmlFormats.Vml;
     using NPOI.OpenXmlFormats.Vml.Office;
+    using System.Diagnostics;
 
     /**
      * A .docx file can have no headers/footers, the same header/footer
@@ -35,9 +35,9 @@ namespace NPOI.XWPF.Model
      */
     public class XWPFHeaderFooterPolicy
     {
-        public static ST_HdrFtr DEFAULT = ST_HdrFtr.DEFAULT;
-        public static ST_HdrFtr EVEN = ST_HdrFtr.EVEN;
-        public static ST_HdrFtr FIRST = ST_HdrFtr.FIRST;
+        public static ST_HdrFtr DEFAULT = ST_HdrFtr.@default;
+        public static ST_HdrFtr EVEN = ST_HdrFtr.even;
+        public static ST_HdrFtr FIRST = ST_HdrFtr.first;
 
         private XWPFDocument doc;
 
@@ -104,11 +104,11 @@ namespace NPOI.XWPF.Model
 
         private void assignFooter(XWPFFooter ftr, ST_HdrFtr type)
         {
-            if (type == ST_HdrFtr.FIRST)
+            if (type == ST_HdrFtr.first)
             {
                 firstPageFooter = ftr;
             }
-            else if (type == ST_HdrFtr.EVEN)
+            else if (type == ST_HdrFtr.even)
             {
                 evenPageFooter = ftr;
             }
@@ -120,11 +120,11 @@ namespace NPOI.XWPF.Model
 
         private void assignHeader(XWPFHeader hdr, ST_HdrFtr type)
         {
-            if (type == ST_HdrFtr.FIRST)
+            if (type == ST_HdrFtr.first)
             {
                 firstPageHeader = hdr;
             }
-            else if (type == ST_HdrFtr.EVEN)
+            else if (type == ST_HdrFtr.even)
             {
                 evenPageHeader = hdr;
             }
@@ -146,18 +146,17 @@ namespace NPOI.XWPF.Model
             int i = GetRelationIndex(relation);
             HdrDocument hdrDoc = new HdrDocument();
             XWPFHeader wrapper = (XWPFHeader)doc.CreateRelationship(relation, XWPFFactory.GetInstance(), i);
-
+            wrapper.SetXWPFDocument(doc);
             CT_HdrFtr hdr = buildHdr(type, pStyle, wrapper, pars);
             wrapper.SetHeaderFooter(hdr);
 
-            Stream outputStream = wrapper.GetPackagePart().GetOutputStream();
             hdrDoc.SetHdr((CT_Hdr)hdr);
 
-            //XmlOptions xmlOptions = Commit(wrapper);
-
             assignHeader(wrapper, type);
-            hdrDoc.Save(outputStream, Commit(wrapper));
-            outputStream.Close();
+            using (Stream outputStream = wrapper.GetPackagePart().GetOutputStream())
+            {
+                hdrDoc.Save(outputStream);
+            }
             return wrapper;
         }
 
@@ -173,29 +172,26 @@ namespace NPOI.XWPF.Model
             int i = GetRelationIndex(relation);
             FtrDocument ftrDoc = new FtrDocument();
             XWPFFooter wrapper = (XWPFFooter)doc.CreateRelationship(relation, XWPFFactory.GetInstance(), i);
-
+            wrapper.SetXWPFDocument(doc);
             CT_HdrFtr ftr = buildFtr(type, pStyle, wrapper, pars);
             wrapper.SetHeaderFooter(ftr);
 
-            Stream outputStream = wrapper.GetPackagePart().GetOutputStream();
             ftrDoc.SetFtr((CT_Ftr)ftr);
 
-            //XmlOptions xmlOptions = Commit(wrapper);
-
             assignFooter(wrapper, type);
-            ftrDoc.Save(outputStream, Commit(wrapper));
-            outputStream.Close();
+            using (Stream outputStream = wrapper.GetPackagePart().GetOutputStream())
+            {
+                ftrDoc.Save(outputStream);
+            }
             return wrapper;
         }
 
         private int GetRelationIndex(XWPFRelation relation)
         {
-            List<POIXMLDocumentPart> relations = doc.GetRelations();
             int i = 1;
-            for (IEnumerator<POIXMLDocumentPart> it = relations.GetEnumerator(); it.MoveNext(); )
+            foreach (POIXMLDocumentPart.RelationPart rp in doc.RelationParts)
             {
-                POIXMLDocumentPart item = it.Current;
-                if (item.GetPackageRelationship().RelationshipType.Equals(relation.Relation))
+                if (rp.Relationship.RelationshipType.Equals(relation.Relation))
                 {
                     i++;
                 }
@@ -217,28 +213,6 @@ namespace NPOI.XWPF.Model
             CT_HdrFtr hdr = buildHdrFtr(pStyle, pars, wrapper);		// MB 24 May 2010
             SetHeaderReference(type, wrapper);
             return hdr;
-        }
-
-        private CT_HdrFtr buildHdrFtr(String pStyle, XWPFParagraph[] paragraphs)
-        {
-            CT_HdrFtr ftr = new CT_HdrFtr();
-            if (paragraphs != null) {
-                for (int i = 0 ; i < paragraphs.Length ; i++) {
-                    CT_P p = ftr.AddNewP();
-                    //ftr.PArray=(0, paragraphs[i].CTP);		// MB 23 May 2010
-                    ftr.SetPArray(i, paragraphs[i].GetCTP());   	// MB 23 May 2010
-                }
-            }
-            else {
-                CT_P p = ftr.AddNewP();
-                byte[] rsidr = doc.Document.body.GetPArray(0).rsidR;
-                byte[] rsidrdefault = doc.Document.body.GetPArray(0).rsidRDefault;
-                p.rsidR = (rsidr);
-                p.rsidRDefault = (rsidrdefault);
-                CT_PPr pPr = p.AddNewPPr();
-                pPr.AddNewPStyle().val = (pStyle);
-            }
-            return ftr;
         }
 
         /**
@@ -264,10 +238,18 @@ namespace NPOI.XWPF.Model
             }
             else {
                 CT_P p = ftr.AddNewP();
-                byte[] rsidr = doc.Document.body.GetPArray(0).rsidR;
-                byte[] rsidrdefault = doc.Document.body.GetPArray(0).rsidRDefault;
-                p.rsidP=(rsidr);
-                p.rsidRDefault=(rsidrdefault);
+                CT_Body body = doc.Document.body;
+                if (body.SizeOfPArray() > 0)
+                {
+                    CT_P p0 = body.GetPArray(0);
+                    if (p0.IsSetRsidR())
+                    {
+                        byte[] rsidr = p0.rsidR;
+                        byte[] rsidrdefault = p0.rsidRDefault;
+                        p.rsidP = rsidr;
+                        p.rsidRDefault = rsidrdefault;
+                    }
+                }
                 CT_PPr pPr = p.AddNewPPr();
                 pPr.AddNewPStyle().val = (pStyle);
             }
@@ -279,7 +261,7 @@ namespace NPOI.XWPF.Model
         {
             CT_HdrFtrRef ref1 = doc.Document.body.sectPr.AddNewFooterReference();
             ref1.type = (type);
-            ref1.id = (wrapper.GetPackageRelationship().Id);
+            ref1.id = (doc.GetRelationId(wrapper));
         }
 
 
@@ -287,26 +269,13 @@ namespace NPOI.XWPF.Model
         {
             CT_HdrFtrRef ref1 = doc.Document.body.sectPr.AddNewHeaderReference();
             ref1.type = (type);
-            ref1.id = (wrapper.GetPackageRelationship().Id);
+            ref1.id = (doc.GetRelationId(wrapper));
         }
 
 
         private XmlSerializerNamespaces Commit(XWPFHeaderFooter wrapper)
         {
-        //    XmlOptions xmlOptions = new XmlOptions(wrapper.DEFAULT_XML_OPTIONS);
-        //    Dictionary<String, String> map = new Dictionary<String, String>();
-        //    map.Put("http://schemas.Openxmlformats.org/officeDocument/2006/math", "m");
-        //    map.Put("urn:schemas-microsoft-com:office:office", "o");
-        //    map.Put("http://schemas.Openxmlformats.org/officeDocument/2006/relationships", "r");
-        //    map.Put("urn:schemas-microsoft-com:vml", "v");
-        //    map.Put("http://schemas.Openxmlformats.org/markup-compatibility/2006", "ve");
-        //    map.Put("http://schemas.Openxmlformats.org/wordProcessingml/2006/main", "w");
-        //    map.Put("urn:schemas-microsoft-com:office:word", "w10");
-        //    map.Put("http://schemas.microsoft.com/office/word/2006/wordml", "wne");
-        //    map.Put("http://schemas.Openxmlformats.org/drawingml/2006/wordProcessingDrawing", "wp");
-        //    xmlOptions.SaveSuggestedPrefixes=(map);
-        //    return xmlOptions;
-            XmlSerializerNamespaces namespaces = new XmlSerializerNamespaces(new[] {
+            XmlSerializerNamespaces namespaces = new XmlSerializerNamespaces(new XmlQualifiedName[] {
                 new XmlQualifiedName("ve", "http://schemas.openxmlformats.org/markup-compatibility/2006"),
                 new XmlQualifiedName("r", "http://schemas.openxmlformats.org/officeDocument/2006/relationships"),
                 new XmlQualifiedName("m", "http://schemas.openxmlformats.org/officeDocument/2006/math"),
@@ -410,8 +379,7 @@ namespace NPOI.XWPF.Model
             catch (IOException e)
             {
                 // TODO Auto-generated catch block
-                //e.PrintStackTrace();
-                Console.Write(e.StackTrace);
+                Trace.Write(e.StackTrace);
             }
         }
 
@@ -457,13 +425,13 @@ namespace NPOI.XWPF.Model
             formulas.AddNewF().eqn = ("mid @6 @7");
             formulas.AddNewF().eqn = ("sum @6 0 @5");
             CT_Path path = shapetype.AddNewPath();
-            path.textpathok=(ST_TrueFalse.t);
+            path.textpathok=(NPOI.OpenXmlFormats.Vml.ST_TrueFalse.t);
             path.connecttype=(ST_ConnectType.custom);
             path.connectlocs=("@9,0;@10,10800;@11,21600;@12,10800");
             path.connectangles=("270,180,90,0");
             CT_TextPath shapeTypeTextPath = shapetype.AddNewTextpath();
-            shapeTypeTextPath.on=(ST_TrueFalse.t);
-            shapeTypeTextPath.fitshape=(ST_TrueFalse.t);
+            shapeTypeTextPath.on=(NPOI.OpenXmlFormats.Vml.ST_TrueFalse.t);
+            shapeTypeTextPath.fitshape=(NPOI.OpenXmlFormats.Vml.ST_TrueFalse.t);
             CT_Handles handles = shapetype.AddNewHandles();
             CT_H h = handles.AddNewH();
             h.position=("#0,bottomRight");
@@ -477,7 +445,7 @@ namespace NPOI.XWPF.Model
             shape.style = ("position:absolute;margin-left:0;margin-top:0;width:415pt;height:207.5pt;z-index:-251654144;mso-wrap-edited:f;mso-position-horizontal:center;mso-position-horizontal-relative:margin;mso-position-vertical:center;mso-position-vertical-relative:margin");
             shape.wrapcoords = ("616 5068 390 16297 39 16921 -39 17155 7265 17545 7186 17467 -39 17467 18904 17467 10507 17467 8710 17545 18904 17077 18787 16843 18358 16297 18279 12554 19178 12476 20701 11774 20779 11228 21131 10059 21248 8811 21248 7563 20975 6316 20935 5380 19490 5146 14022 5068 2616 5068");
             shape.fillcolor = ("black");
-            shape.stroked = (ST_TrueFalse.@false);
+            shape.stroked = (NPOI.OpenXmlFormats.Vml.ST_TrueFalse.@false);
             CT_TextPath shapeTextPath = shape.AddNewTextpath();
             shapeTextPath.style=("font-family:&quot;Cambria&quot;;font-size:1pt");
             shapeTextPath.@string=(text);

@@ -54,19 +54,24 @@ namespace NPOI.XSSF.Model
             mapInfo = new CT_MapInfo();
 
         }
-
-        internal MapInfo(PackagePart part, PackageRelationship rel)
-            : base(part, rel)
+        XmlDocument xml = null;
+        internal MapInfo(PackagePart part)
+            : base(part)
         {
-
             ReadFrom(part.GetInputStream());
         }
+        [Obsolete("deprecated in POI 3.14, scheduled for removal in POI 3.16")]
+        public MapInfo(PackagePart part, PackageRelationship rel)
+             : this(part)
+        {
 
+        }
         public void ReadFrom(Stream is1)
         {
             try
             {
-                MapInfoDocument doc = MapInfoDocument.Parse(is1);
+                XmlDocument xmldoc = ConvertStreamToXml(is1);
+                MapInfoDocument doc = MapInfoDocument.Parse(xmldoc, NamespaceManager);
                 mapInfo = doc.GetMapInfo();
 
                 maps = new Dictionary<int, XSSFMap>();
@@ -161,13 +166,14 @@ namespace NPOI.XSSF.Model
 
         protected void WriteTo(Stream out1)
         {
-            MapInfoDocument doc = new MapInfoDocument();
-            doc.SetMapInfo(mapInfo);
-            doc.Save(out1);
+            //MapInfoDocument doc = new MapInfoDocument();
+            //doc.SetMapInfo(mapInfo);
+            //doc.Save(out1);
+            xml.Save(out1);
         }
 
 
-        protected override void Commit()
+        protected internal override void Commit()
         {
             PackagePart part = GetPackagePart();
             Stream out1 = part.GetOutputStream();

@@ -15,16 +15,11 @@
    limitations under the License.
 ==================================================================== */
 
-namespace NPOI.XWPF.Model
+namespace TestCases.XWPF.Model
 {
-    using System;
-
-
-
-    using NUnit.Framework;
-
-    using NPOI.XWPF;
+    using NPOI.XWPF.Model;
     using NPOI.XWPF.UserModel;
+    using NUnit.Framework;
 
     /**
      * Tests for XWPF Header Footer Stuff
@@ -134,6 +129,37 @@ namespace NPOI.XWPF.Model
         }
 
         [Test]
+        public void TestCreate()
+        {
+            XWPFDocument doc = new XWPFDocument();
+            Assert.AreEqual(null, doc.GetHeaderFooterPolicy());
+            Assert.AreEqual(0, doc.HeaderList.Count);
+            Assert.AreEqual(0, doc.FooterList.Count);
+
+            XWPFHeaderFooterPolicy policy = doc.CreateHeaderFooterPolicy();
+            Assert.IsNotNull(doc.GetHeaderFooterPolicy());
+            Assert.AreEqual(0, doc.HeaderList.Count);
+            Assert.AreEqual(0, doc.FooterList.Count);
+
+            // Create a header and a footer
+            XWPFHeader header = policy.CreateHeader(XWPFHeaderFooterPolicy.DEFAULT);
+            XWPFFooter footer = policy.CreateFooter(XWPFHeaderFooterPolicy.DEFAULT);
+            header.CreateParagraph().CreateRun().SetText("Header Hello");
+            footer.CreateParagraph().CreateRun().SetText("Footer Bye");
+
+
+            // Save, re-load, and check
+            doc = XWPFTestDataSamples.WriteOutAndReadBack(doc);
+            Assert.IsNotNull(doc.GetHeaderFooterPolicy());
+            Assert.AreEqual(1, doc.HeaderList.Count);
+            Assert.AreEqual(1, doc.FooterList.Count);
+
+            Assert.AreEqual("Header Hello\n", doc.HeaderList[(0)].Text);
+            Assert.AreEqual("Footer Bye\n", doc.FooterList[(0)].Text);
+        }
+
+
+        [Test]
         public void TestContents()
         {
             XWPFHeaderFooterPolicy policy;
@@ -143,11 +169,11 @@ namespace NPOI.XWPF.Model
 
             Assert.AreEqual(
                 "I am the header on the first page, and I" + '\u2019' + "m nice and simple\n",
-                policy.GetFirstPageHeader().GetText()
+                policy.GetFirstPageHeader().Text
             );
             Assert.AreEqual(
                     "First header column!\tMid header\tRight header!\n",
-                    policy.GetDefaultHeader().GetText()
+                    policy.GetDefaultHeader().Text
             );
 
 
@@ -156,11 +182,11 @@ namespace NPOI.XWPF.Model
 
             Assert.AreEqual(
                 "[ODD Page Header text]\n\n",
-                policy.GetDefaultHeader().GetText()
+                policy.GetDefaultHeader().Text
             );
             Assert.AreEqual(
                 "[This is an Even Page, with a Header]\n\n",
-                policy.GetEvenPageHeader().GetText()
+                policy.GetEvenPageHeader().Text
             );
         }
     }

@@ -18,11 +18,8 @@
 namespace NPOI.HSSF.Model
 {
     using System;
-    using System.Text;
-    using System.Collections;
     using NPOI.HSSF.Record;
     using NPOI.HSSF.Record.Aggregates;
-    using NPOI.HSSF.Record.AutoFilter;
     using System.Collections.Generic;
     using NPOI.HSSF.Record.PivotTable;
 
@@ -341,6 +338,7 @@ namespace NPOI.HSSF.Model
                 //case UnknownRecord.SHEETEXT_0862:
                 case SheetExtRecord.sid:
                 case UnknownRecord.SHEETPROTECTION_0867:
+                case UnknownRecord.PLV_MAC:
                 //case UnknownRecord.RANGEPROTECTION_0868:
                 case FeatRecord.sid: 
                 case EOFRecord.sid:
@@ -426,6 +424,7 @@ namespace NPOI.HSSF.Model
                 case DrawingSelectionRecord.sid:
                 case ObjRecord.sid:
                 case TextObjectRecord.sid:
+                case ColumnInfoRecord.sid: // See Bugzilla 53984
                 case GutsRecord.sid:   // see Bugzilla 50426
                 case WindowOneRecord.sid:
                 // should really be part of workbook stream, but some apps seem to put this before WINDOW2

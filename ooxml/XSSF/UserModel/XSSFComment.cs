@@ -21,6 +21,8 @@ using NPOI.OpenXmlFormats.Vml;
 using NPOI.SS.UserModel;
 using NPOI.SS.Util;
 using NPOI.XSSF.Model;
+using NPOI.Util;
+using NPOI.OpenXmlFormats.Vml.Spreadsheet;
 
 namespace NPOI.XSSF.UserModel
 {
@@ -46,6 +48,22 @@ namespace NPOI.XSSF.UserModel
             _comment = comment;
             _comments = comments;
             _vmlShape = vmlShape;
+
+            // we potentially need to adjust the column/row information in the shape
+            // the same way as we do in setRow()/setColumn()
+            if (vmlShape != null && vmlShape.SizeOfClientDataArray() > 0)
+            {
+                CellReference ref1 = new CellReference(comment.@ref);
+                CT_ClientData clientData = vmlShape.GetClientDataArray(0);
+                clientData.SetRowArray(0, ref1.Row);
+
+                clientData.SetColumnArray(0, ref1.Col);
+
+                // There is a very odd xmlbeans bug when changing the row
+                //  arrays which can lead to corrupt pointer
+                // This call seems to fix them again... See bug #50795
+                //vmlShape.GetClientDataList().ToString();
+            }
         }
 
         /**
@@ -65,6 +83,41 @@ namespace NPOI.XSSF.UserModel
                 );
             }
         }
+
+        public CellAddress Address
+        {
+            get
+            {
+                return new CellAddress(_comment.@ref);
+            }
+            set
+            {
+                CellAddress oldRef = new CellAddress(_comment.@ref);
+                if (value.Equals(oldRef))
+                {
+                    // nothing to do
+                    return;
+                }
+                _comment.@ref = value.FormatAsString();
+                _comments.ReferenceUpdated(oldRef, _comment);
+
+                if (_vmlShape != null)
+                {
+                    CT_ClientData clientData = _vmlShape.GetClientDataArray(0);
+                    clientData.SetRowArray(0, value.Row);
+                    clientData.SetColumnArray(0, value.Column);
+
+                    // There is a very odd xmlbeans bug when changing the column
+                    //  arrays which can lead to corrupt pointer
+                    // This call seems to fix them again... See bug #50795
+                    //_vmlShape.GetClientDataList().toString();
+                }
+            }
+        }
+        public void SetAddress(int row, int col)
+        {
+            Address = new CellAddress(row, col);
+        }
         /**
          * @return the 0-based column of the cell that the comment is associated with.
          */
@@ -72,27 +125,11 @@ namespace NPOI.XSSF.UserModel
         {
             get
             {
-                return new CellReference(_comment.@ref).Col;
+                return Address.Column;
             }
-            set 
+            set
             {
-                String oldRef = _comment.@ref;
-
-                CellReference ref1 = new CellReference(Row, value);
-                _comment.@ref = (ref1.FormatAsString());
-                _comments.ReferenceUpdated(oldRef, _comment);
-
-                if (_vmlShape != null)
-                {
-                    _vmlShape.GetClientDataArray(0).SetColumnArray(
-                          0,value
-                    );
-
-                    // There is a very odd xmlbeans bug when changing the column
-                    //  arrays which can lead to corrupt pointer
-                    // This call seems to fix them again... See bug #50795
-                    //_vmlShape.ClientData.ToString();
-                }
+                SetAddress(Row, value);
             }
         }
 
@@ -103,20 +140,11 @@ namespace NPOI.XSSF.UserModel
         {
             get
             {
-                return new CellReference(_comment.@ref).Row;
+                return Address.Row;
             }
             set 
             {
-                String oldRef = _comment.@ref;
-
-                String newRef =
-                    (new CellReference(value, Column)).FormatAsString();
-                _comment.@ref = (newRef);
-                _comments.ReferenceUpdated(oldRef, _comment);
-
-                if (_vmlShape != null) 
-                    _vmlShape.GetClientDataArray(0)
-                        .SetRowArray(0,value);
+                SetAddress(value, Column);
             }
         }
 
@@ -200,6 +228,23 @@ namespace NPOI.XSSF.UserModel
             this.String = (new XSSFRichTextString(str));
         }
 
+        public IClientAnchor ClientAnchor
+        {
+            get
+            {
+                String position = _vmlShape.GetClientDataArray(0).GetAnchorArray(0);
+                int[] pos = new int[8];
+                int i = 0;
+                foreach (String s in position.Split(",".ToCharArray()))
+                {
+                    pos[i++] = int.Parse(s.Trim());
+                }
+                XSSFClientAnchor ca = new XSSFClientAnchor(pos[1] * Units.EMU_PER_PIXEL, pos[3] * Units.EMU_PER_PIXEL,
+                    pos[5] * Units.EMU_PER_PIXEL, pos[7] * Units.EMU_PER_PIXEL, pos[0], pos[2], pos[4], pos[6]);
+                return ca;
+            }
+        }
+
         /**
          * @return the xml bean holding this comment's properties
          */
@@ -211,6 +256,21 @@ namespace NPOI.XSSF.UserModel
         internal CT_Shape GetCTShape()
         {
             return _vmlShape;
+        }
+
+        public override bool Equals(Object obj)
+        {
+            if (!(obj is XSSFComment)) {
+                return false;
+            }
+            XSSFComment other = (XSSFComment)obj;
+            return ((GetCTComment() == other.GetCTComment()) &&
+                    (GetCTShape() == other.GetCTShape()));
+        }
+
+        public override int GetHashCode()
+        {
+            return ((Row * 17) + Column) * 31;
         }
     }
 }

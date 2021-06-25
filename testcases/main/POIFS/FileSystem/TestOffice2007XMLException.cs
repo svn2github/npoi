@@ -33,6 +33,7 @@ namespace TestCases.POIFS.FileSystem
     using TestCases.HSSF;
     using NPOI.POIFS.FileSystem;
     using NUnit.Framework;
+    using NPOI.Util;
 
 
     /**
@@ -41,7 +42,7 @@ namespace TestCases.POIFS.FileSystem
      * @author Marc Johnson
      */
     [TestFixture]
-    public class TestOffice2007XMLException
+    public class TestOfficeXMLException
     {
 
         private static Stream OpenSampleStream(String sampleFileName)
@@ -49,13 +50,13 @@ namespace TestCases.POIFS.FileSystem
             return HSSFTestDataSamples.OpenSampleFileStream(sampleFileName);
         }
         [Test]
-        public void TestXMLException()
+        public void TestOOXMLException()
         {
             Stream in1 = OpenSampleStream("sample.xlsx");
 
             try
             {
-                new POIFSFileSystem(in1);
+                new POIFSFileSystem(in1).Close();
                 Assert.Fail("expected exception was not thrown");
             }
             catch (OfficeXmlFileException e)
@@ -65,12 +66,33 @@ namespace TestCases.POIFS.FileSystem
                 Assert.IsTrue(e.Message.IndexOf("You are calling the part of POI that deals with OLE2 Office Documents") > -1);
             }
         }
+
+        [Test]
+        public void Test2003XMLException()
+        {
+            Stream in1 = OpenSampleStream("SampleSS.xml");
+            try
+            {
+                new POIFSFileSystem(in1).Close();
+                Assert.Fail("expected exception was not thrown");
+            }
+            catch (NotOLE2FileException e)
+            {
+                // expected during successful test
+                Assert.IsTrue(e.Message.IndexOf("The supplied data appears to be a raw XML file") > -1);
+                Assert.IsTrue(e.Message.IndexOf("Formats such as Office 2003 XML") > -1);
+            }
+        }
+
         [Test]
         public void TestDetectAsPOIFS()
         {
 
             // ooxml file isn't
             ConfirmIsPOIFS("SampleSS.xlsx", false);
+
+            // 2003 xml file isn't
+            ConfirmIsPOIFS("SampleSS.xml", false);
 
             // xls file is
             ConfirmIsPOIFS("SampleSS.xls", true);
@@ -81,16 +103,60 @@ namespace TestCases.POIFS.FileSystem
         private void ConfirmIsPOIFS(String sampleFileName, bool expectedResult)
         {
             Stream in1 = OpenSampleStream(sampleFileName);
-            bool actualResult;
             try
             {
-                actualResult = POIFSFileSystem.HasPOIFSHeader(in1);
+                bool actualResult;
+                try
+                {
+                    actualResult = POIFSFileSystem.HasPOIFSHeader(in1);
+                }
+                catch (IOException ex)
+                {
+                    throw new RuntimeException(ex);
+                }
+                Assert.AreEqual(expectedResult, actualResult);
             }
-            catch (IOException)
+            finally
             {
-                throw;
+                in1.Close();
             }
-            Assert.AreEqual(expectedResult, actualResult);
+
         }
+        [Test]
+        public void TestFileCorruption()
+        {
+
+            // create test InputStream
+            byte[] testData = { (byte)1, (byte)2, (byte)3 };
+            InputStream testInput = new ByteArrayInputStream(testData);
+
+            // detect header
+            InputStream in1 = new PushbackInputStream(testInput, 10);
+            Assert.IsFalse(POIFSFileSystem.HasPOIFSHeader(in1));
+
+            // check if InputStream is still intact
+            byte[] test = new byte[3];
+            in1.Read(test);
+            Assert.IsTrue(Arrays.Equals(testData, test));
+            Assert.AreEqual(-1, in1.Read());
+        }
+        [Test]
+        public void testFileCorruptionOPOIFS()
+        {
+
+            // create test InputStream
+            byte[] testData = { (byte)1, (byte)2, (byte)3 };
+            InputStream testInput = new ByteArrayInputStream(testData);
+
+            // detect header
+            InputStream in1 = new PushbackInputStream(testInput, 10);
+            Assert.IsFalse(OPOIFSFileSystem.HasPOIFSHeader(in1));
+            // check if InputStream is still intact
+            byte[] test = new byte[3];
+            in1.Read(test);
+            Assert.IsTrue(Arrays.Equals(testData, test));
+            Assert.AreEqual(-1, in1.Read());
+        }
+
     }
 }

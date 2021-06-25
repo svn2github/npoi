@@ -19,17 +19,18 @@
 namespace TestCases.HPSF.Basic
 {
     using System;
+    using System.Collections;
     using System.IO;
     using System.Text;
-    using System.Collections;
-    using NUnit.Framework;
+
     using NPOI.HPSF;
-    using NPOI.Util;
-    using NPOI.POIFS.FileSystem;
-    using NPOI.POIFS.EventFileSystem;
     using NPOI.HPSF.Wellknown;
+    using NPOI.POIFS.EventFileSystem;
+    using NPOI.POIFS.FileSystem;
+    using NPOI.Util;
 
-
+    using NUnit.Framework;
+    using NUnit.Framework.Constraints;
 
     /**
      * Tests HPSF's writing functionality.
@@ -41,13 +42,9 @@ namespace TestCases.HPSF.Basic
     [TestFixture]
     public class TestWrite
     {
-        //static string dataDir = @"..\..\..\TestCases\HPSF\data\";
         static String POI_FS = "TestHPSFWritingFunctionality.doc";
         private static POIDataSamples _samples = POIDataSamples.GetHPSFInstance();
 
-        //static int BYTE_ORDER = 0xfffe;
-        //static int FORMAT = 0x0000;
-        //static int OS_VERSION = 0x00020A04;
         static int[] SECTION_COUNT = { 1, 2 };
         static bool[] IS_SUMMARY_INFORMATION = { true, false };
         static bool[] IS_DOCUMENT_SUMMARY_INFORMATION = { false, true };
@@ -59,38 +56,6 @@ namespace TestCases.HPSF.Basic
             "8-bit-characters. You can achieve this by Setting the " +
             "LANG environment variable to a proper value, e.g. " +
             "\"de_DE\".";
-
-        //POIFile[] poiFiles;
-
-        private TestContext testContextInstance;
-
-        /// <summary>
-        ///Gets or sets the test context which provides
-        ///information about and functionality for the current test run.
-        ///</summary>
-        public TestContext TestContext
-        {
-            get
-            {
-                return testContextInstance;
-            }
-            set
-            {
-                testContextInstance = value;
-            }
-        }
-
-
-        /**
-         * Constructor
-         * 
-         * @param name the Test case's name
-         */
-        public TestWrite()
-        {
-        }
-
-
 
         [SetUp]
         public void SetUp()
@@ -107,7 +72,7 @@ namespace TestCases.HPSF.Basic
          * @exception IOException if an I/O exception occurs
          */
         [Test]
-        public void TestNoFormatID()
+        public void TestWithoutAFormatID()
         {
             FileInfo fi = TempFile.CreateTempFile(POI_FS, ".doc");
             using (FileStream file = new FileStream(fi.FullName, FileMode.Open, FileAccess.ReadWrite))
@@ -142,6 +107,7 @@ namespace TestCases.HPSF.Basic
                 }
                 finally
                 {
+                    poiFs.Close();
                     out1.Close();
                 }
             }
@@ -192,6 +158,8 @@ namespace TestCases.HPSF.Basic
                 POIFSReader reader3 = new POIFSReader();
                 reader3.StreamReaded += new POIFSReaderEventHandler(reader3_StreamReaded);
                 reader3.Read(file);
+
+                poiFs.Close();
                 file.Close();
                 //File.Delete(dataDir + POI_FS);
             }
@@ -251,9 +219,10 @@ namespace TestCases.HPSF.Basic
             si.SetProperty(p);
             si.SetProperty(PropertyIDMap.PID_TITLE, Variant.VT_LPSTR, TITLE);
 
-            poiFs.CreateDocument(ps.GetStream(),
+            poiFs.CreateDocument(ps.ToInputStream(),
                                  SummaryInformation.DEFAULT_STREAM_NAME);
             poiFs.WriteFileSystem(out1);
+            poiFs.Close();
             //out1.Close();
             file.Position = 0;
 
@@ -331,8 +300,9 @@ namespace TestCases.HPSF.Basic
             s2.SetProperty(2, SECTION2);
             ps.AddSection(s2);
 
-            poiFs.CreateDocument(ps.GetStream(), STREAM_NAME);
+            poiFs.CreateDocument(ps.ToInputStream(), STREAM_NAME);
             poiFs.WriteFileSystem(out1);
+            poiFs.Close();
             //out1.Close();
 
             /* Read the POIFS: */
@@ -388,8 +358,8 @@ namespace TestCases.HPSF.Basic
 
         private static int CODEPAGE_DEFAULT = -1;
         private static int CODEPAGE_1252 = 1252;
-        private static int CODEPAGE_UTF8 = (int)Constants.CP_UTF8;
-        private static int CODEPAGE_UTF16 = (int)Constants.CP_UTF16;
+        private static int CODEPAGE_UTF8 = CodePageUtil.CP_UTF8;
+        private static int CODEPAGE_UTF16 = CodePageUtil.CP_UTF16;
 
 
 
@@ -496,7 +466,7 @@ namespace TestCases.HPSF.Basic
                     check(t, "\u00e4\u00f6\u00fc\u00c4\u00d6", cp);
                     check(t, "\u00e4\u00f6\u00fc\u00c4\u00d6\u00dc", cp);
                     check(t, "\u00e4\u00f6\u00fc\u00c4\u00d6\u00dc\u00df", cp);
-                    if (cp == (int)Constants.CP_UTF16 || cp == (int)Constants.CP_UTF8)
+                    if (cp == CodePageUtil.CP_UTF16 || cp == CodePageUtil.CP_UTF8)
                         check(t, "\u79D1\u5B78", cp);
                 }
                 catch (Exception ex)
@@ -682,14 +652,16 @@ namespace TestCases.HPSF.Basic
             for (int i = 0; i < files.Length; i++)
             {
                 string filename = Path.GetFileName(files[i]);
-                if (filename.StartsWith("Test"))
+                if (filename.StartsWith("Test") && TestReadAllFiles.checkExclude(filename))
                 {
-                    //if (files[i].EndsWith("1")
-                    //    || files[i].EndsWith("TestHPSFWritingFunctionality.doc")
-                    //    || files[i].EndsWith("excel_with_embeded.xls"))
-                    //    continue;
-
-                    TestRecreate(new FileInfo(files[i]));
+                    try
+                    {
+                        TestRecreate(new FileInfo(files[i]));
+                    }
+                    catch (Exception e)
+                    {
+                        throw new IOException("While handling file " + files[i], e);
+                    }
                 }
             }
         }
@@ -707,14 +679,14 @@ namespace TestCases.HPSF.Basic
             Console.WriteLine("Recreating file \"" + f.Name + "\"");
             
             /* Read the POI filesystem's property Set streams: */
-            POIFile[] psf1 = Util.ReadPropertySets(_samples.GetFile(f.Name));
+            POIFile[] psf1 = Util.ReadPropertySets(f);
 
             /* Create a new POI filesystem containing the origin file's
              * property Set streams: */
-            FileInfo fi = new FileInfo(f.Name);
-            FileStream copy = File.Create(fi.Name);
+            FileInfo copy = TempFile.CreateTempFile(f.Name, "");
+            //File.Create(Path.Combine(TestContext.CurrentContext.TestDirectory,f.Name));
             //copy.deleteOnExit();
-            FileStream out1 = copy;
+            FileStream out1 = copy.OpenWrite();
             POIFSFileSystem poiFs = new POIFSFileSystem();
             for (int i = 0; i < psf1.Length; i++)
             {
@@ -731,6 +703,8 @@ namespace TestCases.HPSF.Basic
                                      psf1[i].GetName());
                 poiFs.WriteFileSystem(out1);
             }
+            poiFs.Close();
+            out1.Close();
 
             /* Read the property Set streams from the POI filesystem just
              * Created. */
@@ -752,34 +726,31 @@ namespace TestCases.HPSF.Basic
             out1.Close();
         }
 
-
-
         /**
          * Tests writing and Reading back a proper dictionary.
          */
         [Test]
         public void TestDictionary()
         {
-            FileStream copy = File.Create( @"\Test-HPSF.ole2");
-            //copy.deleteOnExit();
-
-            /* Write: */
-            FileStream out1 = copy;
-            POIFSFileSystem poiFs = new POIFSFileSystem();
+            FileInfo copy = TempFile.CreateTempFile("Test-HPSF", "ole2");
             MutablePropertySet ps1 = new MutablePropertySet();
-            MutableSection s = (MutableSection)ps1.Sections[0];
-            Hashtable m = new Hashtable(3, 1.0f);
-            m[1] = "String 1";
-            m[2] = "String 2";
-            m[3] = "String 3";
-            s.Dictionary = (m);
-            s.SetFormatID(SectionIDMap.DOCUMENT_SUMMARY_INFORMATION_ID1);
-            int codepage = (int)Constants.CP_UNICODE;
-            s.SetProperty(PropertyIDMap.PID_CODEPAGE, Variant.VT_I2,
-                          codepage);
-            poiFs.CreateDocument(ps1.GetStream(), "Test");
-            poiFs.WriteFileSystem(out1);
-
+            using (FileStream out1 = copy.OpenWrite())
+            {
+                /* Write: */
+                POIFSFileSystem poiFs = new POIFSFileSystem();
+                MutableSection s = (MutableSection)ps1.Sections[0];
+                Hashtable m = new Hashtable(3, 1.0f);
+                m[1] = "String 1";
+                m[2] = "String 2";
+                m[3] = "String 3";
+                s.Dictionary = (m);
+                s.SetFormatID(SectionIDMap.DOCUMENT_SUMMARY_INFORMATION_ID1);
+                int codepage = CodePageUtil.CP_UNICODE;
+                s.SetProperty(PropertyIDMap.PID_CODEPAGE, Variant.VT_I2, codepage);
+                poiFs.CreateDocument(ps1.ToInputStream(), "Test");
+                poiFs.WriteFileSystem(out1);
+                poiFs.Close();
+            }
             /* Read back: */
             POIFile[] psf = Util.ReadPropertySets(copy);
             Assert.AreEqual(1, psf.Length);
@@ -788,19 +759,230 @@ namespace TestCases.HPSF.Basic
             PropertySet ps2 = PropertySetFactory.Create(in1);
 
             /* Check if the result is a DocumentSummaryInformation stream, as
-             * specified. */
+                * specified. */
             Assert.IsTrue(ps2.IsDocumentSummaryInformation);
 
             /* Compare the property Set stream with the corresponding one
-             * from the origin file and check whether they are equal. */
+                * from the origin file and check whether they are equal. */
             Assert.IsTrue(ps1.Equals(ps2));
-
-            out1.Close();
-            copy.Close();
-            File.Delete( @"\Test-HPSF.ole2");
-
+            
+            copy.Delete();
         }
 
+        /**
+         * Tests that when using NPOIFS, we can do an in-place write
+         *  without needing to stream in + out the whole kitchen sink
+         */
+        [Test]
+        public void TestInPlaceNPOIFSWrite()
+        {
+            NPOIFSFileSystem fs = null;
+            DirectoryEntry root = null;
+            DocumentNode sinfDoc = null;
+            DocumentNode dinfDoc = null;
+            SummaryInformation sinf = null;
+            DocumentSummaryInformation dinf = null;
+
+            // We need to work on a File for in-place changes, so create a temp one
+            FileInfo copy = TempFile.CreateTempFile("Test-HPSF", "ole2");
+            //copy.DeleteOnExit();
+
+            // Copy a test file over to a temp location
+            Stream inp = _samples.OpenResourceAsStream("TestShiftJIS.doc");
+            FileStream out1 = new FileStream(copy.FullName, FileMode.Create);
+            IOUtils.Copy(inp, out1);
+            inp.Close();
+            out1.Close();
+
+            // Open the copy in Read/write mode
+            fs = new NPOIFSFileSystem(copy, false);
+            root = fs.Root;
+
+            // Read the properties in there
+            sinfDoc = (DocumentNode)root.GetEntry(SummaryInformation.DEFAULT_STREAM_NAME);
+            dinfDoc = (DocumentNode)root.GetEntry(DocumentSummaryInformation.DEFAULT_STREAM_NAME);
+
+            InputStream sinfStream = new NDocumentInputStream(sinfDoc);
+            sinf = (SummaryInformation)PropertySetFactory.Create(sinfStream);
+            sinfStream.Close();
+            Assert.AreEqual(131077, sinf.OSVersion);
+
+            InputStream dinfStream = new NDocumentInputStream(dinfDoc);
+            dinf = (DocumentSummaryInformation)PropertySetFactory.Create(dinfStream);
+            dinfStream.Close();
+            Assert.AreEqual(131077, dinf.OSVersion);
+
+            // Check they start as we expect
+            Assert.AreEqual("Reiichiro Hori", sinf.Author);
+            Assert.AreEqual("Microsoft Word 9.0", sinf.ApplicationName);
+            Assert.AreEqual("\u7b2c1\u7ae0", sinf.Title);
+
+            Assert.AreEqual("", dinf.Company);
+            Assert.AreEqual(null, dinf.Manager);
+
+            // Do an in-place replace via an InputStream
+            new NPOIFSDocument(sinfDoc).ReplaceContents(sinf.ToInputStream());
+            new NPOIFSDocument(dinfDoc).ReplaceContents(dinf.ToInputStream());
+
+
+            // Check it didn't Get Changed
+            sinfDoc = (DocumentNode)root.GetEntry(SummaryInformation.DEFAULT_STREAM_NAME);
+            dinfDoc = (DocumentNode)root.GetEntry(DocumentSummaryInformation.DEFAULT_STREAM_NAME);
+
+            InputStream sinfStream2 = new NDocumentInputStream(sinfDoc);
+            sinf = (SummaryInformation)PropertySetFactory.Create(sinfStream2);
+            sinfStream2.Close();
+            Assert.AreEqual(131077, sinf.OSVersion);
+
+            InputStream dinfStream2 = new NDocumentInputStream(dinfDoc);
+            dinf = (DocumentSummaryInformation)PropertySetFactory.Create(dinfStream2);
+            dinfStream2.Close();
+            Assert.AreEqual(131077, dinf.OSVersion);
+
+
+            // Start again!
+            fs.Close();
+            inp = _samples.OpenResourceAsStream("TestShiftJIS.doc");
+            out1 = new FileStream(copy.FullName, FileMode.Open, FileAccess.ReadWrite);
+            IOUtils.Copy(inp, out1);
+            inp.Close();
+            out1.Close();
+
+            fs = new NPOIFSFileSystem(new FileStream(copy.FullName, FileMode.Open, FileAccess.ReadWrite),
+                null, false, true);
+            root = fs.Root;
+
+            // Read the properties in once more
+            sinfDoc = (DocumentNode)root.GetEntry(SummaryInformation.DEFAULT_STREAM_NAME);
+            dinfDoc = (DocumentNode)root.GetEntry(DocumentSummaryInformation.DEFAULT_STREAM_NAME);
+
+            InputStream sinfStream3 = new NDocumentInputStream(sinfDoc);
+            sinf = (SummaryInformation)PropertySetFactory.Create(sinfStream3);
+            sinfStream3.Close();
+            Assert.AreEqual(131077, sinf.OSVersion);
+
+            InputStream dinfStream3 = new NDocumentInputStream(dinfDoc);
+            dinf = (DocumentSummaryInformation)PropertySetFactory.Create(dinfStream3);
+            dinfStream3.Close();
+            Assert.AreEqual(131077, dinf.OSVersion);
+
+
+            // Have them write themselves in-place with no Changes
+            Stream soufStream = new NDocumentOutputStream(sinfDoc);
+            sinf.Write(soufStream);
+            soufStream.Close();
+            Stream doufStream = new NDocumentOutputStream(dinfDoc);
+            dinf.Write(doufStream);
+            doufStream.Close();
+
+            // And also write to some bytes for Checking
+            MemoryStream sinfBytes = new MemoryStream();
+            sinf.Write(sinfBytes);
+            MemoryStream dinfBytes = new MemoryStream();
+            dinf.Write(dinfBytes);
+
+
+            // Check that the filesystem can give us back the same bytes
+            sinfDoc = (DocumentNode)root.GetEntry(SummaryInformation.DEFAULT_STREAM_NAME);
+            dinfDoc = (DocumentNode)root.GetEntry(DocumentSummaryInformation.DEFAULT_STREAM_NAME);
+
+            InputStream sinfStream4 = new NDocumentInputStream(sinfDoc);
+            byte[] sinfData = IOUtils.ToByteArray(sinfStream4);
+            sinfStream4.Close();
+            InputStream dinfStream4 = new NDocumentInputStream(dinfDoc);
+            byte[] dinfData = IOUtils.ToByteArray(dinfStream4);
+            dinfStream4.Close();
+            Assert.That(sinfBytes.ToArray(), new EqualConstraint(sinfData));
+            Assert.That(dinfBytes.ToArray(), new EqualConstraint(dinfData));
+
+
+            // Read back in as-is
+            InputStream sinfStream5 = new NDocumentInputStream(sinfDoc);
+            sinf = (SummaryInformation)PropertySetFactory.Create(sinfStream5);
+            sinfStream5.Close();
+            Assert.AreEqual(131077, sinf.OSVersion);
+
+            InputStream dinfStream5 = new NDocumentInputStream(dinfDoc);
+            dinf = (DocumentSummaryInformation)PropertySetFactory.Create(dinfStream5);
+            dinfStream5.Close();
+            Assert.AreEqual(131077, dinf.OSVersion);
+
+            Assert.AreEqual("Reiichiro Hori", sinf.Author);
+            Assert.AreEqual("Microsoft Word 9.0", sinf.ApplicationName);
+            Assert.AreEqual("\u7b2c1\u7ae0", sinf.Title);
+
+            Assert.AreEqual("", dinf.Company);
+            Assert.AreEqual(null, dinf.Manager);
+
+
+            // Now alter a few of them
+            sinf.Author = (/*setter*/"Changed Author");
+            sinf.Title = (/*setter*/"Le titre \u00e9tait chang\u00e9");
+            dinf.Manager = (/*setter*/"Changed Manager");
+
+
+            // Save this into the filesystem
+            Stream soufStream2 = new NDocumentOutputStream(sinfDoc);
+            sinf.Write(soufStream2);
+            soufStream2.Close();
+            Stream doufStream2 = new NDocumentOutputStream(dinfDoc);
+            dinf.Write(doufStream2);
+            doufStream2.Close();
+
+
+            // Read them back in again
+            sinfDoc = (DocumentNode)root.GetEntry(SummaryInformation.DEFAULT_STREAM_NAME);
+            InputStream sinfStream6 = new NDocumentInputStream(sinfDoc);
+            sinf = (SummaryInformation)PropertySetFactory.Create(sinfStream6);
+            sinfStream6.Close();
+            Assert.AreEqual(131077, sinf.OSVersion);
+
+            dinfDoc = (DocumentNode)root.GetEntry(DocumentSummaryInformation.DEFAULT_STREAM_NAME);
+            InputStream dinfStream6 = new NDocumentInputStream(dinfDoc);
+            dinf = (DocumentSummaryInformation)PropertySetFactory.Create(dinfStream6);
+            dinfStream6.Close();
+            Assert.AreEqual(131077, dinf.OSVersion);
+
+            Assert.AreEqual("Changed Author", sinf.Author);
+            Assert.AreEqual("Microsoft Word 9.0", sinf.ApplicationName);
+            Assert.AreEqual("Le titre \u00e9tait chang\u00e9", sinf.Title);
+
+            Assert.AreEqual("", dinf.Company);
+            Assert.AreEqual("Changed Manager", dinf.Manager);
+
+
+            // Close the whole filesystem, and open it once more
+            fs.WriteFileSystem();
+            fs.Close();
+
+            fs = new NPOIFSFileSystem(new FileStream(copy.FullName, FileMode.Open));
+            root = fs.Root;
+
+            // Re-check on load
+            sinfDoc = (DocumentNode)root.GetEntry(SummaryInformation.DEFAULT_STREAM_NAME);
+            InputStream sinfStream7 = new NDocumentInputStream(sinfDoc);
+            sinf = (SummaryInformation)PropertySetFactory.Create(sinfStream7);
+            sinfStream7.Close();
+            Assert.AreEqual(131077, sinf.OSVersion);
+
+            dinfDoc = (DocumentNode)root.GetEntry(DocumentSummaryInformation.DEFAULT_STREAM_NAME);
+            InputStream dinfStream7 = new NDocumentInputStream(dinfDoc);
+            dinf = (DocumentSummaryInformation)PropertySetFactory.Create(dinfStream7);
+            dinfStream7.Close();
+            Assert.AreEqual(131077, dinf.OSVersion);
+
+            Assert.AreEqual("Changed Author", sinf.Author);
+            Assert.AreEqual("Microsoft Word 9.0", sinf.ApplicationName);
+            Assert.AreEqual("Le titre \u00e9tait chang\u00e9", sinf.Title);
+
+            Assert.AreEqual("", dinf.Company);
+            Assert.AreEqual("Changed Manager", dinf.Manager);
+
+
+            // Tidy up
+            fs.Close();
+            copy.Delete();
+        }
 
 
         /**
@@ -810,13 +992,10 @@ namespace TestCases.HPSF.Basic
         [Test]
         public void TestDictionaryWithInvalidCodepage()
         {
-            try
-            {
-                FileStream copy = File.Create( @"\Test-HPSF.ole2");
-                //copy.deleteOnExit();
 
+            using (FileStream copy = File.Create(@".\Test-HPSF.ole2"))
+            {
                 /* Write: */
-                FileStream out1 = copy;
                 POIFSFileSystem poiFs = new POIFSFileSystem();
                 MutablePropertySet ps1 = new MutablePropertySet();
                 MutableSection s = (MutableSection)ps1.Sections[0];
@@ -824,22 +1003,30 @@ namespace TestCases.HPSF.Basic
                 m[1] = "String 1";
                 m[2] = "String 2";
                 m[3] = "String 3";
-                s.Dictionary = (m);
-                s.SetFormatID(SectionIDMap.DOCUMENT_SUMMARY_INFORMATION_ID1);
-                int codepage = 12345;
-                s.SetProperty(PropertyIDMap.PID_CODEPAGE, Variant.VT_I2,
-                              codepage);
-                poiFs.CreateDocument(ps1.GetStream(), "Test");
-                poiFs.WriteFileSystem(out1);
-                out1.Close();
-                Assert.Fail("This Testcase did not detect the invalid codepage value.");
+                
+                try
+                {
+                    Assert.Throws<IllegalPropertySetDataException>(() => {
+                        s.Dictionary = m;
+                        s.SetFormatID(SectionIDMap.DOCUMENT_SUMMARY_INFORMATION_ID1);
+                        s.SetProperty(PropertyIDMap.PID_CODEPAGE, Variant.VT_I2, 12345);
+                        poiFs.CreateDocument(ps1.ToInputStream(), "Test");
+                        poiFs.WriteFileSystem(copy);
+                    });
+                }
+                finally
+                {
+                    poiFs.Close();
+                }
             }
-            catch (IllegalPropertySetDataException)
+            
+            
+            
+            if (File.Exists(@".\Test-HPSF.ole2"))
             {
-                //Assert.IsTrue(true);
+                File.Delete(@".\Test-HPSF.ole2");
             }
         }
-
 
 
         /**

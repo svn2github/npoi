@@ -22,7 +22,6 @@ namespace NPOI.HSSF.Record
     using NPOI.Util;
 
     using System.IO;
-    using System.Collections;
     using System.Collections.Generic;
 
 
@@ -31,10 +30,10 @@ namespace NPOI.HSSF.Record
      *
      * @author Glen Stampoultzis (glens at apache.org)
      */
-    public class ObjRecord : Record
+    public class ObjRecord : Record, ICloneable
     {
-        private static int NORMAL_PAD_ALIGNMENT = 2;
-	    private static int MAX_PAD_ALIGNMENT = 4;
+        private const int NORMAL_PAD_ALIGNMENT = 2;
+	    private const int MAX_PAD_ALIGNMENT = 4;
 
         public const short sid = 0x5D;
         private List<SubRecord> subrecords;

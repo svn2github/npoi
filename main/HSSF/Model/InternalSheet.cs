@@ -20,11 +20,12 @@ namespace NPOI.HSSF.Model
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Text;
     using NPOI.HSSF.Record;
     using NPOI.HSSF.Record.Aggregates;
     using NPOI.SS.Formula;
     using NPOI.SS.Util;
-    using NPOI.HSSF.Record.Aggregates.Chart;
+    using NPOI.Util;
 
     /// <summary>
     /// Low level model implementation of a Sheet (one workbook Contains many sheets)
@@ -49,7 +50,7 @@ namespace NPOI.HSSF.Model
     public class InternalSheet
     {
 
-        //private static POILogger log = POILogFactory.GetLogger(typeof(Sheet));
+        private static POILogger log = POILogFactory.GetLogger(typeof(InternalSheet));
 
         int preoffset = 0;            // offset of the sheet in a new file
         protected int dimsloc = -1;  // TODO - Is it legal for dims record to be missing?
@@ -70,6 +71,8 @@ namespace NPOI.HSSF.Model
         [NonSerialized]
         protected PrintGridlinesRecord printGridlines = null;
         [NonSerialized]
+        protected PrintHeadersRecord printHeaders = null;
+        [NonSerialized]
         protected WindowTwoRecord windowTwo = null;
         [NonSerialized]
         protected MergeCellsRecord merged = null;
@@ -84,7 +87,7 @@ namespace NPOI.HSSF.Model
         //protected IList mergedRecords = new ArrayList();
 
         [NonSerialized]
-        protected SelectionRecord selection = null;
+        protected SelectionRecord _selection = null;
         //protected ColumnInfoRecordsAggregate columns = null;
         //protected ValueRecordsAggregate cells = null;
         /*package*/
@@ -113,10 +116,10 @@ namespace NPOI.HSSF.Model
         /** Add an UncalcedRecord if not true indicating formulas have not been calculated */
         protected bool _isUncalced = false;
 
-        //public static byte PANE_LOWER_RIGHT = (byte)0;
-        //public static byte PANE_UPPER_RIGHT = (byte)1;
-        //public static byte PANE_LOWER_LEFT = (byte)2;
-        //public static byte PANE_UPPER_LEFT = (byte)3;
+        //public const byte PANE_LOWER_RIGHT = (byte)0;
+        //public const byte PANE_UPPER_RIGHT = (byte)1;
+        //public const byte PANE_LOWER_LEFT = (byte)2;
+        //public const byte PANE_UPPER_LEFT = (byte)3;
 
 
         /// <summary>
@@ -129,7 +132,7 @@ namespace NPOI.HSSF.Model
         /// <returns></returns>
         public InternalSheet CloneSheet()
         {
-            List<RecordBase> clonedRecords = new List<RecordBase>(this.records.Count);
+            List<Record> clonedRecords = new List<Record>(this.records.Count);
             for (int i = 0; i < this.records.Count; i++)
             {
                 RecordBase rb = (RecordBase)this.records[i];
@@ -138,25 +141,26 @@ namespace NPOI.HSSF.Model
                     ((RecordAggregate)rb).VisitContainedRecords(new RecordCloner(clonedRecords));
                     continue;
                 }
-                Record rec = (Record)((Record)rb).Clone();
-                clonedRecords.Add(rec);
+
+                if (rb is EscherAggregate)
+                {
+                    /*
+                     * this record will be removed after reading actual data from EscherAggregate
+                     */
+                    rb = new DrawingRecord();
+                }
+                try
+                {
+                    Record rec = (Record)((Record)rb).Clone();
+                    clonedRecords.Add(rec);
+                }
+                catch (NotSupportedException e)
+                {
+                    throw new RecordFormatException(e);
+                }
+
             }
             return CreateSheet(new RecordStream(clonedRecords, 0));
-        }
-        /// <summary>
-        /// get the NEXT value record (from LOC).  The first record that is a value record
-        /// (starting at LOC) will be returned.
-        /// This method is "loc" sensitive.  Meaning you need to set LOC to where you
-        /// want it to start searching.  If you don't know do this: setLoc(getDimsLoc).
-        /// When adding several rows you can just start at the last one by leaving loc
-        /// at what this sets it to.  For this method, set loc to dimsloc to start with,
-        /// subsequent calls will return values in (physical) sequence or NULL when you get to the end.
-        /// </summary>
-        /// <returns>the next value record or NULL if there are no more</returns>
-        // <see cref="SetLoc(int)"/>
-        public CellValueRecordInterface[] GetValueRecords()
-        {
-            return _rowsAggregate.GetValueRecords();
         }
 
         public WindowTwoRecord WindowTwo
@@ -175,15 +179,23 @@ namespace NPOI.HSSF.Model
 
         private class RecordCloner : RecordVisitor
         {
-            private IList _destList;
+            private IList<Record> _destList;
 
-            public RecordCloner(IList destList)
+            public RecordCloner(IList<Record> destList)
             {
                 _destList = destList;
             }
             public void VisitRecord(Record r)
             {
-                _destList.Add(r.Clone());
+                try
+                {
+                    _destList.Add((Record)r.Clone());
+                }
+                catch (NotSupportedException e)
+                {
+                    throw new RecordFormatException(e);
+                }
+                
             }
         }
 
@@ -203,19 +215,40 @@ namespace NPOI.HSSF.Model
 
             if (rs.PeekNextSid() != BOFRecord.sid)
             {
-                throw new Exception("BOF record expected");
+                throw new RecordFormatException("BOF record expected");
             }
             BOFRecord bof = (BOFRecord)rs.GetNext();
-            if (bof.Type != BOFRecord.TYPE_WORKSHEET)
+            if (bof.Type == BOFRecordType.Worksheet)
             {
-                // TODO - fix junit tests throw new RuntimeException("Bad BOF record type");
+                // Good, well supported
             }
+            else if (bof.Type == BOFRecordType.Chart ||
+                     bof.Type == BOFRecordType.Excel4Macro)
+            {
+                // These aren't really typical sheets... Let it go though,
+                //  we can handle them roughly well enough as a "normal" one
+            }
+            else
+            {
+                // Not a supported type
+                // Skip onto the EOF, then complain
+                while (rs.HasNext())
+                {
+                    Record rec = rs.GetNext();
+                    if (rec is EOFRecord)
+                    {
+                        break;
+                    }
+                }
+                throw new UnsupportedBOFType(bof.Type);
+            }
+        
             records.Add(bof);
             while (rs.HasNext())
             {
                 int recSid = rs.PeekNextSid();
 
-                if (recSid == CFHeaderRecord.sid)
+                if (recSid == CFHeaderRecord.sid || recSid == CFHeader12Record.sid)
                 {
                     condFormatting = new ConditionalFormattingTable(rs);
                     records.Add(condFormatting);
@@ -353,13 +386,17 @@ namespace NPOI.HSSF.Model
                 {
                     printGridlines = (PrintGridlinesRecord)rec;
                 }
+                else if (recSid == PrintHeadersRecord.sid)
+                {
+                    printHeaders = (PrintHeadersRecord)rec;
+                }
                 else if (recSid == GridsetRecord.sid)
                 {
                     gridset = (GridsetRecord)rec;
                 }
                 else if (recSid == SelectionRecord.sid)
                 {
-                    selection = (SelectionRecord)rec;
+                    _selection = (SelectionRecord)rec;
                 }
                 else if (recSid == WindowTwoRecord.sid)
                 {
@@ -378,7 +415,7 @@ namespace NPOI.HSSF.Model
             }
             if (windowTwo == null)
             {
-                throw new InvalidOperationException("WINDOW2 was not found");
+                throw new RecordFormatException("WINDOW2 was not found");
             }
             if (_dimensions == null)
             {
@@ -454,7 +491,8 @@ namespace NPOI.HSSF.Model
             records.Add(CreateIteration());
             records.Add(CreateDelta());
             records.Add(CreateSaveRecalc());
-            records.Add(CreatePrintHeaders());
+            printHeaders = CreatePrintHeaders();
+            records.Add(printHeaders);
             printGridlines = CreatePrintGridlines();
             records.Add(printGridlines);
             gridset = CreateGridset();
@@ -483,8 +521,8 @@ namespace NPOI.HSSF.Model
             records.Add(_rowsAggregate);
             // 'Sheet View Settings'
             records.Add(windowTwo = CreateWindowTwo());
-            selection = CreateSelection();
-            records.Add(selection);
+            _selection = CreateSelection();
+            records.Add(_selection);
 
             records.Add(_mergedCellsTable); // MCT comes after 'Sheet View Settings'
             sheetext = new SheetExtRecord();
@@ -784,8 +822,7 @@ namespace NPOI.HSSF.Model
         /// <param name="col">a record supporting the CellValueRecordInterface.</param>
         public void RemoveValueRecord(int row, CellValueRecordInterface col)
         {
-            //log.LogFormatted(POILogger.DEBUG, "Remove value record row,dimsloc %,%",
-            //                 new int[] { row, dimsloc });
+            log.Log(POILogger.DEBUG, "Remove value record row " + row);
             _rowsAggregate.RemoveCell(col);
         }
 
@@ -855,7 +892,22 @@ namespace NPOI.HSSF.Model
             _rowsAggregate.RemoveRow(row);
         }
 
-
+        /**
+         * Get all the value records (from LOC). Records will be returned from the first
+         *  record (starting at LOC) which is a value record.
+         *
+         * This method is "loc" sensitive.  Meaning you need to set LOC to where you
+         * want it to start searching.  If you don't know do this: setLoc(getDimsLoc).
+         * When adding several rows you can just start at the last one by leaving loc
+         * at what this sets it to.  For this method, set loc to dimsloc to start with,
+         * subsequent calls will return values in (physical) sequence or NULL when you get to the end.
+         *
+         * @return Iterator of CellValueRecordInterface representing the value records
+         */
+        public IEnumerator<CellValueRecordInterface> GetCellValueIterator()
+        {
+            return _rowsAggregate.GetCellValueEnumerator();
+        }
         /// <summary>
         /// Get the NEXT RowRecord (from LOC).  The first record that is a Row record
         /// (starting at LOC) will be returned.
@@ -918,12 +970,12 @@ namespace NPOI.HSSF.Model
         /// Creates the BOF record
         /// </summary>
         /// <returns>record containing a BOFRecord</returns>
-        public static Record CreateBOF()
+        public static BOFRecord CreateBOF()
         {
             BOFRecord retval = new BOFRecord();
 
             retval.Version = ((short)0x600);
-            retval.Type = ((short)0x010);
+            retval.Type = BOFRecordType.Worksheet;
 
             retval.Build = ((short)0x0dbb);
             retval.BuildYear = ((short)1996);
@@ -936,7 +988,7 @@ namespace NPOI.HSSF.Model
         /// Creates the Index record  - not currently used
         /// </summary>
         /// <returns>record containing a IndexRecord</returns>
-        protected Record CreateIndex()
+        private static IndexRecord CreateIndex()
         {
             IndexRecord retval = new IndexRecord();
 
@@ -949,7 +1001,7 @@ namespace NPOI.HSSF.Model
         /// Creates the CalcMode record and Sets it to 1 (automatic formula caculation)
         /// </summary>
         /// <returns>record containing a CalcModeRecord</returns>
-        protected Record CreateCalcMode()
+        private static CalcModeRecord CreateCalcMode()
         {
             CalcModeRecord retval = new CalcModeRecord();
 
@@ -961,7 +1013,7 @@ namespace NPOI.HSSF.Model
         /// Creates the CalcCount record and Sets it to 0x64 (default number of iterations)
         /// </summary>
         /// <returns>record containing a CalcCountRecord</returns>
-        protected Record CreateCalcCount()
+        private static CalcCountRecord CreateCalcCount()
         {
             CalcCountRecord retval = new CalcCountRecord();
 
@@ -973,7 +1025,7 @@ namespace NPOI.HSSF.Model
         /// Creates the RefMode record and Sets it to A1 Mode (default reference mode)
         /// </summary>
         /// <returns>record containing a RefModeRecord</returns>
-        protected Record CreateRefMode()
+        private static RefModeRecord CreateRefMode()
         {
             RefModeRecord retval = new RefModeRecord();
 
@@ -985,7 +1037,7 @@ namespace NPOI.HSSF.Model
         /// Creates the Iteration record and Sets it to false (don't iteratively calculate formulas)
         /// </summary>
         /// <returns>record containing a IterationRecord</returns>
-        protected Record CreateIteration()
+        private static IterationRecord CreateIteration()
         {
             return new IterationRecord(false);
         }
@@ -994,7 +1046,7 @@ namespace NPOI.HSSF.Model
         /// Creates the Delta record and Sets it to 0.0010 (default accuracy)
         /// </summary>
         /// <returns>record containing a DeltaRecord</returns>
-        protected Record CreateDelta()
+        private static DeltaRecord CreateDelta()
         {
             return new DeltaRecord(DeltaRecord.DEFAULT_VALUE);            
         }
@@ -1003,7 +1055,7 @@ namespace NPOI.HSSF.Model
         /// Creates the SaveRecalc record and Sets it to true (recalculate before saving)
         /// </summary>
         /// <returns>record containing a SaveRecalcRecord</returns>
-        protected Record CreateSaveRecalc()
+        private static SaveRecalcRecord CreateSaveRecalc()
         {
             SaveRecalcRecord retval = new SaveRecalcRecord();
 
@@ -1015,7 +1067,7 @@ namespace NPOI.HSSF.Model
         /// Creates the PrintHeaders record and Sets it to false (we don't Create headers yet so why print them)
         /// </summary>
         /// <returns>record containing a PrintHeadersRecord</returns>
-        protected Record CreatePrintHeaders()
+        private static PrintHeadersRecord CreatePrintHeaders()
         {
             PrintHeadersRecord retval = new PrintHeadersRecord();
 
@@ -1028,7 +1080,7 @@ namespace NPOI.HSSF.Model
         /// tell this does the same thing as the GridsetRecord
         /// </summary>
         /// <returns>record containing a PrintGridlinesRecord</returns>
-        protected PrintGridlinesRecord CreatePrintGridlines()
+        private static PrintGridlinesRecord CreatePrintGridlines()
         {
             PrintGridlinesRecord retval = new PrintGridlinesRecord();
 
@@ -1040,7 +1092,7 @@ namespace NPOI.HSSF.Model
         /// Creates the GridSet record and Sets it to true (user has mucked with the gridlines)
         /// </summary>
         /// <returns>record containing a GridsetRecord</returns>
-        protected GridsetRecord CreateGridset()
+        private static GridsetRecord CreateGridset()
         {
             GridsetRecord retval = new GridsetRecord();
 
@@ -1052,7 +1104,7 @@ namespace NPOI.HSSF.Model
         /// Creates the Guts record and Sets leftrow/topcol guttter and rowlevelmax/collevelmax to 0
         /// </summary>
         /// <returns>record containing a GutsRecordRecord</returns>
-        protected GutsRecord CreateGuts()
+        private static GutsRecord CreateGuts()
         {
             GutsRecord retval = new GutsRecord();
 
@@ -1068,7 +1120,7 @@ namespace NPOI.HSSF.Model
         /// <see cref="NPOI.HSSF.Record.DefaultRowHeightRecord"/>
         /// <see cref="NPOI.HSSF.Record.Record"/>
         /// <returns>record containing a DefaultRowHeightRecord</returns>
-        protected DefaultRowHeightRecord CreateDefaultRowHeight()
+        private static DefaultRowHeightRecord CreateDefaultRowHeight()
         {
             DefaultRowHeightRecord retval = new DefaultRowHeightRecord();
 
@@ -1084,7 +1136,7 @@ namespace NPOI.HSSF.Model
          * @return record containing a WSBoolRecord
          */
 
-        protected Record CreateWSBool()
+        private static WSBoolRecord CreateWSBool()
         {
             WSBoolRecord retval = new WSBoolRecord();
 
@@ -1100,7 +1152,7 @@ namespace NPOI.HSSF.Model
          * @return record containing a HCenterRecord
          */
 
-        protected Record CreateHCenter()
+        private static HCenterRecord CreateHCenter()
         {
             HCenterRecord retval = new HCenterRecord();
 
@@ -1115,7 +1167,7 @@ namespace NPOI.HSSF.Model
          * @return record containing a VCenterRecord
          */
 
-        protected Record CreateVCenter()
+        private static VCenterRecord CreateVCenter()
         {
             VCenterRecord retval = new VCenterRecord();
 
@@ -1130,7 +1182,7 @@ namespace NPOI.HSSF.Model
          * @return record containing a PrintSetupRecord
          */
 
-        protected Record CreatePrintSetup()
+        private static PrintSetupRecord CreatePrintSetup()
         {
             PrintSetupRecord retval = new PrintSetupRecord();
 
@@ -1155,7 +1207,7 @@ namespace NPOI.HSSF.Model
          * @return record containing a DefaultColWidthRecord
          */
 
-        protected DefaultColWidthRecord CreateDefaultColWidth()
+        private static DefaultColWidthRecord CreateDefaultColWidth()
         {
             DefaultColWidthRecord retval = new DefaultColWidthRecord();
 
@@ -1182,7 +1234,12 @@ namespace NPOI.HSSF.Model
         public short DefaultRowHeight
         {
             get { return defaultrowheight.RowHeight; }
-            set { defaultrowheight.RowHeight = (value); }
+            set 
+            { 
+                defaultrowheight.RowHeight = (value);
+                // set the bit that specifies that the default settings for the row height have been changed.
+                defaultrowheight.OptionFlags = (short)1;
+            }
         }
 
         /**
@@ -1444,10 +1501,10 @@ namespace NPOI.HSSF.Model
         /// <param name="activeColumn">The active column in the active range</param>
         public void SetActiveCellRange(List<CellRangeAddress8Bit> cellranges, int activeRange, int activeRow, int activeColumn)
         {
-            this.selection.ActiveCellCol = activeColumn;
-            this.selection.ActiveCellRow = activeRow;
-            this.selection.ActiveCellRef = activeRange;
-            this.selection.CellReferences = cellranges.ToArray();
+            this._selection.ActiveCellCol = activeColumn;
+            this._selection.ActiveCellRow = activeRow;
+            this._selection.ActiveCellRef = activeRange;
+            this._selection.CellReferences = cellranges.ToArray();
 
         }
 
@@ -1460,17 +1517,25 @@ namespace NPOI.HSSF.Model
         {
             get
             {
-                if (selection == null)
+                if (_selection == null)
                 {
                     return 0;
                 }
-                return selection.ActiveCellRow;
+                return _selection.ActiveCellRow;
+            }
+            set
+            {
+                //shouldn't have a sheet w/o a SelectionRecord, but best to guard anyway
+                if (_selection != null)
+                {
+                    _selection.ActiveCellRow = value;
+                }
             }
         }
 
 
         /// <summary>
-        /// Gets or sets the active cell col.
+        /// Gets the active cell col.
         /// </summary>
         /// <value>the active column index</value>
         /// @see org.apache.poi.hssf.record.SelectionRecord
@@ -1478,11 +1543,19 @@ namespace NPOI.HSSF.Model
         {
             get
             {
-                if (selection == null)
+                if (_selection == null)
                 {
                     return 0;
                 }
-                return selection.ActiveCellCol;
+                return _selection.ActiveCellCol;
+            }
+            set
+            {
+                //shouldn't have a sheet w/o a SelectionRecord, but best to guard anyway
+                if (_selection != null)
+                {
+                    _selection.ActiveCellCol = value;
+                }
             }
         }
 
@@ -1684,6 +1757,16 @@ namespace NPOI.HSSF.Model
         }
 
         /**
+         * Returns the PrintHeadersRecord.
+         * @return PrintHeadersRecord for the sheet.
+         */
+        public PrintHeadersRecord PrintHeaders
+        {
+            get { return printHeaders; }
+            set { printHeaders = value; }
+        }
+
+        /**
          * Sets whether the sheet is selected
          * @param sel True to select the sheet, false otherwise.
          */
@@ -1778,7 +1861,7 @@ namespace NPOI.HSSF.Model
             windowTwo.FreezePanesNoSplit = (false);
 
             SelectionRecord sel = (SelectionRecord)FindFirstRecordBySid(SelectionRecord.sid);
-            sel.Pane = (byte)NPOI.SS.UserModel.PanePosition.LOWER_RIGHT;
+            sel.Pane = (byte)NPOI.SS.UserModel.PanePosition.LowerRight;
 
         }
 
@@ -1803,9 +1886,9 @@ namespace NPOI.HSSF.Model
         {
             get
             {
-                return selection;
+                return _selection;
             }
-            set { this.selection = value; }
+            set { this._selection = value; }
         }
         /**
  * creates a Password record with password set to 00.
@@ -1914,6 +1997,15 @@ namespace NPOI.HSSF.Model
             }
         }
 
+        /**
+         * Returns if RowColHeadings are displayed.
+         * @return whether RowColHeadings are displayed
+         */
+        public bool IsPrintRowColHeadings
+        {
+            get { return windowTwo.DisplayRowColHeadings; }
+            set { windowTwo.DisplayRowColHeadings = (value); }
+        }
 
         /**
          * @return whether an Uncalced record must be Inserted or not at generation
@@ -1924,15 +2016,14 @@ namespace NPOI.HSSF.Model
             set { this._isUncalced = value; }
         }
 
-        /**
-         * Finds the DrawingRecord for our sheet, and
-         *  attaches it to the DrawingManager (which knows about
-         *  the overall DrawingGroup for our workbook).
-         * If requested, will Create a new DrawRecord
-         *  if none currently exist
-         * @param drawingManager The DrawingManager2 for our workbook
-         * @param CreateIfMissing Should one be Created if missing?
-         */
+        /// <summary>
+        /// Finds the DrawingRecord for our sheet, and  attaches it to the DrawingManager (which knows about
+        ///  the overall DrawingGroup for our workbook).
+        /// If requested, will Create a new DrawRecord if none currently exist
+        /// </summary>
+        /// <param name="drawingManager">The DrawingManager2 for our workbook</param>
+        /// <param name="CreateIfMissing">Should one be Created if missing?</param>
+        /// <returns>location of EscherAggregate record. if no EscherAggregate record is found return -1</returns>
         public int AggregateDrawingRecords(DrawingManager2 drawingManager, bool CreateIfMissing)
         {
             int loc = FindFirstRecordLocBySid(DrawingRecord.sid);
@@ -1945,7 +2036,7 @@ namespace NPOI.HSSF.Model
                     return -1;
                 }
 
-                EscherAggregate aggregate = new EscherAggregate(drawingManager);
+                EscherAggregate aggregate = new EscherAggregate(true);
                 loc = FindFirstRecordLocBySid(EscherAggregate.sid);
                 if (loc == -1)
                 {
@@ -1958,32 +2049,8 @@ namespace NPOI.HSSF.Model
                 Records.Insert(loc, aggregate);
                 return loc;
             }
-            else
-            {
-                List<RecordBase> records = Records;
-                EscherAggregate r = EscherAggregate.CreateAggregate(records, loc, drawingManager);
-                int startloc = loc;
-                while (loc + 1 < records.Count
-                        && records[loc] is DrawingRecord
-                        && (records[loc + 1] is ObjRecord ||
-                            records[loc + 1] is TextObjectRecord)
-                        )
-                {
-                    loc += 2;
-                    if (records[loc] is NoteRecord) loc ++;
-                }
-                while (records[loc] is NoteRecord)
-                {
-                    loc++;
-                }
-                int endloc = loc - 1;
-
-                records.RemoveRange(startloc,endloc - startloc + 1);
-                records.Insert(startloc, r);
-
-                
-                return startloc;
-            }
+            EscherAggregate.CreateAggregate(records, loc);
+            return loc;
         }
 
         /**
@@ -2107,7 +2174,6 @@ namespace NPOI.HSSF.Model
 
         public void VisitContainedRecords(RecordVisitor rv, int offset)
         {
-
             PositionTrackingVisitor ptv = new PositionTrackingVisitor(rv, offset);
 
             bool haveSerializedIndex = false;
@@ -2116,7 +2182,6 @@ namespace NPOI.HSSF.Model
             for (int k = 0; k < records.Count; k++)
             {
                 RecordBase record = records[k];
-
                 if (record is RecordAggregate)
                 {
                     RecordAggregate agg = (RecordAggregate)record;
@@ -2242,9 +2307,9 @@ namespace NPOI.HSSF.Model
             return _dataValidityTable;
         }
         /**
- * Get the {@link NoteRecord}s (related to cell comments) for this sheet
- * @return never <code>null</code>, typically empty array
- */
+         * Get the {@link NoteRecord}s (related to cell comments) for this sheet
+         * @return never <code>null</code>, typically empty array
+         */
         public NoteRecord[] GetNoteRecords()
         {
             List<NoteRecord> temp = new List<NoteRecord>();
@@ -2265,5 +2330,29 @@ namespace NPOI.HSSF.Model
             return result;
         }
 
+        public int GetColumnOutlineLevel(int columnIndex)
+        {
+            return _columnInfos.GetOutlineLevel(columnIndex);
+        }
+
+    }
+
+    public class UnsupportedBOFType : RecordFormatException
+    {
+        private BOFRecordType type;
+        public UnsupportedBOFType(BOFRecordType type)
+            : base("BOF not of a supported type, found " + type)
+        {
+            ;
+            this.type = type;
+        }
+
+        public BOFRecordType Type
+        {
+            get
+            {
+                return type;
+            }
+        }
     }
 }

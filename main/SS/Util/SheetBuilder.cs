@@ -15,8 +15,6 @@
    limitations under the License.
    ==================================================================== */
 using System;
-using System.Collections.Generic;
-using System.Text;
 using NPOI.SS.UserModel;
 using NPOI.Util;
 
@@ -40,7 +38,7 @@ namespace NPOI.SS.Util
         public SheetBuilder(IWorkbook workbook, Object[][] cells)
         {
             this.workbook = workbook;
-            this.cells = cells;
+            this.cells = (Object[][])cells.Clone();
         }
 
         /**

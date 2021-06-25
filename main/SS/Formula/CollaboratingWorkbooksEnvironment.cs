@@ -20,6 +20,8 @@ namespace NPOI.SS.Formula
     using System;
     using System.Text;
     using System.Collections;
+    using System.Collections.Generic;
+    using NPOI.SS.UserModel;
 
     [Serializable]
     public class WorkbookNotFoundException : Exception
@@ -39,16 +41,15 @@ namespace NPOI.SS.Formula
      */
     public class CollaboratingWorkbooksEnvironment
     {
+        public static readonly CollaboratingWorkbooksEnvironment EMPTY = new CollaboratingWorkbooksEnvironment();
 
-        public static CollaboratingWorkbooksEnvironment EMPTY = new CollaboratingWorkbooksEnvironment();
-
-        private Hashtable _evaluatorsByName;
+        private Dictionary<String, WorkbookEvaluator> _evaluatorsByName;
         private WorkbookEvaluator[] _evaluators;
 
         private bool _unhooked;
         private CollaboratingWorkbooksEnvironment()
         {
-            _evaluatorsByName = new Hashtable();
+            _evaluatorsByName = new Dictionary<String, WorkbookEvaluator>();
             _evaluators = new WorkbookEvaluator[0];
         }
         public static void Setup(String[] workbookNames, WorkbookEvaluator[] evaluators)
@@ -66,33 +67,74 @@ namespace NPOI.SS.Formula
             CollaboratingWorkbooksEnvironment env = new CollaboratingWorkbooksEnvironment(workbookNames, evaluators, nItems);
             HookNewEnvironment(evaluators, env);
         }
-
-        private CollaboratingWorkbooksEnvironment(String[] workbookNames, WorkbookEvaluator[] evaluators, int nItems)
+        public static void Setup(Dictionary<String, WorkbookEvaluator> evaluatorsByName)
         {
-            Hashtable m = new Hashtable(nItems * 3 / 2);
-            Hashtable uniqueEvals = new Hashtable(nItems * 3 / 2);
+            if (evaluatorsByName.Count < 1)
+            {
+                throw new  ArgumentException("Must provide at least one collaborating worbook");
+            }
+            List<WorkbookEvaluator> temp = new List<WorkbookEvaluator>(evaluatorsByName.Count);
+            temp.AddRange(evaluatorsByName.Values);
+            WorkbookEvaluator[] evaluators = temp.ToArray();
+            new CollaboratingWorkbooksEnvironment(evaluatorsByName, evaluators);
+        }
+        public static void SetupFormulaEvaluator(Dictionary<String, IFormulaEvaluator> evaluators)
+        {
+            Dictionary<String, WorkbookEvaluator> evaluatorsByName = new Dictionary<String, WorkbookEvaluator>(evaluators.Count);
+            foreach (KeyValuePair<string, IFormulaEvaluator> swb in evaluators)
+            {
+                string wbName = swb.Key;
+                IFormulaEvaluator eval = swb.Value;
+                if (eval is IWorkbookEvaluatorProvider)
+                {
+                    evaluatorsByName.Add(wbName, ((IWorkbookEvaluatorProvider)eval).GetWorkbookEvaluator());
+                }
+                else
+                {
+                    throw new ArgumentException("Formula Evaluator " + eval +
+                                                       " provides no WorkbookEvaluator access");
+                }
+            }
+            Setup(evaluatorsByName);
+        }
+        private CollaboratingWorkbooksEnvironment(String[] workbookNames, WorkbookEvaluator[] evaluators, int nItems)
+            : this(ToUniqueMap(workbookNames, evaluators, nItems), evaluators)
+        {
+
+        }
+        private static Dictionary<String, WorkbookEvaluator> ToUniqueMap(String[] workbookNames, WorkbookEvaluator[] evaluators, int nItems)
+        {
+            Dictionary<String, WorkbookEvaluator> evaluatorsByName = new Dictionary<String, WorkbookEvaluator>(nItems * 3 / 2);
             for (int i = 0; i < nItems; i++)
             {
                 String wbName = workbookNames[i];
                 WorkbookEvaluator wbEval = evaluators[i];
-                if (m.ContainsKey(wbName))
+                if (evaluatorsByName.ContainsKey(wbName))
                 {
                     throw new ArgumentException("Duplicate workbook name '" + wbName + "'");
                 }
-                if (uniqueEvals.ContainsKey(wbEval))
+                evaluatorsByName.Add(wbName, wbEval);
+            }
+            return evaluatorsByName;
+        }
+        private CollaboratingWorkbooksEnvironment(Dictionary<String, WorkbookEvaluator> evaluatorsByName, WorkbookEvaluator[] evaluators)
+        {
+            Dictionary<WorkbookEvaluator, String> uniqueEvals = new Dictionary<WorkbookEvaluator, String>(evaluators.Length);
+            foreach (KeyValuePair<string, WorkbookEvaluator> me in evaluatorsByName)
+            {
+                if (uniqueEvals.ContainsKey(me.Value))
                 {
-                    String msg = "Attempted To register same workbook under names '"
-                        + uniqueEvals[(wbEval) + "' and '" + wbName + "'"];
+                    String msg = "Attempted to register same workbook under names '" +
+                        uniqueEvals[me.Value] + "' and '" + me.Key + "'";
                     throw new ArgumentException(msg);
                 }
-                uniqueEvals[wbEval]=wbName;
-                m[wbName] = wbEval;
+                uniqueEvals.Add(me.Value, me.Key);
             }
             UnhookOldEnvironments(evaluators);
-            //HookNewEnvironment(evaluators, this); - moved to Setup method above
+            HookNewEnvironment(evaluators, this);
             _unhooked = false;
-            _evaluators = evaluators;
-            _evaluatorsByName = m;
+            _evaluators = (WorkbookEvaluator[])evaluators.Clone();
+            _evaluatorsByName = evaluatorsByName;
         }
 
         private static void HookNewEnvironment(WorkbookEvaluator[] evaluators, CollaboratingWorkbooksEnvironment env)

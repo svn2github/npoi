@@ -14,12 +14,13 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 ==================================================================== */
-namespace NPOI.XWPF
+namespace TestCases.XWPF
 {
     using System.IO;
     using NUnit.Framework;
     using NPOI.Util;
     using NPOI.XWPF.UserModel;
+    using NPOI.XWPF;
 
     [TestFixture]
     public class TestDocumentProtection
@@ -148,7 +149,14 @@ namespace NPOI.XWPF
 
             Assert.IsTrue(document.IsEnforcedCommentsProtection());
         }
-
+        [Test]
+        public void TestUpdateFields()
+        {
+            XWPFDocument doc = new XWPFDocument();
+            Assert.IsFalse(doc.IsEnforcedUpdateFields());
+            doc.EnforceUpdateFields();
+            Assert.IsTrue(doc.IsEnforcedUpdateFields());
+        }
     }
 
 }

@@ -18,22 +18,23 @@ namespace NPOI.HSSF.Record
 {
     using System;
     using System.Collections.Generic;
-    using NPOI.HSSF.EventUserModel;
     using NPOI;
     using System.IO;
     using NPOI.HSSF.Record.Crypto;
     using NPOI.Util;
     using NPOI.HSSF.Record.Chart;
+    using NPOI.POIFS.Crypt;
+
     /**
-     * A stream based way to get at complete records, with
-     * as low a memory footprint as possible.
-     * This handles Reading from a RecordInputStream, turning
-     * the data into full records, processing continue records
-     * etc.
-     * Most users should use {@link HSSFEventFactory} /
-     * {@link HSSFListener} and have new records pushed to
-     * them, but this does allow for a "pull" style of coding.
-     */
+* A stream based way to get at complete records, with
+* as low a memory footprint as possible.
+* This handles Reading from a RecordInputStream, turning
+* the data into full records, processing continue records
+* etc.
+* Most users should use {@link HSSFEventFactory} /
+* {@link HSSFListener} and have new records pushed to
+* them, but this does allow for a "pull" style of coding.
+*/
     public class RecordFactoryInputStream
     {
 
@@ -60,12 +61,25 @@ namespace NPOI.HSSF.Record
                 if (rec is BOFRecord)
                 {
                     _hasBOFRecord = true;
+                    // Fetch the next record, and see if it indicates whether
+                    //  the document is encrypted or not
                     if (rs.HasNextRecord)
                     {
                         rs.NextRecord();
                         rec = RecordFactory.CreateSingleRecord(rs);
                         recSize += rec.RecordSize;
                         outputRecs.Add(rec);
+                        // Encrypted is normally BOF then FILEPASS
+					    // May sometimes be BOF, WRITEPROTECT, FILEPASS
+                        if (rec is WriteProtectRecord && rs.HasNextRecord)
+                        {
+                            rs.NextRecord();
+                            rec = RecordFactory.CreateSingleRecord(rs);
+                            recSize += rec.RecordSize;
+                            outputRecs.Add(rec);
+                        }
+                        // If it's a FILEPASS, track it specifically but
+                        //  don't include it in the main stream
                         if (rec is FilePassRecord)
                         {
                             fpr = (FilePassRecord)rec;
@@ -101,23 +115,13 @@ namespace NPOI.HSSF.Record
             {
                 FilePassRecord fpr = _filePassRec;
                 String userPassword = Biff8EncryptionKey.CurrentUserPassword;
-
-                Biff8EncryptionKey key;
                 if (userPassword == null)
                 {
-                    key = Biff8EncryptionKey.Create(fpr.DocId);
+                    userPassword = Decryptor.DEFAULT_PASSWORD;
                 }
-                else
-                {
-                    key = Biff8EncryptionKey.Create(userPassword, fpr.DocId);
-                }
-                if (!key.Validate(fpr.SaltData, fpr.SaltHash))
-                {
-                    throw new EncryptedDocumentException(
-                            (userPassword == null ? "Default" : "Supplied")
-                            + " password is invalid for docId/saltData/saltHash");
-                }
-                return new RecordInputStream(original, key, _InitialRecordsSize);
+
+                //return new RecordInputStream(original, key, _InitialRecordsSize);
+                throw new NotImplementedException("Implement it based on poi 4.2 in the future");
             }
 
             public bool HasEncryption
@@ -381,8 +385,8 @@ namespace NPOI.HSSF.Record
                 }
                 if (_lastRecord is DrawingRecord)
                 {
-                    ((DrawingRecord)_lastRecord).ProcessContinueRecord(contRec.Data);
-                    return null;
+                    //((DrawingRecord)_lastRecord).ProcessContinueRecord(contRec.Data);
+                    return contRec;
                 }
                 if (_lastRecord is CrtMlFrtRecord)
                 {

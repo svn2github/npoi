@@ -1,4 +1,325 @@
-2.0 Alpha (August, 2012)
+2.4.0 (Oct, 2018£©
+New features
+.NET Standard 2.0 support
+stop .NET Framework 2.0 support (some contributed code start using System.Linq)
+Add Excel function support for AVERAGEIF and AVERAGEIFS
+CopySheet support in XSSFSheet
+Implemented OMath formula edit/creation in XWPF
+Support line and bar mixed chart 
+
+BUG Fixes
+fix SharpZipLib 0.86 dependency issue in .NET Framework
+solve SecurityRules issue since .NET 4.0 while using AllowPartiallyTrustedCallers 
+AutoFilter colId must have value even when it equals 0
+Fix NUnit Test cases in VS2017 (development purpose only)
+MathX.Round() - fixing some instances of incorrect rounding and adding
+Fix Word processing fields issue in XWPF
+Fix a bug of 'adding picture to word' failed
+
+2.3.0 (Mar, 2017£©
+New Features
+- implement XSSF Streaming
+
+BUG Fixes
+- Fix GZIPSheetDataWriter
+- Hold file handler when OOXML zip package is closed
+- Fix test cases
+
+
+2.2.1 (May,2016)
+Bug Fixes
+- Fix a lot of serialization issue of ooxml issue
+- Fix phonetic guides tag reading/writing issue
+- Fix XWPFRun SetText exception issue
+- Fix xml security issue
+- Optimize memory for AutoResizeColumn
+- Fix sqref property is missing on ProtectedRange
+- Fix drawing ooxml issue and cell value bug
+- Fix numFmtId property issue on NumFmt node
+- Fix ooxml issues for RadarChart and CellStyle
+- Fix xfrm namespace issue in ooxml
+- Fix ScatterChart issue in ooxml
+- Fix ooxml bugs in Vml entities
+- fix bug when call ISheet.RemoveRow, it removes a wrong row
+- Don't close zip stream when zipoutputstream finish writing
+
+2.2.0 (Aug, 2015)
+New Feature
+1. Implement FIXED, PROPER, DMIN and DGET functions
+2. XSSF support for evaluating formula references to other Workbooks
+3. Read text from SDTs at the table cell level, including (sometimes) Cover Page, Table of Contents and Bibliography
+4. Double Strikethrough support for XWPF runs
+5. XSSFSheet support for getDrawingPatriarch(), alongside the existing createDrawingPatriarch() method
+6. Start on common interfaces for Paragraphs and Character Runs for XWPF
+7. Basic text extractor for older Excel 4,5 and 95 formats
+8. Add NPOIFS in-place write support, including updating the contents of existing entries
+9. Support loading .xlsx files with no Styles Table
+
+POI Bug fixes
+57880 - Handle >32,767 cell styles and formats in XSSF (file format limit is 64,000)
+57826 - If a XSSF shape has a buFont but no bullet character, mirror Excel and treat as un-bulleted
+56017 - Fix shifting comments with shifted rows
+56295 - Fix cloning of styles across workbooks and handling of default value of attribute applyFill
+56380 - Remove limitation of 1024 comments per Workbook
+56467 - Fix cloning of sheets with pictures
+57171 - Adjust the active sheet in setSheetOrder()
+57163 - Adjust the active sheet in removeSheet()
+57165 - Avoid PartAlreadyExistsException when removing/cloning sheets
+57196 - Resolve RefEval to it's inner ValueEval in Hex2Dec
+57482 - Handle XSLX files with no shared strings table in read-only mode
+46898 - XSSF: Return #VALUE! for circular references.
+46912 - Add methods to query outline level for HSSF and XSSF
+49541 - Mapping of symbol characters to unicode equivalent
+57007 - Add initial implementations of DMIN and DGET functions
+57373 - Fix get/setFirstVisibleTab() for XSSFWorkbook
+57231 - Add missing ArrayRecord.clone()
+56511 - Fix NullPointerException for RichText strings with no formatting for some runs.
+56888 - XSSFDataValidation ignores "allow blank" read from sheet, assumes true
+57236 - 
+57254 - XWPF: Correctly build internal list of styles when styles are added
+57312 - XWPF: Add check for null value of underline w:val
+57355 - 
+57164 - XSSFDrawing.createCellComment() does not honor dx and dy values passed in
+57003 - Add implementation of function FIXED
+57185 - Correct naming from "Serie" to "Series"
+57010 - Add implementation of function PROPER
+55280 - XSSF: Greatly improve performance of shifting rows in sheets with many merged regions.
+48195 - Formulas: Fix incorrect evaluation of IF() with ROW()/COLUMN() as else-result.
+56914 - XSSFRowShifter.updateConditionalFormatting throws IOOBE when there are more than 1 CTConditionalFormatting
+51222 - XSSFColor.getARGBHex() returns wrong color for Excel 2007 xlsx file
+56864 - XWPFLatentStyles.isLatentStyle always returns true if there is at least 1 lsdException
+57151 - And documentation and validation in CellRangeAddress to prevent invalid row/column combinations
+
+2.1.3.1 (Feb., 2015)
+Bug Fixes
+a. fix word serialization issues
+b. fix CloneStyleFrom issue
+c. Fix vertical alignment default value for XSSFCell
+d. fix setAutoFilter change range issue
+e. fix EDate function
+f. fix FormatException in FormulaParser
+g. fix Comment random Shape issue (comment serialization issue)
+h. fix not be able to unlock the cell issue 
+
+POI BUG FIXES
+55729 - DataFormatter should format Error cells, returning the Excel error string
+49237 - HSSF Row Style XfIndex is 12 not 16 bits of data
+54607 - NullPointerException in XSSFSheet.getTopRow() when the top row is 1
+55745 - fix handling of tables in XSSF if there are comments as well
+54673 - Simple wildcard support in HLOOKUP, VOOLKUP, MATCH, COUNTIF
+55047 - REPT formula support
+55042 - COMPLEX formula support
+55041 - CODE formula support
+54508 - EDATE formula support
+53966 - IfError support (from Analysis Toolpak)
+54402 - IfError handling of indirect references
+
+New feature
+a. Add ReplaceText to XWPFParagraph and XWPFRun
+b. adjust ExcelExtractor interface
+c. Improving comment missing handling in HSSFSheet
+d. copy hyperlink in CopySheet and fix some bugs
+e. Implement ChartSheet in OpenXmlFormats
+f. Implement shrinktofit for XSSF
+
+2.1.3 (Dec., 2014)
+Bug Fixes
+a. fix 2 charts insert in the same sheet issue
+b. fix a lot of Excel 2007 serialization issues
+c. fix some Word 2007 serialiation issues
+d. fix RemoteSheetAt bug
+e. support changing background in XWPF
+f. fix Uri-related issues on Mono
+
+New examples
+SetIsRightToLeftInXlsx - show how to use IsRightToLeft property
+ExtractPicturesFromXlsx - show how to extract pictures from Excel 2007 file
+SetRowStyle - show how to set whole row style with simple code
+
+2.1.1 (Jun., 2014) 
+New Features
+a. XSSFSheet.CopySheet
+b. Excel2Html for XSSF and HSSF
+c. insert picture in word 2007
+d. Implement IfError function in formula engine
+
+Bug Fixes
+a. fix conditional formatting issue
+b. fix ctFont order issue
+c. fix vertical alignment issue in XSSF
+d. add IndexedColors to NPOI.SS.UserModel
+e. fix decimal point issue in non-English culture
+f. fix SetMargin issue in XSSF
+g.fix multiple images insert issue in XSSF
+h.fix rich text style missing issue in XSSF
+i. fix cell comment shape (big arrow) in XSSF
+j. WorkbookFactory for Excel 2007 doesn't occupy file.
+k. fix XSSFCell.IsMergedCell
+l. fix incorrect page margin value due to different culture
+m. fix HSSFSheet.CopyTo doesn't copy rich text in cells
+n. fix scroll bar and tabs missing in previous 2.1 release
+
+New examples
+a. XSSF.DownloadXlsx
+b. XSSF.ConditionFormats
+c. XSSF.LineChart
+d. XWPF.InsertPicturesInWord
+
+2.0 [v2.0.6] (Jan., 2014)
+a. fix a lot of xml serialization issue for OOXML (2.0.5 will corrupt some xlsx and docx files)
+b. implement XSSFCell.IsMergedCell
+c. IWorkbook implements IList<ISheet>
+
+2.0 Beta 2 [v2.0.5] (Dec, 2013)
+New features
+a. Support Scatter chart in XSSF (xlsx) (other chart types are not supported yet)
+b. Extract pictures from Excel (xlsx)
+c. XWPF becomes stabler than before
+d. Able to support xml:space="preserve" attribute
+e. Add mono assembly in the release package
+f. file generated by NPOI will contain NPOI tags in custom properties to identify the generator
+g. Adjust some XWPF interfaces
+
+Sample changes
+a. add new samples like BigGridTest, WritePerformanceTest to test performance
+b. add ScatterChart to show how to create Scatter chart
+c. add LinkedDropDownList for both XSSF and HSSF
+d. add MonthlySalaryReport to show how to use formula in XSSF
+e. add CreateCustomProperties to show how to use custom props in XSSF and XWPF
+
+Bug fixes
+a. fix shift row issue in XSSFSheet
+b. fix performance issue due to XmlSerializer. NPOI is getting rid of XmlSerializer.
+c. reading/writing CT_Drawing
+d. fix ddd pattern issue in CellDateFormatter
+e. Change some common interfaces in NPOI.SS
+f. fix OutOfMemory issue in MemoryPackagePart
+g. Able to read AbsoluteAnchor, OneCellAnchor, TwoCellAnchor in drawing.xml
+h. Formula will be calculated automatically after generation
+i. improve performance for XSSF while creating new rows
+For detail, please read https://npoi.codeplex.com/discussions/443655
+j. fix name encoding issue of custom properties in HSSF
+For detail, please read https://npoi.codeplex.com/workitem/12296
+k. fix exception in HSSFRows.RemoveAllCells
+l. fix CellStyle Hashtable comparison issue in class HSSFCellUtil. This can help prevent over 4000 styles issue from code.
+m. Fix globalization issue in ExpandedDouble
+
+=========================================================================
+
+2.0 Beta 1 [v2.0.1] (Feb, 2013)
+New features
+a. Copy rows, columns inside a sheet
+b. Copy sheet between workbooks (contributed by Paul Kratt)
+c. insert rows and column inside a sheet
+d. OpenXml4Net is stable and ready for use
+e. Support new Excel functions such as RATE, RANK, ISERR
+f. Support converting from Excel to Html
+g. POIFS Browser supports Chart records
+
+Example changes
+a. Use MemoryStream.WriteTo instead in ExportXlsToDownload in order to avoid out of memory exception
+b. add new examples like CalendarDemo, BusinessPlan, CopySheet
+
+NPOI Bug Fixes
+Issue with 2.0 Beta: Get an non-Closing Element error
+http://npoi.codeplex.com/workitem/11085
+Npoi 2 error in NumericCellValue (XSSFCell)
+http://npoi.codeplex.com/workitem/11083
+[HSSF]Comment is not saved correctly while using a xls template with comment
+http://npoi.codeplex.com/workitem/11169
+Access issue creating worksheet
+http://npoi.codeplex.com/workitem/11383
+Error when running NPOI with Mono C# compiler version 2.0.1.0
+http://npoi.codeplex.com/workitem/4547
+
+POI Bug Fixes
+53282 - Avoid exception when parsing OPC relationships with non-breaking spaces(poi-developers) 
+54016 - Avoid exception when parsing workbooks with DConRefRecord in row aggregate(poi-developers)
+53404 - Fixed compatibility bug with modifying xls files created by POI-3.6 and earlier(poi-developers)
+53763 - avoid style mess when using HSSFOptimiser (poi-developers) 
+53974 - Avoid NPE when constructing HSSFWorbook on Google App Engine(poi-developers) 
+53950 - fixed setForceFormulaRecalculation to reset workbook-level "manual" flag(poi-developers) 
+52211 - avoid unnessary re-coverting content types to US-ASCII, it can cause exceptions on ibm mainframes(poi-developers) 
+HSSFOptimiser will now also tidy away un-used cell styles, in addition to duplicate styles(poi-developers)
+53434 - Subtotal is not return correct value. (poi-developers) 
+53144 - First comment not cloned after cloneSheet() (poi-developers) 
+53028 - Broken auto fit row height in the cells with word wrap (poi-developers)
+53010 - GSoC2012? Improve drawing support in HSSF (poi-developers)
+52764 - Unmodified cell comments disappear after HSSFWorkbook.write (poi-developers) 
+51676 - Using drawingPatriarch.createCellComment(anchor) leads to File error: data may have been lost (poi-developers) 
+51455 - It would be really nice to be able to set the background picture of a comment (poi-developers) 
+48989 - If we have a comment but the row is not created we will not be able to get it. (poi-developers) 
+48873 - Comments not saving in XLS files with collapsible columns (poi-developers) 
+46143 - setLineStyleColor for comments donot work (poi-developers) 
+53699 - Patch to correct BorderStyle? enum positions (poi-developers)
+53644 - XLS formula bugfix (CalFieldFunc?) + WeekDay? addon (poi-developers) 
+53446 - Fixed some problems extracting PNGs (poi-developers)
+53204 - Improved performanceof PageSettingsBlock? in HSSF (poi-developers)
+53500 - Getter for repeating rows and columns(poi-developers)
+53476 - Support Complex Name in formulas (poi-developers) 
+53414 - properly update sheet dimensions when adding column (poi-developers)
+Add File based constructor to OPCPackage, alongside existing String one (which constructed a File from the string internally)(poi-developers) 
+53389 - Handle formatting General and @ formats even if a locale is prefixed to them(poi-developers) 
+53058 - Utility for representing drawings contained in a binary Excel file as a XML tree(poi-developers)
+48528 - support negative arguments to the DATE() function(poi-developers) 
+53101 - fixed evaluation of SUM over cell range > 255(poi-developers)~
+52928 - DateFormatConverter?: an utility to convert instances of java.text.DateFormat? to Excel format patterns(poi-developers)
+52895 - show SSTIndex instead of XFIndex in LabelSSTRecord.toString()(poi-developers)
+52818 - Added implementation for RANK()(poi-developers)
+51564 - support for enforcing fields update in XWPF(poi-developers) 51673 - support grouping rows in SXSSF(poi-developers)
+51780 - support replacement of content types in OPC packages (poi-developers)
+52057 - updated formula test framework to be aware of recently added Functions (poi-developers)
+52574 - support setting header / footer page margins in HSSF(poi-developers)
+52583 - fixed WorkbookUtil#createSafeSheetName? to escape colon (poi-developers)
+52708 - misc improvements in CellFormat? (poi-developers)
+52690 - added a getter for length of encrypted data in Ecma and Agile decryptors(poi-developers)
+allow runtime registration of functions in FormulaEvaluator?(poi-developers)
+52665 - When reading from a ZipFileZipEntrySource? that has already been closed, give IllegalArgumentException? rather than NPE(poi-developers)
+52385 - avoid trancated array and vector data when reading OLE properties(poi-developers)
+51498 - fixed evaluation of blank cells in COUNTIF(poi-developers)
+52576 - support changing external file references in HSSFWorkbook(poi-developers)
+49896 - support external references in FormulaRenderer?(poi-developers)
+52527 - avoid exception when matching shared formula records in HSSF(poi-developers)
+52568 - Added methods to set/get an XWPFRun's text color(poi-developers)
+52566 - Added methods to set/get vertical alignment and color in XWPFTableCell(poi-developers)
+52562 - Added methods to get/set a table row's Can't Split and Repeat Header attributes in XWPF(poi-developers)
+52561 - Added methods to set table inside borders and cell margins in XWPF(poi-developers)
+52569 - Support DConRefRecord in HSSF(poi-developers)
+52575 - added an option to ignore missing workbook references in formula evaluator(poi-developers)
+52540 - Relax the M4.1 constraint on reading OOXML files, as some Office produced ones do have 2 Core Properties, despite the specification explicitly forbidding this(poi-developers)
+52462 - Added implementation for SUMIFS()(poi-developers)
+52449 - Support writing XWPF documents with glossaries (Glossaries are not yet supported, but can now be written out again without changes)(poi-developers)
+52438 - Update CellDateFormatter? to handle times without seconds(poi-developers)
+52389 - Support ?/? as well as #/# fractions, and tighten DataFormatter? rules for fraction matching(poi-developers)
+52378 - Support for WORKDAY and NETWORKDAYS functions(poi-developers)
+52349 - Merge the logic between the TEXT function and DataFormatter?(poi-developers)
+52349 - Correctly support excel style date format strings in the TEXT function(poi-developers)
+52369 - XSSFExcelExtractor should format numeric cells based on the format strings applied to them(poi-developers) 
+52369 - Event based XSSF parsing should handle formatting of formula values in XSSFSheetXMLHandler(poi-developers)
+52348 - Avoid exception when creating cell style in a workbook that has an empty xf table(poi-developers)
+52314 - enhanced SheetUtil?.getColumnWidth(poi-developers)
+51875 - More XSSF new-line in formula support(poi-developers)
+POIFS EntryUtils?.copyNodes(POFS,POIFS) now uses FilteringDirectoryNode?, so can exclude from copying nodes not just directly under the root(poi-developers)
+POIFS Helper FilteringDirectoryNode?, which wraps a DirectoryEntry? and allows certain parts to be ignored(poi-developers)
+52190 - null check on XWPF setFontFamily(poi-developers)
+52050 - Support for the Excel RATE function(poi-developers)
+51949 - Avoid NPE on double close of ZipFileZipEntrySource?(poi-developers)
+51950 - XWPF fix for footnotes not always being present in a document(poi-developers)
+51963 - Correct AreaReference? handling of references containing a sheet name which includes a comma(poi-developers)
+51834 - Opening and Writing .doc file results in corrupt document(poi-developers)
+Allow the passing of a File object to WorkbookFactory?.create, which permits lower memory processing than the InputStream? version(poi-developers)
+51850 - support creating comments in XSSF on an earlier slide when later ones already have them(poi-developers)
+New PackagePart? method getRelatedPart(PackageRelationship?) to simplify navigation of relations between OPC Parts(poi-developers)
+51832 - handle XLS files where the WRITEPROTECT record preceeds the FILEPASS one, rather than following as normal(poi-developers)
+51809 - correct GTE handling in COUNTIF(poi-developers)
+51670 - avoid LeftoverDataException? when reading .xls files with invalid LabelRecords?(poi-developers)
+51196 - prevent NPE in XWPFPicture.getPictureData() (poi-developers)
+51196 - more progress with Chart APi in XSSF(poi-developers)
+51785 - Allow XSSF setForceFormulaRecalculation to work with the minimal ooxml-schemas jar(poi-developers)
+
+=========================================================================
+ 
+2.0 Alpha [v2.0.0] (August, 2012)
 New features
 a. Implement OpenXml4Net (same as System.Packaging from Microsoft). It supports both .NET 2.0 and .NET 4.0
 b. Excel 2007 read/write library (NPOI.XSSF)
@@ -8,6 +329,8 @@ e. Load xlsx template and save as new xlsx file (partially supported)
 f. Diagonal line in cell both in xls and xlsx
 g. Support isRightToLeft and setRightToLeft on the common spreadsheet Sheet interface, as per existing HSSF support(poi-developers)
 h. New examples for NPOI.OpenXml4Net(2 examples), NPOI.XSSF (15 examples) and NPOI.XWPF (5 examples)
+
+=========================================================================
 
 1.2.5 (April,2012)
 In this release, we fixed most of the bugs found in POI 3.8 beta 4. 
@@ -77,6 +400,9 @@ e. Support using RecalcIdRecord to trigger a full formula recalculation on load 
 f. ExternalNameRecord support for DDE Link entries without an operation(poi-developers)
 g. POIFS Browser: add ability to parse EscherContainer and sub nodes
 
+
+=========================================================================
+
 1.2.4 (Nov,2011)
 In this release, we fixed most of the bugs found in POI 3.6 and POI 3.7. 
 
@@ -128,6 +454,8 @@ b. AutoFilter Phrase II - it's able to create autofilter with any cell range
 c. Add the method to determine if the cell is merged or not
 d. Support compilation with MonoDeveloper
 e. Change all interface name starting with 'I'
+
+=========================================================================
 
 1.2.3 (Nov. 2010)
 NPOI Bug fixes
@@ -182,6 +510,8 @@ Sync POI bug fixes
 45290 - Support odd files where the POIFS header block comes after the data blocks, and is on the data blocks list(POI-DEVELOPERS) 
 46137 - Handle odd files with a ContinueRecord after EOFRecord(POI-DEVELOPERS) 
 
+=========================================================================
+
 NPOI 1.2.2 (2009-12-5)
 a. ability to identify more Chart record
 b. ColumnAutoSize bug is fixed (bug 3754 )
@@ -193,6 +523,8 @@ h. HSSFSheet.RemoveRow will remove CellRecord as well as RowRecord (bug 3493)
 i. Auto filter feature (alpha)
 j. read xls template with macro (bug 3804)
 
+=========================================================================
+
 NPOI 1.2.1 (2009-6-1)
 a. Conditional Formating doesn't work as expected
 b. HSSFDataFormat.GetFormat return different index for the same format string
@@ -200,6 +532,8 @@ c. Incorrect namespace spelling of NPOI.SS.Formula
 d. HSSFCell.ToString() method supports DataFormat now
 e. add strong name for all the assembiles
 f. HSSFColor.index static variable isn't accessible in VB.NET due to the HSSFColor Index property
+
+=========================================================================
 
 NPOI 1.2 (2009-5)
 implement features in POI 3.2 final

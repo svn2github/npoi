@@ -24,6 +24,9 @@ namespace NPOI.XSSF.Model
     using System.IO;
     using NPOI.OpenXml4Net.OPC;
     using System.Xml;
+    using System.Security;
+    using System.Text.RegularExpressions;
+    using System.Text;
 
     /**
      * Table of strings shared across all sheets in a workbook.
@@ -85,27 +88,33 @@ namespace NPOI.XSSF.Model
             _sstDoc.AddNewSst();
         }
 
-        internal SharedStringsTable(PackagePart part, PackageRelationship rel)
-            : base(part, rel)
+        public SharedStringsTable(PackagePart part)
+            : base(part)
         {
-
             ReadFrom(part.GetInputStream());
         }
 
+        [Obsolete("deprecated in POI 3.14, scheduled for removal in POI 3.16")]
+        public SharedStringsTable(PackagePart part, PackageRelationship rel)
+             : this(part)
+        {
+
+        }
 
         public void ReadFrom(Stream is1)
         {
             try
             {
                 int cnt = 0;
-                _sstDoc = SstDocument.Parse(is1);
+                XmlDocument xml = ConvertStreamToXml(is1);
+                _sstDoc = SstDocument.Parse(xml, NamespaceManager);
                 CT_Sst sst = _sstDoc.GetSst();
                 count = (int)sst.count;
                 uniqueCount = (int)sst.uniqueCount;
                 foreach (CT_Rst st in sst.si)
                 {
-                    string key=GetKey(st);
-                    if(key!=null && !stmap.ContainsKey(key))
+                    string key = GetKey(st);
+                    if (key != null && !stmap.ContainsKey(key))
                         stmap.Add(key, cnt);
                     strings.Add(st);
                     cnt++;
@@ -113,13 +122,13 @@ namespace NPOI.XSSF.Model
             }
             catch (XmlException e)
             {
-                throw new IOException(e.Message);
+                throw new IOException("unable to parse shared strings table", e);
             }
         }
 
         private String GetKey(CT_Rst st)
         {
-            return st.t==null?string.Empty:st.t; //.xmltext
+            return st.XmlText;
         }
 
         /**
@@ -139,9 +148,12 @@ namespace NPOI.XSSF.Model
          *
          * @return the total count of strings in the workbook
          */
-        public int GetCount()
+        public int Count
         {
-            return count;
+            get
+            {
+                return count;
+            }
         }
 
         /**
@@ -151,9 +163,12 @@ namespace NPOI.XSSF.Model
          *
          * @return the total count of unique strings in the workbook
          */
-        public int GetUniqueCount()
+        public int UniqueCount
         {
-            return uniqueCount;
+            get
+            {
+                return uniqueCount;
+            }
         }
 
         /**
@@ -191,13 +206,17 @@ namespace NPOI.XSSF.Model
          *
          * @return array of CT_Rst beans
          */
-        public List<CT_Rst> GetItems()
+        public IList<CT_Rst> Items
         {
-            return strings;
+            get
+            {
+                return strings.AsReadOnly();
+            }
         }
 
         /**
-         * Write this table out as XML.
+         * 
+         * this table out as XML.
          * 
          * @param out The stream to write to.
          * @throws IOException if an error occurs while writing.
@@ -208,19 +227,16 @@ namespace NPOI.XSSF.Model
             // see Bugzilla 48936
             //options.SetSaveCDataLengthThreshold(1000000);
             //options.SetSaveCDataEntityCountThreshold(-1);
-
-            //re-create the sst table every time saving a workbook
             CT_Sst sst = _sstDoc.GetSst();
             sst.count = count;
-            sst.countSpecified = true;
-            sst.uniqueCount = uniqueCount;
-            sst.uniqueCountSpecified = true;
+           sst.uniqueCount = uniqueCount;
 
-            _sstDoc.Save(out1);
+           //re-create the sst table every time saving a workbook
+           _sstDoc.Save(out1);
         }
 
 
-        protected override void Commit()
+        protected internal override void Commit()
         {
             PackagePart part = GetPackagePart();
             //Stream out1 = part.GetInputStream();

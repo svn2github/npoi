@@ -18,7 +18,6 @@
 namespace NPOI.SS.Formula.Eval
 {
     using System;
-    using System.Text.RegularExpressions;
     using System.Globalization;
 
     /**
@@ -60,7 +59,7 @@ namespace NPOI.SS.Formula.Eval
             ValueEval result;
             if (arg is RefEval)
             {
-                result = ((RefEval)arg).InnerValueEval;
+                result = ChooseSingleElementFromRef((RefEval)arg);
             }
             else if (arg is AreaEval)
             {
@@ -193,7 +192,10 @@ namespace NPOI.SS.Formula.Eval
             }
             return ae.GetAbsoluteValue(ae.FirstRow, srcCellCol);
         }
-
+        private static ValueEval ChooseSingleElementFromRef(RefEval ref1)
+        {
+            return ref1.GetInnerValueEval(ref1.FirstSheetIndex);
+        }
         /**
          * Applies some conversion rules if the supplied value is not already an integer.<br/>
          * Value is first Coerced to a <c>double</c> ( See <c>CoerceValueTodouble()</c> ).<p/>

@@ -21,6 +21,8 @@ namespace NPOI.SS.Formula.Functions
     using NPOI.SS.Formula.Eval;
     using NPOI.SS.Formula.Functions;
     using NPOI.SS.Formula;
+    using System.Collections.Generic;
+    using System.Linq;
 
     public class SingleValueVector : ValueVector
     {
@@ -136,7 +138,14 @@ namespace NPOI.SS.Formula.Functions
             if (eval is RefEval)
             {
                 RefEval re = (RefEval)eval;
-                return new SingleValueVector(re.InnerValueEval);
+                if (re.NumberOfSheets == 1)
+                {
+                    return new SingleValueVector(re.GetInnerValueEval(re.FirstSheetIndex));
+                }
+                else
+                {
+                    return LookupUtils.CreateVector(re);
+                }
             }
             if (eval is TwoDEval)
             {
@@ -195,6 +204,11 @@ namespace NPOI.SS.Formula.Functions
                 // if the string Parses as a number, it Is OK
                 return d;
             }
+            //if the 3rd argument is missing, use the default value
+            if (match_type is MissingArgEval)
+            {
+                return 1d;
+            }
             throw new Exception("Unexpected match_type type (" + match_type.GetType().Name + ")");
         }
 
@@ -207,9 +221,10 @@ namespace NPOI.SS.Formula.Functions
 
             LookupValueComparer lookupComparer = CreateLookupComparer(lookupValue, matchExact);
 
+            int size = lookupRange.Size;
             if (matchExact)
             {
-                for (int i = 0; i < lookupRange.Size; i++)
+                for (int i = 0; i < size; i++)
                 {
                     if (lookupComparer.CompareTo(lookupRange.GetItem(i)).IsEqual)
                     {
@@ -221,8 +236,27 @@ namespace NPOI.SS.Formula.Functions
 
             if (FindLargestLessThanOrEqual)
             {
+                //in case the lookupRange area is not sorted, still try to get the right index 
+                if (lookupValue is NumericValueEval nve)
+                {
+                    Dictionary<int, double> dicDeltas = new Dictionary<int, double>();
+                    for (int i = 0; i < size; i++)
+                    {
+                        var item = lookupRange.GetItem(i) as NumericValueEval;
+                        if (lookupComparer.CompareTo(item).IsEqual)
+                        {
+                            return i;
+                        }
+                        else
+                        {
+                            dicDeltas.Add(i, item.NumberValue - nve.NumberValue);
+                        }
+                    }
+
+                    return dicDeltas.Where(kv => kv.Value < 0).OrderByDescending(kv => kv.Value).First().Key;
+                }
                 // Note - backward iteration
-                for (int i = lookupRange.Size - 1; i >= 0; i--)
+                for (int i = size - 1; i >= 0; i--)
                 {
                     CompareResult cmp = lookupComparer.CompareTo(lookupRange.GetItem(i));
                     if (cmp.IsTypeMismatch)
@@ -239,7 +273,7 @@ namespace NPOI.SS.Formula.Functions
 
             // else - Find smallest greater than or equal to
             // TODO - Is binary search used for (match_type==+1) ?
-            for (int i = 0; i < lookupRange.Size; i++)
+            for (int i = 0; i < size; i++)
             {
                 CompareResult cmp = lookupComparer.CompareTo(lookupRange.GetItem(i));
                 if (cmp.IsEqual)
@@ -256,30 +290,12 @@ namespace NPOI.SS.Formula.Functions
                 }
             }
 
-            throw new EvaluationException(ErrorEval.NA);
+            return size - 1;
         }
 
         private static LookupValueComparer CreateLookupComparer(ValueEval lookupValue, bool matchExact)
         {
-            if (matchExact && lookupValue is StringEval)
-            {
-                String stringValue = ((StringEval)lookupValue).StringValue;
-                if (IsLookupValueWild(stringValue))
-                {
-                    throw new Exception("Wildcard lookup values '" + stringValue + "' not supported yet");
-                }
-
-            }
-            return LookupUtils.CreateLookupComparer(lookupValue);
-        }
-
-        private static bool IsLookupValueWild(String stringValue)
-        {
-            if (stringValue.IndexOf('?') >= 0 || stringValue.IndexOf('*') >= 0)
-            {
-                return true;
-            }
-            return false;
+            return LookupUtils.CreateLookupComparer(lookupValue, matchExact, true);
         }
     }
 }

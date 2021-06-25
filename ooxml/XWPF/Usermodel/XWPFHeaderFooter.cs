@@ -53,12 +53,12 @@ namespace NPOI.XWPF.UserModel
         protected XWPFHeaderFooter()
         {
 
-            //headerFooter = new CT_HdrFtr();
-            //ReadHdrFtr();
+            headerFooter = new CT_HdrFtr();
+            ReadHdrFtr();
         }
 
-        public XWPFHeaderFooter(POIXMLDocumentPart parent, PackagePart part, PackageRelationship rel) :
-            base(parent, part, rel)
+        public XWPFHeaderFooter(POIXMLDocumentPart parent, PackagePart part) 
+            : base(parent, part)
         {
             ;
             this.document = (XWPFDocument)GetParent();
@@ -69,7 +69,12 @@ namespace NPOI.XWPF.UserModel
             }
         }
 
+        [Obsolete("deprecated in POI 3.14, scheduled for removal in POI 3.16")]
+        public XWPFHeaderFooter(POIXMLDocumentPart parent, PackagePart part, PackageRelationship rel)
+            : this(parent, part)
+        {
 
+        }
         internal override void OnDocumentRead()
         {
             foreach (POIXMLDocumentPart poixmlDocumentPart in GetRelations())
@@ -121,9 +126,12 @@ namespace NPOI.XWPF.UserModel
          *  complex headers/footers have a table or two
          *  in Addition. 
          */
-        public IList<XWPFTable> GetTables()
+        public IList<XWPFTable> Tables
         {
-            return tables.AsReadOnly();
+            get
+            {
+                return tables.AsReadOnly();
+            }
         }
 
 
@@ -132,35 +140,44 @@ namespace NPOI.XWPF.UserModel
          * Returns the textual content of the header/footer,
          *  by flattening out the text of its paragraph(s)
          */
-        public String GetText()
+        public String Text
         {
-            StringBuilder t = new StringBuilder();
-
-            for (int i = 0; i < paragraphs.Count; i++)
+            get
             {
-                if (!paragraphs[(i)].IsEmpty())
+                StringBuilder t = new StringBuilder();
+
+                for (int i = 0; i < paragraphs.Count; i++)
                 {
-                    String text = paragraphs[(i)].GetText();
+                    if (!paragraphs[(i)].IsEmpty)
+                    {
+                        String text = paragraphs[i].Text;
+                        if (text != null && text.Length > 0)
+                        {
+                            t.Append(text);
+                            t.Append('\n');
+                        }
+                    }
+                }
+
+                IList<XWPFTable> tables = this.Tables;
+                for (int i = 0; i < tables.Count; i++)
+                {
+                    String text = tables[(i)].Text;
                     if (text != null && text.Length > 0)
                     {
                         t.Append(text);
                         t.Append('\n');
                     }
                 }
-            }
-
-            IList<XWPFTable> tables = GetTables();
-            for (int i = 0; i < tables.Count; i++)
-            {
-                String text = tables[(i)].GetText();
-                if (text != null && text.Length > 0)
+                foreach (IBodyElement bodyElement in BodyElements)
                 {
-                    t.Append(text);
-                    t.Append('\n');
+                    if (bodyElement is XWPFSDT)
+                    {
+                        t.Append(((XWPFSDT)bodyElement).Content.Text + '\n');
+                    }
                 }
+                return t.ToString();
             }
-
-            return t.ToString();
         }
 
         /**
@@ -214,8 +231,11 @@ namespace NPOI.XWPF.UserModel
          */
         public XWPFParagraph GetParagraphArray(int pos)
         {
-
-            return paragraphs[(pos)];
+            if (pos >= 0 && pos < paragraphs.Count)
+            {
+                return paragraphs[(pos)];
+            }
+            return null;
         }
 
         /**
@@ -282,7 +302,8 @@ namespace NPOI.XWPF.UserModel
                 {
                     try
                     {
-                        out1.Close();
+                        if (out1 != null)
+                            out1.Close();
                     }
                     catch (IOException)
                     {
@@ -303,14 +324,9 @@ namespace NPOI.XWPF.UserModel
                  */
                 PackagePart picDataPart = xwpfPicData.GetPackagePart();
                 // TODO add support for TargetMode.EXTERNAL relations.
-                TargetMode targetMode = TargetMode.Internal;
-                PackagePartName partName = picDataPart.PartName;
-                String relation = relDesc.Relation;
-                PackageRelationship relShip = GetPackagePart().AddRelationship(partName, targetMode, relation);
-                String id = relShip.Id;
-                AddRelation(id, xwpfPicData);
+                RelationPart rp = AddRelation(null, XWPFRelation.IMAGES, xwpfPicData);
                 pictures.Add(xwpfPicData);
-                return id;
+                return rp.Relationship.Id;
             }
             else
             {
@@ -459,9 +475,12 @@ namespace NPOI.XWPF.UserModel
         }*/
 
 
-        public POIXMLDocumentPart GetOwner()
+        public POIXMLDocumentPart Owner
         {
-            return this;
+            get
+            {
+                return this;
+            }
         }
 
         /**
@@ -470,8 +489,7 @@ namespace NPOI.XWPF.UserModel
          */
         public XWPFTable GetTableArray(int pos)
         {
-
-            if (pos > 0 && pos < tables.Count)
+            if (pos >= 0 && pos < tables.Count)
             {
                 return tables[(pos)];
             }
@@ -483,7 +501,7 @@ namespace NPOI.XWPF.UserModel
          * @param pos
          * @param table
          */
-        public void insertTable(int pos, XWPFTable table)
+        public void InsertTable(int pos, XWPFTable table)
         {
             bodyElements.Insert(pos, table);
             int i;
@@ -577,7 +595,6 @@ namespace NPOI.XWPF.UserModel
         {
             document = doc;
         }
-
         public XWPFDocument GetXWPFDocument()
         {
             if (document != null)
@@ -594,25 +611,39 @@ namespace NPOI.XWPF.UserModel
          * returns the Part, to which the body belongs, which you need for Adding relationship to other parts
          * @see NPOI.XWPF.UserModel.IBody#getPart()
          */
-        public POIXMLDocumentPart GetPart()
+        public POIXMLDocumentPart Part
         {
-            return this;
+            get
+            {
+                return this;
+            }
         }
 
         #region IBody ³ÉÔ±
 
 
-        public virtual BodyType GetPartType()
+        public virtual BodyType PartType
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+        /**
+         * Adds a new paragraph at the end of the header or footer
+         */
+        public XWPFParagraph CreateParagraph()
+        {
+            XWPFParagraph paragraph = new XWPFParagraph(headerFooter.AddNewP(), this);
+            paragraphs.Add(paragraph);
+            return paragraph;
+        }
+        public XWPFParagraph InsertNewParagraph(System.Xml.XmlDocument cursor)
         {
             throw new NotImplementedException();
         }
 
-        public XWPFParagraph insertNewParagraph(System.Xml.XmlDocument cursor)
-        {
-            throw new NotImplementedException();
-        }
-
-        public XWPFTable insertNewTbl(System.Xml.XmlDocument cursor)
+        public XWPFTable InsertNewTbl(System.Xml.XmlDocument cursor)
         {
             throw new NotImplementedException();
         }

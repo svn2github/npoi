@@ -21,7 +21,10 @@ using NUnit.Framework;
 using NPOI.SS.Util;
 using System;
 using System.Text;
-namespace NPOI.XSSF.UserModel
+using NPOI.XSSF;
+using NPOI.XSSF.UserModel;
+
+namespace TestCases.XSSF.UserModel
 {
     [TestFixture]
     public class TestXSSFDataValidation : BaseTestDataValidation
@@ -37,7 +40,7 @@ namespace NPOI.XSSF.UserModel
         {
             XSSFWorkbook workbook = XSSFTestDataSamples.OpenSampleWorkbook("DataValidations-49244.xlsx");
             ISheet sheet = workbook.GetSheetAt(0);
-            List<XSSFDataValidation> dataValidations = ((XSSFSheet)sheet).GetDataValidations();
+            List<IDataValidation> dataValidations = ((XSSFSheet)sheet).GetDataValidations();
 
             /**
              * 		For each validation type, there are two cells with the same validation. This Tests
@@ -60,13 +63,13 @@ namespace NPOI.XSSF.UserModel
             int[] validationTypes = new int[] { ValidationType.INTEGER, ValidationType.DECIMAL, ValidationType.TEXT_LENGTH };
 
             int[] SingleOperandOperatorTypes = new int[]{
-				OperatorType.LESS_THAN,OperatorType.LESS_OR_EQUAL,
-				OperatorType.GREATER_THAN,OperatorType.GREATER_OR_EQUAL,
-				OperatorType.EQUAL,OperatorType.NOT_EQUAL
-				};
+                OperatorType.LESS_THAN,OperatorType.LESS_OR_EQUAL,
+                OperatorType.GREATER_THAN,OperatorType.GREATER_OR_EQUAL,
+                OperatorType.EQUAL,OperatorType.NOT_EQUAL
+                };
             int[] doubleOperandOperatorTypes = new int[]{
-				OperatorType.BETWEEN,OperatorType.NOT_BETWEEN
-		};
+                OperatorType.BETWEEN,OperatorType.NOT_BETWEEN
+        };
 
             decimal value = (decimal)10, value2 = (decimal)20;
             double dvalue = (double)10.001, dvalue2 = (double)19.999;
@@ -132,7 +135,7 @@ namespace NPOI.XSSF.UserModel
                     ICell cell_13 = row1.CreateCell(3);
 
 
-                    cell_13.SetCellType(CellType.NUMERIC);
+                    cell_13.SetCellType(CellType.Numeric);
                     cell_13.SetCellValue(validationType == ValidationType.DECIMAL ? dvalue : (double)value);
 
 
@@ -201,11 +204,11 @@ namespace NPOI.XSSF.UserModel
 
 
                     String value1String = validationType == ValidationType.DECIMAL ? dvalue.ToString() : value.ToString();
-                    cell_13.SetCellType(CellType.NUMERIC);
+                    cell_13.SetCellType(CellType.Numeric);
                     cell_13.SetCellValue(validationType == ValidationType.DECIMAL ? dvalue : (int)value);
 
                     String value2String = validationType == ValidationType.DECIMAL ? dvalue2.ToString() : value2.ToString();
-                    cell_14.SetCellType(CellType.NUMERIC);
+                    cell_14.SetCellType(CellType.Numeric);
                     cell_14.SetCellValue(validationType == ValidationType.DECIMAL ? dvalue2 : (int)value2);
 
 
@@ -248,6 +251,140 @@ namespace NPOI.XSSF.UserModel
             validation.CreatePromptBox("Prompt", "Enter some value");
             validation.SuppressDropDownArrow = yesNo;
         }
+        [Test]
+        public void Test53965()
+        {
+
+            XSSFWorkbook wb = new XSSFWorkbook();
+            try
+            {
+                XSSFSheet sheet = wb.CreateSheet() as XSSFSheet;
+                List<IDataValidation> lst = sheet.GetDataValidations();    //<-- works
+                Assert.AreEqual(0, lst.Count);
+
+                //create the cell that will have the validation applied
+                sheet.CreateRow(0).CreateCell(0);
+
+                IDataValidationHelper dataValidationHelper = sheet.GetDataValidationHelper();
+                IDataValidationConstraint constraint = dataValidationHelper.CreateCustomConstraint("SUM($A$1:$A$1) <= 3500");
+                CellRangeAddressList addressList = new CellRangeAddressList(0, 0, 0, 0);
+                IDataValidation validation = dataValidationHelper.CreateValidation(constraint, addressList);
+                sheet.AddValidationData(validation);
+
+                // this line caused XmlValueOutOfRangeException , see Bugzilla 3965
+                lst = sheet.GetDataValidations();
+                Assert.AreEqual(1, lst.Count);
+            }
+            finally
+            {
+                wb.Close();
+            }
+        }
+
+        [Test]
+        public void TestDefaultAllowBlank()
+        {
+            XSSFWorkbook wb = new XSSFWorkbook();
+            try
+            {
+                XSSFSheet sheet = wb.CreateSheet() as XSSFSheet;
+
+                XSSFDataValidation validation = CreateValidation(sheet);
+                sheet.AddValidationData(validation);
+
+                List<IDataValidation> dataValidations = sheet.GetDataValidations();
+                Assert.AreEqual(true, (dataValidations[0] as XSSFDataValidation).GetCTDataValidation().allowBlank);
+            }
+            finally
+            {
+                wb.Close();
+            }
+        }
+
+        [Test]
+        public void TestSetAllowBlankToFalse()
+        {
+            XSSFWorkbook wb = new XSSFWorkbook();
+            try
+            {
+                XSSFSheet sheet = wb.CreateSheet() as XSSFSheet;
+
+                XSSFDataValidation validation = CreateValidation(sheet);
+                validation.GetCTDataValidation().allowBlank = (/*setter*/false);
+
+                sheet.AddValidationData(validation);
+
+                List<IDataValidation> dataValidations = sheet.GetDataValidations();
+                Assert.AreEqual(false, (dataValidations[0] as XSSFDataValidation).GetCTDataValidation().allowBlank);
+            }
+            finally
+            {
+                wb.Close();
+            }
+        }
+
+        [Test]
+        public void TestSetAllowBlankToTrue()
+        {
+            XSSFWorkbook wb = new XSSFWorkbook();
+            try
+            {
+                XSSFSheet sheet = wb.CreateSheet() as XSSFSheet;
+
+                XSSFDataValidation validation = CreateValidation(sheet);
+                validation.GetCTDataValidation().allowBlank = (/*setter*/true);
+
+                sheet.AddValidationData(validation);
+
+                List<IDataValidation> dataValidations = sheet.GetDataValidations();
+                Assert.AreEqual(true, (dataValidations[0] as XSSFDataValidation).GetCTDataValidation().allowBlank);
+            }
+            finally
+            {
+                wb.Close();
+            }
+        }
+
+        [Test]
+        public void TestCreateMultipleRegionsValidation()
+        {
+            XSSFWorkbook wb = new XSSFWorkbook();
+            try
+            {
+                XSSFSheet sheet = wb.CreateSheet() as XSSFSheet;
+                IDataValidationHelper dataValidationHelper = sheet.GetDataValidationHelper();
+                IDataValidationConstraint constraint = dataValidationHelper.CreateExplicitListConstraint(new string[] { "A" });
+                CellRangeAddressList cellRangeAddressList = new CellRangeAddressList();
+                cellRangeAddressList.AddCellRangeAddress(0, 0, 0, 0);
+                cellRangeAddressList.AddCellRangeAddress(0, 1, 0, 1);
+                cellRangeAddressList.AddCellRangeAddress(0, 2, 0, 2);
+                XSSFDataValidation dataValidation = dataValidationHelper.CreateValidation(constraint, cellRangeAddressList) as XSSFDataValidation;
+                sheet.AddValidationData(dataValidation);
+
+                Assert.AreEqual(new CellRangeAddress(0, 0, 0, 0), sheet.GetDataValidations()[0].Regions.CellRangeAddresses[0]);
+                Assert.AreEqual(new CellRangeAddress(0, 0, 1, 1), sheet.GetDataValidations()[0].Regions.CellRangeAddresses[1]);
+                Assert.AreEqual(new CellRangeAddress(0, 0, 2, 2), sheet.GetDataValidations()[0].Regions.CellRangeAddresses[2]);
+                Assert.AreEqual("A1 B1 C1", dataValidation.GetCTDataValidation().sqref);
+            }
+            finally
+            {
+                wb.Close();
+            }
+        }
+
+        private XSSFDataValidation CreateValidation(XSSFSheet sheet)
+        {
+            //create the cell that will have the validation applied
+            IRow row = sheet.CreateRow(0);
+            row.CreateCell(0);
+
+            IDataValidationHelper dataValidationHelper = sheet.GetDataValidationHelper();
+
+            IDataValidationConstraint constraint = dataValidationHelper.CreateCustomConstraint("true");
+            XSSFDataValidation validation = (XSSFDataValidation)dataValidationHelper.CreateValidation(constraint, new CellRangeAddressList(0, 0, 0, 0));
+            return validation;
+        }
+
     }
 }
 

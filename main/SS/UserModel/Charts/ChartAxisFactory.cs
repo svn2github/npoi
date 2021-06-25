@@ -30,6 +30,9 @@ namespace NPOI.SS.UserModel.Charts
         /// <returns></returns>
         IValueAxis CreateValueAxis(AxisPosition pos);
 
+        IChartAxis CreateCategoryAxis(AxisPosition pos);
+
+        IChartAxis CreateDateAxis(AxisPosition pos);
     }
 
 }

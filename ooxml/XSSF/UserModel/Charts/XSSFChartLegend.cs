@@ -42,6 +42,19 @@ namespace NPOI.XSSF.UserModel.Charts
             this.legend = (ctChart.IsSetLegend()) ?
                 ctChart.legend :
                 ctChart.AddNewLegend();
+
+            SetDefaults();
+        }
+        /**
+         * Set sensible default styling.
+         */
+        private void SetDefaults()
+        {
+            if (!legend.IsSetOverlay())
+            {
+                legend.AddNewOverlay();
+            }
+            legend.overlay.val = 0;
         }
 
         /**
@@ -68,7 +81,7 @@ namespace NPOI.XSSF.UserModel.Charts
                 }
                 else
                 {
-                    return LegendPosition.RIGHT;
+                    return LegendPosition.Right;
                 }
             }
             set 
@@ -80,6 +93,12 @@ namespace NPOI.XSSF.UserModel.Charts
                 legend.legendPos.val = FromLegendPosition(value);
                 legend.legendPosSpecified = true;
             }
+        }
+
+        public bool IsOverlay
+        {
+            get { return legend.overlay.val != 0; }
+            set { legend.overlay.val = value ? 1 : 0; }
         }
 
         public IManualLayout GetManualLayout()
@@ -95,11 +114,11 @@ namespace NPOI.XSSF.UserModel.Charts
         {
             switch (position)
             {
-                case LegendPosition.BOTTOM: return ST_LegendPos.b;
-                case LegendPosition.LEFT: return ST_LegendPos.l;
-                case LegendPosition.RIGHT: return ST_LegendPos.r;
-                case LegendPosition.TOP: return ST_LegendPos.t;
-                case LegendPosition.TOP_RIGHT: return ST_LegendPos.tr;
+                case LegendPosition.Bottom: return ST_LegendPos.b;
+                case LegendPosition.Left: return ST_LegendPos.l;
+                case LegendPosition.Right: return ST_LegendPos.r;
+                case LegendPosition.Top: return ST_LegendPos.t;
+                case LegendPosition.TopRight: return ST_LegendPos.tr;
                 default:
                     throw new ArgumentException();
             }
@@ -109,11 +128,11 @@ namespace NPOI.XSSF.UserModel.Charts
         {
             switch (ctLegendPos.val)
             {
-                case ST_LegendPos.b: return LegendPosition.BOTTOM;
-                case ST_LegendPos.l: return LegendPosition.LEFT;
-                case ST_LegendPos.r: return LegendPosition.RIGHT;
-                case ST_LegendPos.t: return LegendPosition.TOP;
-                case ST_LegendPos.tr: return LegendPosition.TOP_RIGHT;
+                case ST_LegendPos.b: return LegendPosition.Bottom;
+                case ST_LegendPos.l: return LegendPosition.Left;
+                case ST_LegendPos.r: return LegendPosition.Right;
+                case ST_LegendPos.t: return LegendPosition.Top;
+                case ST_LegendPos.tr: return LegendPosition.TopRight;
                 default:
                     throw new ArgumentException();
             }

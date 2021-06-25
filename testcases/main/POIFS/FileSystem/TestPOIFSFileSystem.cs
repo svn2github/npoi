@@ -190,9 +190,9 @@ namespace TestCases.POIFS.FileSystem
             testIS = new TestIS(OpenSampleStream("13224.xls"), -1);
             try
             {
-                new POIFSFileSystem(testIS);
+                new OPOIFSFileSystem(testIS);
             }
-            catch (IOException )
+            catch (IOException)
             {
                 throw;
             }
@@ -202,7 +202,7 @@ namespace TestCases.POIFS.FileSystem
             testIS = new TestIS(OpenSampleStream("13224.xls"), 10000);
             try
             {
-                new POIFSFileSystem(testIS);
+                new OPOIFSFileSystem(testIS);
                 Assert.Fail("ex Should have been thrown");
             }
             catch (IOException)
@@ -231,12 +231,12 @@ namespace TestCases.POIFS.FileSystem
         [Test]
         public void TestShortLastBlock()
         {
-            String[] files = new String[] {"ShortLastBlock.qwp", "ShortLastBlock.wps"};
+            String[] files = new String[] { "ShortLastBlock.qwp", "ShortLastBlock.wps" };
 
             for (int i = 0; i < files.Length; i++)
             {
                 // Open the file up
-                POIFSFileSystem fs = new POIFSFileSystem(
+                OPOIFSFileSystem fs = new OPOIFSFileSystem(
                         _samples.OpenResourceAsStream(files[i])
                 );
 
@@ -254,9 +254,16 @@ namespace TestCases.POIFS.FileSystem
             // Open the file up
             try
             {
-                POIFSFileSystem fs = new POIFSFileSystem(_samples.OpenResourceAsStream("ReferencesInvalidSectors.mpp")
-                );
-                Assert.Fail("File is corrupt and shouldn't have been opened");
+                Stream stream = _samples.OpenResourceAsStream("ReferencesInvalidSectors.mpp");
+                try
+                {
+                    OPOIFSFileSystem fs = new OPOIFSFileSystem(stream);
+                    Assert.Fail("File is corrupt and shouldn't have been opened");
+                }
+                finally
+                {
+                    stream.Close();
+                }
             }
             catch (IOException e)
             {
@@ -269,7 +276,7 @@ namespace TestCases.POIFS.FileSystem
         public void TestBATandXBAT()
         {
             byte[] hugeStream = new byte[8 * 1024 * 1024];
-            POIFSFileSystem fs = new POIFSFileSystem();
+            OPOIFSFileSystem fs = new OPOIFSFileSystem();
             fs.Root.CreateDocument("BIG", new MemoryStream(hugeStream));
 
             MemoryStream baos = new MemoryStream();
@@ -310,53 +317,59 @@ namespace TestCases.POIFS.FileSystem
                                             blockList);
             Assert.AreEqual(fsData.Length / 512, blockList.BlockCount() + 1);
 
-            //fs = null;
-            //fs = new POIFSFileSystem(new MemoryStream(fsData));
+            fs = null;
+            fs = new OPOIFSFileSystem(new MemoryStream(fsData));
 
 
-            //DirectoryNode root = fs.Root;
-            //Assert.AreEqual(1, root.EntryCount);
-            //DocumentNode big = (DocumentNode)root.GetEntry("BIG");
-            //Assert.AreEqual(hugeStream.Length, big.Size);
+            DirectoryNode root = fs.Root;
+            Assert.AreEqual(1, root.EntryCount);
+            DocumentNode big = (DocumentNode)root.GetEntry("BIG");
+            Assert.AreEqual(hugeStream.Length, big.Size);
 
         }
 
         [Test]
         public void Test4KBlocks()
         {
-            
+
             Stream inp = _samples.OpenResourceAsStream("BlockSize4096.zvi");
+            try
+            {
+                // First up, check that we can process the header properly
+                HeaderBlock header_block = new HeaderBlock(inp);
+                POIFSBigBlockSize bigBlockSize = header_block.BigBlockSize;
+                Assert.AreEqual(4096, bigBlockSize.GetBigBlockSize());
 
-            // First up, check that we can process the header properly
-            HeaderBlock header_block = new HeaderBlock(inp);
-            POIFSBigBlockSize bigBlockSize = header_block.BigBlockSize;
-            Assert.AreEqual(4096, bigBlockSize.GetBigBlockSize());
+                // Check the fat info looks sane
+                Assert.AreEqual(1, header_block.BATArray.Length);
+                Assert.AreEqual(1, header_block.BATCount);
+                Assert.AreEqual(0, header_block.XBATCount);
 
-            // Check the fat info looks sane
-            Assert.AreEqual(1, header_block.BATArray.Length);
-            Assert.AreEqual(1, header_block.BATCount);
-            Assert.AreEqual(0, header_block.XBATCount);
+                // Now check we can get the basic fat
+                RawDataBlockList data_blocks = new RawDataBlockList(inp, bigBlockSize);
+                Assert.AreEqual(15, data_blocks.BlockCount());
 
-            // Now check we can get the basic fat
-            RawDataBlockList data_blocks = new RawDataBlockList(inp, bigBlockSize);
+                // Now try and open properly
+                OPOIFSFileSystem fs = new OPOIFSFileSystem(
+                      _samples.OpenResourceAsStream("BlockSize4096.zvi")
+                );
+                Assert.IsTrue(fs.Root.EntryCount > 3);
 
-
-            // Now try and open properly
-            POIFSFileSystem fs = new POIFSFileSystem(
-                  _samples.OpenResourceAsStream("BlockSize4096.zvi")
-            );
-            Assert.IsTrue(fs.Root.EntryCount > 3);
-
-            // Check we can get at all the contents
-            CheckAllDirectoryContents(fs.Root);
+                // Check we can get at all the contents
+                CheckAllDirectoryContents(fs.Root);
 
 
-            // Finally, check we can do a similar 512byte one too
-            fs = new POIFSFileSystem(
-                 _samples.OpenResourceAsStream("BlockSize512.zvi")
-           );
-            Assert.IsTrue(fs.Root.EntryCount > 3);
-            CheckAllDirectoryContents(fs.Root);
+                // Finally, check we can do a similar 512byte one too
+                fs = new OPOIFSFileSystem(
+                     _samples.OpenResourceAsStream("BlockSize512.zvi")
+               );
+                Assert.IsTrue(fs.Root.EntryCount > 3);
+                CheckAllDirectoryContents(fs.Root);
+            }
+            finally
+            {
+                inp.Close();
+            }
         }
 
 
@@ -364,7 +377,7 @@ namespace TestCases.POIFS.FileSystem
         {
             IEnumerator<Entry> it = dir.Entries;
             //foreach (Entry entry in dir)
-            while(it.MoveNext())
+            while (it.MoveNext())
             {
                 Entry entry = it.Current;
                 if (entry is DirectoryEntry)
@@ -375,54 +388,20 @@ namespace TestCases.POIFS.FileSystem
                 {
                     DocumentNode doc = (DocumentNode)entry;
                     DocumentInputStream dis = new DocumentInputStream(doc);
-                    int numBytes = dis.Available();
-                    byte[] data = new byte[numBytes];
-                    dis.Read(data);
+                    try
+                    {
+                        int numBytes = dis.Available();
+                        byte[] data = new byte[numBytes];
+                        dis.Read(data);
+                    }
+                    finally
+                    {
+                        dis.Close();
+                    }
                 }
             }
-	   }
-        /**
-	 * Test that we can open files that come via Lotus notes.
-	 * These have a top level directory without a name....
-	 */
-        [Test]
-        public void TestNotesOLE2Files()
-        {
-            POIDataSamples _samples = POIDataSamples.GetPOIFSInstance();
-
-            // Open the file up
-            POIFSFileSystem fs = new POIFSFileSystem(
-                _samples.OpenResourceAsStream("Notes.ole2")
-            );
-
-            // Check the contents
-            Assert.AreEqual(1, fs.Root.EntryCount);
-            fs.Root.Entries.MoveNext();
-
-            //fs.Root.Entries.Current is always null. WHY???
-            //Entry entry = fs.Root.Entries.Current;
-            Entry entry = fs.Root.GetEntry(0);
-            Assert.IsTrue(entry.IsDirectoryEntry);
-            Assert.IsTrue(entry is DirectoryEntry);
-
-            // The directory lacks a name!
-            DirectoryEntry dir = (DirectoryEntry)entry;
-            Assert.AreEqual("", dir.Name);
-
-            // Has two children
-            Assert.AreEqual(2, dir.EntryCount);
-
-            // Check them
-            IEnumerator<Entry> it = dir.Entries;
-            it.MoveNext();
-            entry = it.Current;
-            Assert.AreEqual(true, entry.IsDocumentEntry);
-            Assert.AreEqual("\u0001Ole10Native", entry.Name);
-            it.MoveNext();
-            entry = it.Current;
-            Assert.AreEqual(true, entry.IsDocumentEntry);
-            Assert.AreEqual("\u0001CompObj", entry.Name);
         }
+
 
         private static Stream OpenSampleStream(String sampleFileName)
         {

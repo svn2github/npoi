@@ -38,7 +38,32 @@ namespace NPOI.XWPF.UserModel
         DIB = 7,
 
         /** GIF image format */
-        GIF = 8
+        GIF = 8,
+        /**
+         * Tag Image File (.tiff)
+         */
+        TIFF = 9,
+
+        /**
+         * Encapsulated Postscript (.eps)
+         */
+        EPS = 10,
+
+
+        /**
+         * Windows Bitmap (.bmp)
+         */
+        BMP = 11,
+
+        /**
+         * WordPerfect graphics (.wpg)
+         */
+        WPG = 12,
+
+        /**
+         * Scalable Vector Graphics (.svg)
+         */
+        SVG = 13
     }
     public interface Document
     {

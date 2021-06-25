@@ -24,10 +24,10 @@ namespace NPOI.HSSF.Record
 
     using System;
     using System.IO;
-    using System.Text;
 
 
     using NPOI.HSSF.Record.Crypto;
+    using System.Diagnostics;
 
 
     [Serializable]
@@ -35,8 +35,18 @@ namespace NPOI.HSSF.Record
     {
         public LeftoverDataException(int sid, int remainingByteCount)
             : base("Initialisation of record 0x" + StringUtil.ToHexString(sid).ToUpper()
-                + " left " + remainingByteCount + " bytes remaining still to be read.")
+                  + "(" + getRecordName(sid) + ") left " + remainingByteCount
+                    + " bytes remaining still to be read.")
         {
+        }
+        private static String getRecordName(int sid)
+        {
+            Type recordClass = RecordFactory.GetRecordClass(sid);
+            if (recordClass == null)
+            {
+                return null;
+            }
+            return recordClass.Name;
         }
     }
     internal class SimpleHeaderInput : BiffHeaderInput
@@ -83,8 +93,8 @@ namespace NPOI.HSSF.Record
     {
         /** Maximum size of a single record (minus the 4 byte header) without a continue*/
         public const short MAX_RECORD_DATA_SIZE = 8224;
-        private static int INVALID_SID_VALUE = -1;
-        private static int DATA_LEN_NEEDS_TO_BE_READ = -1;
+        private const int INVALID_SID_VALUE = -1;
+        private const int DATA_LEN_NEEDS_TO_BE_READ = -1;
         //private const int EOF_RECORD_ENCODED_SIZE = 4;
 
         //private LittleEndianInput _le;
@@ -102,7 +112,7 @@ namespace NPOI.HSSF.Record
         private ILittleEndianInput _dataInput;
         /** the record identifier of the BIFF record currently being read */
 
-        protected byte[] data = new byte[MAX_RECORD_DATA_SIZE];
+        //protected byte[] data = new byte[MAX_RECORD_DATA_SIZE];
 
         public RecordInputStream(Stream in1)
             : this(in1, null, 0)
@@ -249,7 +259,6 @@ namespace NPOI.HSSF.Record
          * 
          * <i>Note: The auto continue flag is Reset to true</i>
          */
-
         public void NextRecord()
         {
             if (_nextSid == INVALID_SID_VALUE)
@@ -375,10 +384,45 @@ namespace NPOI.HSSF.Record
 
         public void ReadFully(byte[] buf, int off, int len)
         {
-            CheckRecordPosition(len);
+            /*CheckRecordPosition(len);
             _dataInput.ReadFully(buf, off, len);
             _currentDataOffset += len;
-            pos += len;
+            pos += len;*/
+
+            int origLen = len;
+            if (buf == null)
+            {
+                throw new ArgumentNullException();
+            }
+            else if (off < 0 || len < 0 || len > buf.Length - off)
+            {
+                throw new IndexOutOfRangeException();
+            }
+
+            while (len > 0)
+            {
+                int nextChunk = Math.Min(Available(), len);
+                if (nextChunk == 0)
+                {
+                    if (!HasNextRecord)
+                    {
+                        throw new RecordFormatException("Can't read the remaining " + len + " bytes of the requested " + origLen + " bytes. No further record exists.");
+                    }
+                    else
+                    {
+                        NextRecord();
+                        nextChunk = Math.Min(Available(), len);
+                        Debug.Assert(nextChunk > 0);
+                    }
+                }
+                CheckRecordPosition(nextChunk);
+                _dataInput.ReadFully(buf, off, nextChunk);
+                _currentDataOffset += nextChunk;
+                off += nextChunk;
+                len -= nextChunk;
+
+                pos += nextChunk;
+            }
         }
         /**     
          *  given a byte array of 16-bit Unicode Chars, compress to 8-bit and     
@@ -462,6 +506,7 @@ namespace NPOI.HSSF.Record
                 NextRecord();
                 // note - the compressed flag may change on the fly
                 byte compressFlag = (byte)ReadByte();
+                Debug.Assert(compressFlag == 0 || compressFlag == 1);
                 isCompressedEncoding = (compressFlag == 0);
             }
         }
@@ -606,10 +651,16 @@ namespace NPOI.HSSF.Record
 
         public override int Read(byte[] b, int off, int len)
         {
-
-            Array.Copy(data, _currentDataOffset, b, off, len);
-            _currentDataOffset += len;
-            return Math.Min(data.Length, b.Length);
+            int limit = Math.Min(len, Remaining);
+            if (limit == 0)
+            {
+                return 0;
+            }
+            ReadFully(b, off, limit);
+            return limit;
+            //Array.Copy(data, _currentDataOffset, b, off, len);
+            //_currentDataOffset += len;
+            //return Math.Min(data.Length, b.Length);
         }
 
 

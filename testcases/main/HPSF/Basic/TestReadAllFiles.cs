@@ -26,6 +26,7 @@ namespace TestCases.HPSF.Basic
     using NUnit.Framework;
     using NPOI.HPSF;
     using NPOI.Util;
+    using System.Collections.Generic;
 
 
     /**
@@ -40,18 +41,9 @@ namespace TestCases.HPSF.Basic
     [TestFixture]
     public class TestReadAllFiles
     {
-
-        /**
-         * Test case constructor.
-         * 
-         * @param name The Test case's name.
-         */
-        public TestReadAllFiles()
-        {
-
-        }
-
-
+        private static String[] excludes = new String[] {
+        //"TestZeroLengthCodePage.mpp",
+    };
 
         /**
          * This Test methods Reads all property Set streams from all POI
@@ -63,29 +55,32 @@ namespace TestCases.HPSF.Basic
             //string dataDir = @"..\..\..\TestCases\HPSF\data\";
             POIDataSamples _samples = POIDataSamples.GetHPSFInstance();
             string[] files = _samples.GetFiles();
-
             try
             {
                 for (int i = 0; i < files.Length; i++)
                 {
-                    if (files[i].EndsWith("1"))
+                    if (!checkExclude(files[i]))
                         continue;
 
                     Console.WriteLine("Reading file \"" + files[i] + "\"");
+                    FileInfo f = new FileInfo(files[i]);
+                    /* Read the POI filesystem's property Set streams: */
+                    POIFile[] psf1 = Util.ReadPropertySets(f);
 
-                    using (FileStream f = new FileStream(files[i], FileMode.Open, FileAccess.Read))
+                    for (int j = 0; j < psf1.Length; j++)
                     {
-                        /* Read the POI filesystem's property Set streams: */
-                        POIFile[] psf1 = Util.ReadPropertySets(f);
-
-                        for (int j = 0; j < psf1.Length; j++)
+                        Stream in1 =
+                            new ByteArrayInputStream(psf1[j].GetBytes());
+                        try
                         {
-                            Stream in1 =
-                                new ByteArrayInputStream(psf1[j].GetBytes());
                             PropertySet a = PropertySetFactory.Create(in1);
                         }
-                        f.Close();
+                        catch (Exception e)
+                        {
+                            throw new IOException("While handling file: " + files[i] + " at " + j, e);
+                        }
                     }
+
                 }
             }
             catch (Exception t)
@@ -93,6 +88,25 @@ namespace TestCases.HPSF.Basic
                 String s = t.ToString();
                 Assert.Fail(s);
             }
+        }
+
+        /**
+         * Returns true if the file should be checked, false if it should be excluded.
+         *
+         * @param f
+         * @return
+         */
+        public static bool checkExclude(string f)
+        {
+            foreach (String exclude in excludes)
+            {
+                if (f.EndsWith(exclude))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
     }

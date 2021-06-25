@@ -26,6 +26,7 @@ namespace TestCases.HPSF.Basic
     using NPOI.HPSF;
     using NPOI.POIFS.EventFileSystem;
     using NPOI.Util;
+    using System.Collections.Generic;
 
 
 
@@ -118,10 +119,10 @@ namespace TestCases.HPSF.Basic
         public static POIFile[] ReadPOIFiles(Stream poiFs,
                                              String[] poiFiles)
         {
-            files = new ArrayList();
+            List<POIFile> files = new List<POIFile>();
             POIFSReader reader1 = new POIFSReader();
             //reader1.StreamReaded += new POIFSReaderEventHandler(reader1_StreamReaded);
-            POIFSReaderListener pfl = new POIFSReaderListener0();
+            POIFSReaderListener pfl = new POIFSReaderListener0(files);
             if (poiFiles == null)
                 /* Register the listener for all POI files. */
                 reader1.RegisterListener(pfl);
@@ -132,7 +133,14 @@ namespace TestCases.HPSF.Basic
                     reader1.RegisterListener(pfl, poiFiles[i]);
 
             /* Read the POI filesystem. */
-            reader1.Read(poiFs);
+            try
+            {
+                reader1.Read(poiFs);
+            }
+            finally
+            {
+                poiFs.Close();
+            }
             POIFile[] result = new POIFile[files.Count];
             for (int i = 0; i < result.Length; i++)
                 result[i] = (POIFile)files[i];
@@ -141,7 +149,11 @@ namespace TestCases.HPSF.Basic
         private class POIFSReaderListener0 : POIFSReaderListener
         {
             #region POIFSReaderListener members
-
+            private List<POIFile> files;
+            public POIFSReaderListener0(List<POIFile> files)
+            {
+                this.files = files;
+            }
             public void ProcessPOIFSReaderEvent(POIFSReaderEvent evt)
             {
                 try
@@ -165,8 +177,6 @@ namespace TestCases.HPSF.Basic
             #endregion
         }
 
-        
-        static IList files;
         /**
          * Read all files from a POI filesystem which are property Set streams
          * and returns them as an array of {@link org.apache.poi.hpsf.PropertySet}
@@ -183,24 +193,36 @@ namespace TestCases.HPSF.Basic
          * 
          * @exception IOException if an I/O exception occurs
          */
-        public static POIFile[] ReadPropertySets(FileStream poifs)
+        public static POIFile[] ReadPropertySets(FileInfo poifs)
         {
-            files = new ArrayList(7);
+            List<POIFile> files = new List<POIFile>(7);
             POIFSReader reader2 = new POIFSReader();
             //reader2.StreamReaded += new POIFSReaderEventHandler(reader2_StreamReaded);
-            POIFSReaderListener pfl = new POIFSReaderListener1();
+            POIFSReaderListener pfl = new POIFSReaderListener1(files);
             reader2.RegisterListener(pfl);
             /* Read the POI filesystem. */
-            reader2.Read(poifs);
+            FileStream stream = poifs.OpenRead();
+            try
+            {
+                reader2.Read(stream);
+            }
+            finally
+            {
+                stream.Close();
+            }
             POIFile[] result = new POIFile[files.Count];
             for (int i = 0; i < result.Length; i++)
-                result[i] = (POIFile)files[i];
+                result[i] = files[i];
             return result;
         }
         private class POIFSReaderListener1:POIFSReaderListener
         {
             #region POIFSReaderListener members
-
+            private List<POIFile> files;
+            public POIFSReaderListener1(List<POIFile> files)
+            {
+                this.files = files;
+            }
             public void ProcessPOIFSReaderEvent(POIFSReaderEvent e)
             {
                 try
@@ -238,14 +260,14 @@ namespace TestCases.HPSF.Basic
         public static void PrintSystemProperties()
         {
             IDictionary p = Environment.GetEnvironmentVariables();
-            ArrayList names = new ArrayList();
-            for (IEnumerator i = p.Keys.GetEnumerator(); i.MoveNext(); )
-                names.Add(i.Current);
+            List<string> names = new List<string>();
+            for (IEnumerator i = p.GetEnumerator(); i.MoveNext(); )
+                names.Add(i.Current.ToString());
             names.Sort();
-            for (IEnumerator i = names.GetEnumerator(); i.MoveNext(); )
+            for (IEnumerator<string> i = names.GetEnumerator(); i.MoveNext(); )
             {
-                String name = (String)i.Current;
-                String value = (String)p[name];
+                String name = i.Current;
+                String value = (string)p[name];
                 Console.WriteLine(name + ": " + value);
             }
             Console.WriteLine("Current directory: " +

@@ -26,8 +26,6 @@
  * ==============================================================*/
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 using NPOI.POIFS.FileSystem;
 
@@ -40,7 +38,7 @@ namespace NPOI.POIFS.Properties
     public class DocumentProperty:Property
     {
        // the POIFSDocument this property is associated with
-        private POIFSDocument _document;
+        private OPOIFSDocument _document;
 
 
         /// <summary>
@@ -49,6 +47,7 @@ namespace NPOI.POIFS.Properties
         /// <param name="name">POIFSDocument name</param>
         /// <param name="size">POIFSDocument size</param>
         public DocumentProperty(String name, int size)
+            : base()
         {
             _document = null;
             
@@ -73,7 +72,7 @@ namespace NPOI.POIFS.Properties
         /// Gets or sets the document.
         /// </summary>
         /// <value>the associated POIFSDocument</value>
-        public POIFSDocument Document
+        public OPOIFSDocument Document
         {
             set { _document = value; }
             get{ return _document;}
@@ -97,6 +96,14 @@ namespace NPOI.POIFS.Properties
         public override void PreWrite()
         {
             // do nothing
+        }
+
+        /**
+         * Update the size of the property's data
+         */
+        public void UpdateSize(int size)
+        {
+            Size = (size);
         }
     }
 }

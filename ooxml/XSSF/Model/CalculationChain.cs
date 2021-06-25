@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.IO;
 using NPOI.OpenXml4Net.OPC;
 using NPOI.OpenXmlFormats.Spreadsheet;
+using System.Xml;
 
 namespace NPOI.XSSF.Model
 {
@@ -41,16 +42,23 @@ namespace NPOI.XSSF.Model
             chain = new CT_CalcChain();
         }
 
-        internal CalculationChain(PackagePart part, PackageRelationship rel)
-            : base(part, rel)
+        internal CalculationChain(PackagePart part)
+            : base(part)
         {
-
-            ReadFrom(part.GetInputStream());
+            XmlDocument xml = ConvertStreamToXml(part.GetInputStream());
+            ReadFrom(xml);
         }
 
-        public void ReadFrom(Stream is1)
+        [Obsolete("deprecated in POI 3.14, scheduled for removal in POI 3.16")]
+        public CalculationChain(PackagePart part, PackageRelationship rel)
+             : this(part)
         {
-            CalcChainDocument doc = CalcChainDocument.Parse(is1);
+
+        }
+
+        public void ReadFrom(XmlDocument xml)
+        {
+            CalcChainDocument doc = CalcChainDocument.Parse(xml, NamespaceManager);
             chain = doc.GetCalcChain();
 
         }
@@ -62,7 +70,7 @@ namespace NPOI.XSSF.Model
         }
 
 
-        protected override void Commit()
+        protected internal override void Commit()
         {
             PackagePart part = GetPackagePart();
             Stream out1 = part.GetOutputStream();
@@ -104,6 +112,7 @@ namespace NPOI.XSSF.Model
                     if (c[i].iSpecified && i < c.Count - 1 && !c[i + 1].iSpecified)
                     {
                         c[i + 1].i = id;
+                        c[i + 1].iSpecified = true;
                     }
                     chain.RemoveC(i);
                     break;

@@ -22,6 +22,8 @@ using NPOI.XSSF.UserModel.Helpers;
 using NPOI.OpenXmlFormats.Spreadsheet;
 using System.Collections.Generic;
 using NPOI.XSSF.UserModel;
+using System;
+
 namespace NPOI.XSSF.Model
 {
 
@@ -47,13 +49,17 @@ namespace NPOI.XSSF.Model
             SingleXMLCells = new CT_SingleXmlCells();
         }
 
-        internal SingleXmlCells(PackagePart part, PackageRelationship rel)
-            : base(part, rel)
+        public SingleXmlCells(PackagePart part)
+            : base(part)
         {
-
             ReadFrom(part.GetInputStream());
         }
+        [Obsolete("deprecated in POI 3.14, scheduled for removal in POI 3.16")]
+        public SingleXmlCells(PackagePart part, PackageRelationship rel)
+             : this(part)
+        {
 
+        }
         public void ReadFrom(Stream is1)
         {
             try
@@ -80,7 +86,7 @@ namespace NPOI.XSSF.Model
         }
 
 
-        protected override void Commit()
+        protected internal override void Commit()
         {
             PackagePart part = GetPackagePart();
             Stream out1 = part.GetOutputStream();

@@ -61,20 +61,20 @@ namespace TestCases.SS.UserModel
         public void TestSheetHidden()
         {
             IWorkbook wb = _testDataProvider.CreateWorkbook();
-            ISheet sh = wb.CreateSheet("MySheet");
+            wb.CreateSheet("MySheet");
 
             Assert.IsFalse(wb.IsSheetHidden(0));
             Assert.IsFalse(wb.IsSheetVeryHidden(0));
 
-            wb.SetSheetHidden(0, SheetState.HIDDEN);
+            wb.SetSheetHidden(0, SheetState.Hidden);
             Assert.IsTrue(wb.IsSheetHidden(0));
             Assert.IsFalse(wb.IsSheetVeryHidden(0));
 
-            wb.SetSheetHidden(0, SheetState.VERY_HIDDEN);
+            wb.SetSheetHidden(0, SheetState.VeryHidden);
             Assert.IsFalse(wb.IsSheetHidden(0));
             Assert.IsTrue(wb.IsSheetVeryHidden(0));
 
-            wb.SetSheetHidden(0, SheetState.VISIBLE);
+            wb.SetSheetHidden(0, SheetState.Visible);
             Assert.IsFalse(wb.IsSheetHidden(0));
             Assert.IsFalse(wb.IsSheetVeryHidden(0));
 
@@ -96,6 +96,8 @@ namespace TestCases.SS.UserModel
             {
                 // ok
             }
+
+            wb.Close();
         }
 
         /**
@@ -149,12 +151,14 @@ namespace TestCases.SS.UserModel
         [Test]
         public void TestHide()
         {
-            wbU.SetSheetHidden(0,SheetState.HIDDEN);
+            wbU.SetSheetHidden(0,SheetState.Hidden);
             Assert.IsTrue(wbU.IsSheetHidden(0));
             Assert.IsFalse(wbU.IsSheetHidden(1));
             IWorkbook wb2 = _testDataProvider.WriteOutAndReadBack(wbU);
             Assert.IsTrue(wb2.IsSheetHidden(0));
             Assert.IsFalse(wb2.IsSheetHidden(1));
+
+            wb2.Close();
         }
 
         /**
@@ -164,12 +168,14 @@ namespace TestCases.SS.UserModel
         [Test]
         public void TestUnHide()
         {
-            wbH.SetSheetHidden(0,SheetState.VISIBLE);
+            wbH.SetSheetHidden(0,SheetState.Visible);
             Assert.IsFalse(wbH.IsSheetHidden(0));
             Assert.IsFalse(wbH.IsSheetHidden(1));
             IWorkbook wb2 = _testDataProvider.WriteOutAndReadBack(wbH);
             Assert.IsFalse(wb2.IsSheetHidden(0));
             Assert.IsFalse(wb2.IsSheetHidden(1));
+
+            wb2.Close();
         }
     }
 }

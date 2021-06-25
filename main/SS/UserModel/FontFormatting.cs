@@ -19,8 +19,6 @@
 
 namespace NPOI.SS.UserModel
 {
-    using System;
-    
     /**
      * High level representation for Font Formatting component
      * of Conditional Formatting Settings
@@ -42,6 +40,14 @@ namespace NPOI.SS.UserModel
         /// get or set font color index
         /// </summary>
         short FontColorIndex
+        {
+            get;
+            set;
+        }
+        /// <summary>
+        /// get or set the colour of the font, or null if no colour applied
+        /// </summary>
+        IColor FontColor
         {
             get;
             set;

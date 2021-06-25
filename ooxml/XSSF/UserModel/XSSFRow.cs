@@ -25,6 +25,10 @@ using System.Collections.Generic;
 using NPOI.Util;
 using NPOI.SS;
 using System.Collections;
+using NPOI.XSSF.UserModel.Helpers;
+using NPOI.SS.Formula;
+using System.Linq;
+
 namespace NPOI.XSSF.UserModel
 {
 
@@ -71,6 +75,18 @@ namespace NPOI.XSSF.UserModel
                     sheet.OnReadCell(cell);
                 }
             }
+
+            if (!row.IsSetR())
+            {
+                // Certain file format writers skip the row number
+                // Assume no gaps, and give this the next row number
+                int nextRowNum = sheet.LastRowNum + 2;
+                if (nextRowNum == 2 && sheet.PhysicalNumberOfRows == 0)
+                {
+                    nextRowNum = 1;
+                }
+                row.r = (uint)nextRowNum;
+            }
         }
 
         /**
@@ -112,32 +128,57 @@ namespace NPOI.XSSF.UserModel
          *
          * @return an iterator over cells in this row.
          */
-        public IEnumerator GetEnumerator()
+        public IEnumerator<ICell> GetEnumerator()
         {
             return CellIterator();
         }
 
         /**
          * Compares two <code>XSSFRow</code> objects.  Two rows are equal if they belong to the same worksheet and
-         * their row indexes are Equal.
+         * their row indexes are equal.
          *
-         * @param   row   the <code>XSSFRow</code> to be Compared.
-         * @return	the value <code>0</code> if the row number of this <code>XSSFRow</code> is
-         * 		equal to the row number of the argument <code>XSSFRow</code>; a value less than
-         * 		<code>0</code> if the row number of this this <code>XSSFRow</code> is numerically less
-         * 		than the row number of the argument <code>XSSFRow</code>; and a value greater
-         * 		than <code>0</code> if the row number of this this <code>XSSFRow</code> is numerically
-         * 		 greater than the row number of the argument <code>XSSFRow</code>.
-         * @throws ArgumentException if the argument row belongs to a different worksheet
+         * @param   row   the <code>XSSFRow</code> to be compared.
+         * @return  <ul>
+         *      <li>
+         *      the value <code>0</code> if the row number of this <code>XSSFRow</code> is
+         *      equal to the row number of the argument <code>XSSFRow</code>
+         *      </li>
+         *      <li>
+         *      a value less than <code>0</code> if the row number of this this <code>XSSFRow</code> is
+         *      numerically less than the row number of the argument <code>XSSFRow</code>
+         *      </li>
+         *      <li>
+         *      a value greater than <code>0</code> if the row number of this this <code>XSSFRow</code> is
+         *      numerically greater than the row number of the argument <code>XSSFRow</code>
+         *      </li>
+         *      </ul>
+         * @throws IllegalArgumentException if the argument row belongs to a different worksheet
          */
-        public int CompareTo(XSSFRow row)
+        public int CompareTo(XSSFRow other)
         {
-            int thisVal = this.RowNum;
-            if (row.Sheet != Sheet) 
-                throw new ArgumentException("The Compared rows must belong to the same XSSFSheet");
+            if (this.Sheet != other.Sheet)
+            {
+                throw new ArgumentException("The compared rows must belong to the same sheet");
+            }
 
-            int anotherVal = row.RowNum;
-            return (thisVal < anotherVal ? -1 : (thisVal == anotherVal ? 0 : 1));
+            return RowNum.CompareTo(other.RowNum);
+        }
+
+        public override bool Equals(Object obj)
+        {
+            if (!(obj is XSSFRow))
+            {
+                return false;
+            }
+            XSSFRow other = (XSSFRow)obj;
+
+            return (this.RowNum == other.RowNum) &&
+                   (this.Sheet == other.Sheet);
+        }
+
+        public override int GetHashCode()
+        {
+            return _row.GetHashCode();
         }
 
         /**
@@ -153,7 +194,7 @@ namespace NPOI.XSSF.UserModel
          */
         public ICell CreateCell(int columnIndex)
         {
-            return CreateCell(columnIndex, CellType.BLANK);
+            return CreateCell(columnIndex, CellType.Blank);
         }
 
         /**
@@ -186,7 +227,7 @@ namespace NPOI.XSSF.UserModel
             }
             XSSFCell xcell = new XSSFCell(this, ctCell);
             xcell.SetCellNum(columnIndex);
-            if (type != CellType.BLANK)
+            if (type != CellType.Blank)
             {
                 xcell.SetCellType(type);
             }
@@ -233,28 +274,18 @@ namespace NPOI.XSSF.UserModel
             if (cellnum < 0) throw new ArgumentException("Cell index must be >= 0");
 
             XSSFCell cell = (XSSFCell)RetrieveCell(cellnum);
-            if (policy == MissingCellPolicy.RETURN_NULL_AND_BLANK)
+            switch (policy)
             {
-                return cell;
+                case MissingCellPolicy.RETURN_NULL_AND_BLANK:
+                    return cell;
+                case MissingCellPolicy.RETURN_BLANK_AS_NULL:
+                    bool isBlank = (cell != null && cell.CellType == CellType.Blank);
+                    return (isBlank) ? null : cell;
+                case MissingCellPolicy.CREATE_NULL_AS_BLANK:
+                    return (cell == null) ? CreateCell(cellnum, CellType.Blank) : cell;
+                default:
+                    throw new ArgumentException("Illegal policy " + policy + " (" + policy + ")");
             }
-            if (policy == MissingCellPolicy.RETURN_BLANK_AS_NULL)
-            {
-                if (cell == null) return cell;
-                if (cell.CellType == CellType.BLANK)
-                {
-                    return null;
-                }
-                return cell;
-            }
-            if (policy == MissingCellPolicy.CREATE_NULL_AS_BLANK)
-            {
-                if (cell == null)
-                {
-                    return CreateCell(cellnum, CellType.BLANK);
-                }
-                return cell;
-            }
-            throw new ArgumentException("Illegal policy " + policy + " (" + policy.id + ")");
         }
         int GetFirstKey(SortedDictionary<int, ICell>.KeyCollection keys)
         {
@@ -332,7 +363,7 @@ namespace NPOI.XSSF.UserModel
             }
             set 
             {
-                if (value == -1)
+                if (value < 0)
                 {
                     if (_row.IsSetHt()) _row.unSetHt();
                     if (_row.IsSetCustomHeight()) _row.unSetCustomHeight();
@@ -451,7 +482,7 @@ namespace NPOI.XSSF.UserModel
                 if (!IsFormatted) return null;
 
                 StylesTable stylesSource = ((XSSFWorkbook)Sheet.Workbook).GetStylesSource();
-                if (stylesSource.GetNumCellStyles() > 0)
+                if (stylesSource.NumCellStyles > 0)
                 {
                     return stylesSource.GetStyleAt((int)_row.s);
                 }
@@ -466,8 +497,8 @@ namespace NPOI.XSSF.UserModel
                 {
                     if (_row.IsSetS())
                     {
-                        _row.unSetS();
-                        _row.unSetCustomFormat();
+                        _row.UnsetS();
+                        _row.UnsetCustomFormat();
                     }
                 }
                 else
@@ -511,7 +542,7 @@ namespace NPOI.XSSF.UserModel
             {
                 xcell.NotifyArrayFormulaChanging();
             }
-            if (cell.CellType == CellType.FORMULA)
+            if (cell.CellType == CellType.Formula)
             {
                 ((XSSFWorkbook)_sheet.Workbook).OnDeleteFormula(xcell);
             }
@@ -599,7 +630,8 @@ namespace NPOI.XSSF.UserModel
                 }
 
                 //remove the reference in the calculation chain
-                if (calcChain != null) calcChain.RemoveItem(sheetId, cell.GetReference());
+                if (calcChain != null) 
+                    calcChain.RemoveItem(sheetId, cell.GetReference());
 
                 CT_Cell CT_Cell = cell.GetCTCell();
                 String r = new CellReference(rownum, cell.ColumnIndex).FormatAsString();
@@ -607,6 +639,90 @@ namespace NPOI.XSSF.UserModel
             }
             RowNum = rownum;
         }
+
+
+        /**
+         * Copy the cells from srcRow to this row
+         * If this row is not a blank row, this will merge the two rows, overwriting
+         * the cells in this row with the cells in srcRow
+         * If srcRow is null, overwrite cells in destination row with blank values, styles, etc per cell copy policy
+         * srcRow may be from a different sheet in the same workbook
+         * @param srcRow the rows to copy from
+         * @param policy the policy to determine what gets copied
+         */
+
+        public void CopyRowFrom(IRow srcRow, CellCopyPolicy policy)
+        {
+            if (srcRow == null)
+            {
+                // srcRow is blank. Overwrite cells with blank values, blank styles, etc per cell copy policy
+                foreach (ICell destCell in this)
+                {
+                    XSSFCell srcCell = null;
+                    // FIXME: remove type casting when copyCellFrom(Cell, CellCopyPolicy) is added to Cell interface
+                    ((XSSFCell)destCell).CopyCellFrom(srcCell, policy);
+                }
+                if (policy.IsCopyMergedRegions)
+                {
+                    // Remove MergedRegions in dest row
+                    int destRowNum = RowNum;
+                    int index = 0;
+                    HashSet<int> indices = new HashSet<int>();
+                    foreach (CellRangeAddress destRegion in Sheet.MergedRegions)
+                    {
+                        if (destRowNum == destRegion.FirstRow && destRowNum == destRegion.LastRow)
+                        {
+                            indices.Add(index);
+                        }
+                        index++;
+                    }
+                    (Sheet as XSSFSheet).RemoveMergedRegions(indices.ToList());
+                }
+                if (policy.IsCopyRowHeight)
+                {
+                    // clear row height
+                    Height = ((short)-1);
+                }
+            }
+            else
+            {
+                foreach (ICell c in srcRow)
+                {
+                    XSSFCell srcCell = (XSSFCell)c;
+                    XSSFCell destCell = CreateCell(srcCell.ColumnIndex, srcCell.CellType) as XSSFCell;
+                    destCell.CopyCellFrom(srcCell, policy);
+                }
+                XSSFRowShifter rowShifter = new XSSFRowShifter(_sheet);
+                int sheetIndex = _sheet.Workbook.GetSheetIndex(_sheet);
+                String sheetName = _sheet.Workbook.GetSheetName(sheetIndex);
+                int srcRowNum = srcRow.RowNum;
+                int destRowNum = RowNum;
+                int rowDifference = destRowNum - srcRowNum;
+                FormulaShifter shifter = FormulaShifter.CreateForRowCopy(sheetIndex, sheetName, srcRowNum, srcRowNum, rowDifference, SpreadsheetVersion.EXCEL2007);
+                rowShifter.UpdateRowFormulas(this, shifter);
+                // Copy merged regions that are fully contained on the row
+                // FIXME: is this something that rowShifter could be doing?
+                if (policy.IsCopyMergedRegions)
+                {
+                    foreach (CellRangeAddress srcRegion in srcRow.Sheet.MergedRegions)
+                    {
+                        if (srcRowNum == srcRegion.FirstRow && srcRowNum == srcRegion.LastRow)
+                        {
+                            CellRangeAddress destRegion = srcRegion.Copy();
+                            destRegion.FirstRow = (destRowNum);
+                            destRegion.LastRow = (destRowNum);
+                            Sheet.AddMergedRegion(destRegion);
+                        }
+                    }
+                }
+                if (policy.IsCopyRowHeight)
+                {
+                    Height = (srcRow.Height);
+                }
+            }
+        }
+
+
 
         #region IRow Members
 
@@ -636,6 +752,53 @@ namespace NPOI.XSSF.UserModel
             return CellUtil.CopyCell(this, sourceIndex, targetIndex);
         }
 
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        public bool HasCustomHeight()
+        {
+            throw new NotImplementedException();
+        }
+
+        public int OutlineLevel
+        {
+            get
+            {
+                return _row.outlineLevel;
+            }
+            set
+            {
+                _row.outlineLevel = (byte)value;
+            }
+        }
+
+        public bool? Hidden
+        {
+            get
+            {
+                return _row.hidden;
+            }
+
+            set
+            {
+                _row.hidden = value ?? false;
+            }
+        }
+
+        public bool? Collapsed
+        {
+            get
+            {
+                return _row.collapsed;
+            }
+
+            set
+            {
+                _row.collapsed = value ?? false;
+            }
+        }
         #endregion
     }
 

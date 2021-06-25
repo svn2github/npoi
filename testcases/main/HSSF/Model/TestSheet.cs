@@ -32,6 +32,7 @@ namespace TestCases.HSSF.Model
     using NPOI.SS.Formula;
     using NPOI.Util;
     using NPOI.DDF;
+    using NPOI.SS;
 
     /**
      * Unit Test for the Sheet class.
@@ -58,7 +59,7 @@ namespace TestCases.HSSF.Model
         {
             // Check we're Adding row and cell aggregates
             ArrayList records = new ArrayList();
-            records.Add(new BOFRecord());
+            records.Add(BOFRecord.CreateSheetBOF());
             records.Add(new DimensionsRecord());
             records.Add(CreateWindow2Record());
             records.Add(new EOFRecord());
@@ -476,7 +477,7 @@ namespace TestCases.HSSF.Model
         {
 
             ArrayList records = new ArrayList();
-            records.Add(new BOFRecord());
+            records.Add(BOFRecord.CreateSheetBOF());
             records.Add(new UncalcedRecord());
             records.Add(new DimensionsRecord());
             records.Add(CreateWindow2Record());
@@ -570,22 +571,22 @@ namespace TestCases.HSSF.Model
         public void TestGutsRecord_bug45640() {
 
             InternalSheet sheet = InternalSheet.CreateSheet();
-		sheet.AddRow(new RowRecord(0));
-		sheet.AddRow(new RowRecord(1));
-		sheet.GroupRowRange( 0, 1, true );
-		sheet.ToString();
-		IList recs = sheet.Records;
-		int count=0;
-		for(int i=0; i< recs.Count; i++) {
-			if (recs[i] is GutsRecord) {
-				count++;
-			}
-		}
-		if (count == 2) {
-			throw new AssertionException("Identified bug 45640");
-		}
-		Assert.AreEqual(1, count);
-	}
+        sheet.AddRow(new RowRecord(0));
+        sheet.AddRow(new RowRecord(1));
+        sheet.GroupRowRange( 0, 1, true );
+        sheet.ToString();
+        IList recs = sheet.Records;
+        int count=0;
+        for(int i=0; i< recs.Count; i++) {
+            if (recs[i] is GutsRecord) {
+                count++;
+            }
+        }
+        if (count == 2) {
+            throw new AssertionException("Identified bug 45640");
+        }
+        Assert.AreEqual(1, count);
+    }
 
         public void TestMisplacedMergedCellsRecords_bug45699()
         {
@@ -688,7 +689,7 @@ namespace TestCases.HSSF.Model
             //Assert.AreEqual(23, sheetRecs.Count);
             Assert.AreEqual(24, sheetRecs.Count); //for SheetExtRecord
 
-            FormulaShifter shifter = FormulaShifter.CreateForRowShift(0, 0, 0, 1);
+            FormulaShifter shifter = FormulaShifter.CreateForRowShift(0,"", 0, 0, 1, SpreadsheetVersion.EXCEL97);
             sheet.UpdateFormulasAfterCellShift(shifter, 0);
             if (sheetRecs.Count == 25 && sheetRecs[22] is ConditionalFormattingTable)
             {
@@ -725,16 +726,16 @@ namespace TestCases.HSSF.Model
         public void TestCloneMulBlank_bug46776()
         {
             Record[] recs = {
-				InternalSheet.CreateBOF(),
-				new DimensionsRecord(),
-				new RowRecord(1),
-				new MulBlankRecord(1, 3, new short[] { 0x0F, 0x0F, 0x0F, } ),
-				new RowRecord(2),
-				CreateWindow2Record(),
-				EOFRecord.instance,
-		};
+                InternalSheet.CreateBOF(),
+                new DimensionsRecord(),
+                new RowRecord(1),
+                new MulBlankRecord(1, 3, new short[] { 0x0F, 0x0F, 0x0F, } ),
+                new RowRecord(2),
+                CreateWindow2Record(),
+                EOFRecord.instance,
+        };
 
-            InternalSheet sheet = CreateSheet(NPOI.Util.Arrays.AsList(recs));
+            InternalSheet sheet = CreateSheet(Arrays.AsArrayList(recs));
 
             InternalSheet sheet2;
             try
@@ -782,12 +783,12 @@ namespace TestCases.HSSF.Model
                     "0B 00 0C 00 00 00 11 F0 00 00 00 00";
 
             DrawingRecord d1 = new DrawingRecord();
-            d1.Data = HexRead.ReadFromString(msoDrawingRecord1);
+            d1.SetData(HexRead.ReadFromString(msoDrawingRecord1));
 
             ObjRecord r1 = new ObjRecord();
 
             DrawingRecord d2 = new DrawingRecord();
-            d2.Data = (HexRead.ReadFromString(msoDrawingRecord2));
+            d2.SetData(HexRead.ReadFromString(msoDrawingRecord2));
 
             TextObjectRecord r2 = new TextObjectRecord();
             r2.Str = (new HSSFRichTextString("Aggregated"));
@@ -843,6 +844,46 @@ namespace TestCases.HSSF.Model
             Assert.AreEqual(EscherAggregate.sid, ((Record)sheetRecords[1]).Sid);
             Assert.AreEqual(WindowTwoRecord.sid, ((Record)sheetRecords[2]).Sid);
             Assert.AreEqual(EOFRecord.sid, ((Record)sheetRecords[3]).Sid);
+        }
+        [Test]
+        public void TestSheetDimensions()
+        {
+            InternalSheet sheet = InternalSheet.CreateSheet();
+            DimensionsRecord dimensions = (DimensionsRecord)sheet.FindFirstRecordBySid(DimensionsRecord.sid);
+            Assert.AreEqual(0, dimensions.FirstCol);
+            Assert.AreEqual(0, dimensions.FirstRow);
+            Assert.AreEqual(1, dimensions.LastCol);  // plus pne
+            Assert.AreEqual(1, dimensions.LastRow);  // plus pne
+
+            RowRecord rr = new RowRecord(0);
+            sheet.AddRow(rr);
+
+            Assert.AreEqual(0, dimensions.FirstCol);
+            Assert.AreEqual(0, dimensions.FirstRow);
+            Assert.AreEqual(1, dimensions.LastCol);
+            Assert.AreEqual(1, dimensions.LastRow);
+
+            CellValueRecordInterface cvr;
+
+            cvr = new BlankRecord();
+            cvr.Column = ((short)0);
+            cvr.Row = (0);
+            sheet.AddValueRecord(0, cvr);
+
+            Assert.AreEqual(0, dimensions.FirstCol);
+            Assert.AreEqual(0, dimensions.FirstRow);
+            Assert.AreEqual(1, dimensions.LastCol);
+            Assert.AreEqual(1, dimensions.LastRow);
+
+            cvr = new BlankRecord();
+            cvr.Column = ((short)1);
+            cvr.Row = (0);
+            sheet.AddValueRecord(0, cvr);
+
+            Assert.AreEqual(0, dimensions.FirstCol);
+            Assert.AreEqual(0, dimensions.FirstRow);
+            Assert.AreEqual(2, dimensions.LastCol);   //YK:  failed until Bugzilla 53414 was fixed
+            Assert.AreEqual(1, dimensions.LastRow);
         }
     }
 }

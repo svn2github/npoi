@@ -25,6 +25,7 @@ namespace NPOI.HSSF.UserModel
     using System.Text;
     using NPOI.SS.Util;
     using System.Globalization;
+using NPOI.HSSF.Record;
 
     /**
      * 
@@ -41,8 +42,8 @@ namespace NPOI.HSSF.UserModel
 
             public FormulaPair(Ptg[] formula1, Ptg[] formula2)
             {
-                _formula1 = formula1;
-                _formula2 = formula2;
+                _formula1 = (formula1 == null) ? null : (Ptg[])formula1.Clone();
+                _formula2 = (formula2 == null) ? null : (Ptg[])formula2.Clone();
             }
             public Ptg[] Formula1
             {
@@ -84,7 +85,7 @@ namespace NPOI.HSSF.UserModel
             _formula2 = formulaB;
             _value1 = value1;
             _value2 = value2;
-            _explicitListValues = excplicitListValues;
+            _explicitListValues = (excplicitListValues == null) ? null : (String[])excplicitListValues.Clone();
         }
 
 
@@ -467,7 +468,7 @@ namespace NPOI.HSSF.UserModel
             {
                 IWorkbook wb = sheet.Workbook;
                 // formula is Parsed with slightly different RVA rules: (root node type must be 'reference')
-                return HSSFFormulaParser.Parse(_formula1, (HSSFWorkbook)wb, FormulaType.DATAVALIDATION_LIST, wb.GetSheetIndex(sheet));
+                return HSSFFormulaParser.Parse(_formula1, (HSSFWorkbook)wb, FormulaType.DataValidationList, wb.GetSheetIndex(sheet));
                 // To do: Excel places restrictions on the available operations within a list formula.
                 // Some things like union and intersection are not allowed.
             }
@@ -504,7 +505,103 @@ namespace NPOI.HSSF.UserModel
                 throw new InvalidOperationException("Both formula and value cannot be present");
             }
             IWorkbook wb = sheet.Workbook;
-            return HSSFFormulaParser.Parse(formula, (HSSFWorkbook)wb, FormulaType.CELL, wb.GetSheetIndex(sheet));
+            return HSSFFormulaParser.Parse(formula, (HSSFWorkbook)wb, FormulaType.Cell, wb.GetSheetIndex(sheet));
+        }
+
+        internal static DVConstraint CreateDVConstraint(DVRecord dvRecord, IFormulaRenderingWorkbook book)
+        {
+            switch (dvRecord.DataType)
+            {
+                case ValidationType.ANY:
+                    return new DVConstraint(ValidationType.ANY, dvRecord.ConditionOperator, null, null, double.NaN, double.NaN, null);
+                case ValidationType.INTEGER:
+                case ValidationType.DECIMAL:
+                case ValidationType.DATE:
+                case ValidationType.TIME:
+                case ValidationType.TEXT_LENGTH:
+                    FormulaValuePair pair1 = toFormulaString(dvRecord.Formula1, book);
+                    FormulaValuePair pair2 = toFormulaString(dvRecord.Formula2, book);
+                    return new DVConstraint(dvRecord.DataType, dvRecord.ConditionOperator, pair1.formula(),
+                            pair2.formula(), pair1.Value, pair2.Value, null);
+                case ValidationType.LIST:
+                    if (dvRecord.ListExplicitFormula)
+                    {
+                        String values = toFormulaString(dvRecord.Formula1, book).AsString();
+                        if (values.StartsWith("\""))
+                        {
+                            values = values.Substring(1);
+                        }
+                        if (values.EndsWith("\""))
+                        {
+                            values = values.Substring(0, values.Length - 1);
+                        }
+                        String[] explicitListValues = values.Split("\0".ToCharArray());
+                        return CreateExplicitListConstraint(explicitListValues);
+                    }
+                    else
+                    {
+                        String listFormula = toFormulaString(dvRecord.Formula1, book).AsString();
+                        return CreateFormulaListConstraint(listFormula);
+                    }
+                case ValidationType.FORMULA:
+                    return CreateCustomFormulaConstraint(toFormulaString(dvRecord.Formula1, book).AsString());
+                default:
+                    throw new InvalidOperationException(string.Format("validationType={0}", dvRecord.DataType));
+            }
+        }
+
+        private class FormulaValuePair
+        {
+            internal String _formula;
+            internal String _value;
+
+            public String formula()
+            {
+                return _formula;
+            }
+
+            public Double Value
+            {
+                get
+                {
+                    if (_value == null)
+                    {
+                        return double.NaN;
+                    }
+                    return double.Parse(_value);
+                }
+            }
+
+            public String AsString()
+            {
+                if (_formula != null)
+                {
+                    return _formula;
+                }
+                if (_value != null)
+                {
+                    return _value;
+                }
+                return null;
+            }
+        }
+
+        private static FormulaValuePair toFormulaString(Ptg[] ptgs, IFormulaRenderingWorkbook book)
+        {
+            FormulaValuePair pair = new FormulaValuePair();
+            if (ptgs != null && ptgs.Length > 0)
+            {
+                String aString = FormulaRenderer.ToFormulaString(book, ptgs);
+                if (ptgs.Length == 1 && ptgs[0].GetType() == typeof(NumberPtg))
+                {
+                    pair._value = aString;
+                }
+                else
+                {
+                    pair._formula = aString;
+                }
+            }
+            return pair;
         }
     }
 

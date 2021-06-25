@@ -29,29 +29,29 @@ namespace NPOI.HSSF.Record.CF
      * 
      * @author Dmitriy Kumshayev
      */
-    public class FontFormatting
+    public class FontFormatting : ICloneable
     {
-        private byte[] _rawData;
+        private byte[] _rawData = new byte[RAW_DATA_SIZE];
 
-        private static int OFFSET_FONT_NAME = 0;
-        private static int OFFSET_FONT_HEIGHT = 64;
-        private static int OFFSET_FONT_OPTIONS = 68;
-        private static int OFFSET_FONT_WEIGHT = 72;
-        private static int OFFSET_ESCAPEMENT_TYPE = 74;
-        private static int OFFSET_UNDERLINE_TYPE = 76;
-        private static int OFFSET_FONT_COLOR_INDEX = 80;
-        private static int OFFSET_OPTION_FLAGS = 88;
-        private static int OFFSET_ESCAPEMENT_TYPE_MODIFIED = 92;
-        private static int OFFSET_UNDERLINE_TYPE_MODIFIED = 96;
-        private static int OFFSET_FONT_WEIGHT_MODIFIED = 100;
-        private static int OFFSET_NOT_USED1 = 104;
-        private static int OFFSET_NOT_USED2 = 108;
-        private static int OFFSET_NOT_USED3 = 112; // for some reason Excel always Writes  0x7FFFFFFF at this offset   
-        private static int OFFSET_FONT_FORMATING_END = 116;
-        private static int RAW_DATA_SIZE = 118;
+        private const int OFFSET_FONT_NAME = 0;
+        private const int OFFSET_FONT_HEIGHT = 64;
+        private const int OFFSET_FONT_OPTIONS = 68;
+        private const int OFFSET_FONT_WEIGHT = 72;
+        private const int OFFSET_ESCAPEMENT_TYPE = 74;
+        private const int OFFSET_UNDERLINE_TYPE = 76;
+        private const int OFFSET_FONT_COLOR_INDEX = 80;
+        private const int OFFSET_OPTION_FLAGS = 88;
+        private const int OFFSET_ESCAPEMENT_TYPE_MODIFIED = 92;
+        private const int OFFSET_UNDERLINE_TYPE_MODIFIED = 96;
+        private const int OFFSET_FONT_WEIGHT_MODIFIED = 100;
+        private const int OFFSET_NOT_USED1 = 104;
+        private const int OFFSET_NOT_USED2 = 108;
+        private const int OFFSET_NOT_USED3 = 112; // for some reason Excel always Writes  0x7FFFFFFF at this offset   
+        private const int OFFSET_FONT_FORMATING_END = 116;
+        private const int RAW_DATA_SIZE = 118;
 
 
-        public static int FONT_CELL_HEIGHT_PRESERVED = unchecked((int)0xFFFFFFFF);
+        public const int FONT_CELL_HEIGHT_PRESERVED = unchecked((int)0xFFFFFFFF);
 
         // FONT OPTIONS MASKS
         private static BitField posture = BitFieldFactory.GetInstance(0x00000002);
@@ -66,22 +66,6 @@ namespace NPOI.HSSF.Record.CF
         private static BitField shadowModified = BitFieldFactory.GetInstance(0x00000010);
         private static BitField cancellationModified = BitFieldFactory.GetInstance(0x00000080);
 
-        /** Escapement type - None */
-        public const short SS_NONE = 0;
-        /** Escapement type - Superscript */
-        public const short SS_SUPER = 1;
-        /** Escapement type - Subscript */
-        public const short SS_SUB = 2;
-        /** Underline type - None */
-        public const byte U_NONE = 0;
-        /** Underline type - Single */
-        public const byte U_SINGLE = 1;
-        /** Underline type - double */
-        public const byte U_DOUBLE = 2;
-        /** Underline type - Single Accounting */
-        public const byte U_SINGLE_ACCOUNTING = 0x21;
-        /** Underline type - double Accounting */
-        public const byte U_DOUBLE_ACCOUNTING = 0x22;
         /** Normal boldness (not bold) */
         private const short FONT_WEIGHT_NORMAL = 0x190;
 
@@ -90,12 +74,7 @@ namespace NPOI.HSSF.Record.CF
          */
         private const short FONT_WEIGHT_BOLD = 0x2bc;
 
-        private FontFormatting(byte[] rawData)
-        {
-            _rawData = rawData;
-        }
-
-        public FontFormatting():this(new byte[RAW_DATA_SIZE])
+        public FontFormatting()
         {
             
 
@@ -125,9 +104,8 @@ namespace NPOI.HSSF.Record.CF
         }
 
         /** Creates new FontFormatting */
-        public FontFormatting(RecordInputStream in1):this(new byte[RAW_DATA_SIZE])
+        public FontFormatting(RecordInputStream in1)
         {
-            
             for (int i = 0; i < _rawData.Length; i++)
             {
                 _rawData[i] =(byte) in1.ReadByte();
@@ -151,11 +129,22 @@ namespace NPOI.HSSF.Record.CF
             LittleEndian.PutInt(_rawData, offset, value);
         }
 
-        public byte[] GetRawRecord()
+        public byte[] RawRecord
         {
-            return _rawData;
+            get
+            {
+                return _rawData;
+            }
+            
         }
-
+        public int DataLength
+        {
+            get
+            {
+                return RAW_DATA_SIZE;
+            }
+            
+        }
         /**
          * Gets the height of the font in 1/20th point Units
          *
@@ -286,12 +275,6 @@ namespace NPOI.HSSF.Record.CF
          * Get the type of Underlining for the font
          *
          * @return font Underlining type
-         *
-         * @see org.apache.poi.hssf.usermodel.HSSFFontFormatting#U_NONE
-         * @see org.apache.poi.hssf.usermodel.HSSFFontFormatting#U_SINGLE
-         * @see org.apache.poi.hssf.usermodel.HSSFFontFormatting#U_DOUBLE
-         * @see org.apache.poi.hssf.usermodel.HSSFFontFormatting#U_SINGLE_ACCOUNTING
-         * @see org.apache.poi.hssf.usermodel.HSSFFontFormatting#U_DOUBLE_ACCOUNTING
          */
 
         public FontUnderlineType UnderlineType
@@ -400,7 +383,7 @@ namespace NPOI.HSSF.Record.CF
         public override String ToString()
         {
             StringBuilder buffer = new StringBuilder();
-            buffer.Append("	[Font Formatting]\n");
+            buffer.Append("    [Font Formatting]\n");
 
             buffer.Append("	.font height = ").Append(FontHeight).Append(" twips\n");
 
@@ -473,14 +456,15 @@ namespace NPOI.HSSF.Record.CF
             }
             buffer.Append("	.color index = ").Append("0x" + StringUtil.ToHexString(FontColorIndex).ToUpper()).Append("\n");
 
-            buffer.Append("	[/Font Formatting]\n");
+            buffer.Append("    [/Font Formatting]\n");
             return buffer.ToString();
         }
 
         public Object Clone()
         {
-            byte[] rawData = (byte[])_rawData.Clone();
-            return new FontFormatting(rawData);
+            FontFormatting other = new FontFormatting();
+            Array.Copy(_rawData, 0, other._rawData, 0, _rawData.Length);
+            return other;
         }
     }
 }

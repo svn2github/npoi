@@ -15,41 +15,55 @@
    limitations under the License.
 ==================================================================== */
 
-namespace NPOI.XWPF.UserModel
+namespace TestCases.XWPF.UserModel
 {
-    using System;
 
-    using NUnit.Framework;
     using NPOI.OpenXmlFormats.Wordprocessing;
+    using NPOI.XWPF.UserModel;
+    using NUnit.Framework;
 
     [TestFixture]
     public class TestXWPFTableRow
     {
-
-
-
-
-        protected void SetUp()
-        {
-            // TODO Auto-generated method stub
-            //super.Up=();
-        }
-
         [Test]
-        public void TestSomething()
+        public void TestCreateRow()
         {
-
             CT_Row ctRow = new CT_Row();
-
+            Assert.IsNotNull(ctRow);
         }
 
-
-        protected void tearDown()
+         [Test]
+        public void TestSetGetCantSplitRow()
         {
-            // TODO Auto-generated method stub
-            //super.TearDown();
-        }
+            // create a table
+            XWPFDocument doc = new XWPFDocument();
+            CT_Tbl ctTable = new CT_Tbl();
+            XWPFTable table = new XWPFTable(ctTable, doc);
+            // table has a single row by default; grab it
+            XWPFTableRow tr = table.GetRow(0);
+            Assert.IsNotNull(tr);
 
+            tr.IsCantSplitRow = true;
+            bool isCant = tr.IsCantSplitRow;
+
+            Assert.IsTrue(isCant);
+        }
+         [Test]
+        public void TestSetGetRepeatHeader()
+        {
+            // create a table
+            XWPFDocument doc = new XWPFDocument();
+            CT_Tbl ctTable = new CT_Tbl();
+            XWPFTable table = new XWPFTable(ctTable, doc);
+            // table has a single row by default; grab it
+            XWPFTableRow tr = table.GetRow(0);
+            Assert.IsNotNull(tr);
+
+            tr.IsRepeatHeader =true;
+            bool isRpt = tr.IsRepeatHeader;
+            
+            Assert.IsTrue(isRpt);
+        }
     }
 
 }

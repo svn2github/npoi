@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using NPOI.SS.Formula.Eval;
 using NPOI.SS.Formula.Functions;
 
@@ -26,13 +24,9 @@ namespace NPOI.SS.Formula
 
             ValueEval nameArg = args[0];
             String functionName = string.Empty ;
-            if (nameArg is NameEval)
+            if (nameArg is FunctionNameEval)
             {
-                functionName = ((NameEval)nameArg).FunctionName;
-            }
-            else if (nameArg is NameXEval)
-            {
-                functionName = ec.GetWorkbook().ResolveNameXText(((NameXEval)nameArg).Ptg);
+                functionName = ((FunctionNameEval)nameArg).FunctionName;
             }
             else
             {
@@ -42,7 +36,7 @@ namespace NPOI.SS.Formula
             FreeRefFunction targetFunc = ec.FindUserDefinedFunction(functionName);
             if (targetFunc == null)
             {
-                throw new NotImplementedException(functionName);
+                throw new NotImplementedFunctionException(functionName);
             }
             int nOutGoingArgs = nIncomingArgs - 1;
             ValueEval[] outGoingArgs = new ValueEval[nOutGoingArgs];

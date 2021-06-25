@@ -22,6 +22,8 @@ namespace NPOI.SS.UserModel
     using System.Collections.Generic;
 
     using NPOI.SS.Util;
+    using System.Collections;
+    using NPOI.Util;
 
     /// <summary>
     /// Indicate the position of the margin. One of left, right, top and bottom.
@@ -57,19 +59,19 @@ namespace NPOI.SS.UserModel
         /// <summary>
         /// referes to the lower/right corner
         /// </summary>
-        LOWER_RIGHT = 0,
+        LowerRight = 0,
         /// <summary>
         /// referes to the upper/right corner
         /// </summary>
-        UPPER_RIGHT = 1,
+        UpperRight = 1,
         /// <summary>
         /// referes to the lower/left corner
         /// </summary>
-        LOWER_LEFT = 2,
+        LowerLeft = 2,
         /// <summary>
         /// referes to the upper/left corner
         /// </summary>
-        UPPER_LEFT = 3,
+        UpperLeft = 3,
     }
 
     /// <summary>
@@ -80,7 +82,7 @@ namespace NPOI.SS.UserModel
     /// The most common type of sheet is the worksheet, which is represented as a grid of cells. Worksheet cells can
     /// contain text, numbers, dates, and formulas. Cells can also be formatted.
     /// </remarks>
-    public interface ISheet //: IEnumerator<IRow>
+    public interface ISheet
     {
 
         /// <summary>
@@ -164,9 +166,21 @@ namespace NPOI.SS.UserModel
         /// <summary>
         /// get the width (in units of 1/256th of a character width )
         /// </summary>
-        /// <param name="columnIndex">the column to set (0-based)</param>
+        /// <param name="columnIndex">the column to get (0-based)</param>
         /// <returns>the width in units of 1/256th of a character width</returns>
         int GetColumnWidth(int columnIndex);
+
+        /// <summary>
+        /// get the width in pixel
+        /// </summary>
+        /// <param name="columnIndex"></param>
+        /// <returns></returns>
+        /// <remarks>
+        /// Please note, that this method works correctly only for workbooks
+        /// with the default font size (Arial 10pt for .xls and Calibri 11pt for .xlsx).
+        /// If the default font is changed the column width can be streched
+        /// </remarks>
+        float GetColumnWidthInPixels(int columnIndex);
 
         /// <summary>
         /// Get the default column width for the sheet (if the columns do not define their own width)
@@ -180,7 +194,7 @@ namespace NPOI.SS.UserModel
         /// twips (1/20 of  a point)
         /// </summary>
         /// <value>default row height measured in twips (1/20 of  a point)</value>
-        int DefaultRowHeight { get; set; }
+        short DefaultRowHeight { get; set; }
 
         /// <summary>
         /// Get the default row height for the sheet (if the rows do not define their own height) in
@@ -205,6 +219,27 @@ namespace NPOI.SS.UserModel
         int AddMergedRegion(NPOI.SS.Util.CellRangeAddress region);
 
         /// <summary>
+        /// Adds a merged region of cells (hence those cells form one).
+        /// Skips validation. It is possible to create overlapping merged regions
+        /// or create a merged region that intersects a multi-cell array formula
+        /// with this formula, which may result in a corrupt workbook.
+        /// 
+        /// To check for merged regions overlapping array formulas or other merged regions
+        /// after addMergedRegionUnsafe has been called, call {@link #validateMergedRegions()}, which runs in O(n^2) time.
+        /// </summary>
+        /// <param name="region">region to merge</param>
+        /// <returns>index of this region</returns>
+        /// <exception cref="ArgumentException">if region contains fewer than 2 cells</exception>
+        int AddMergedRegionUnsafe(CellRangeAddress region);
+
+        /// <summary>
+        /// Verify that merged regions do not intersect multi-cell array formulas and
+        /// no merged regions intersect another merged region in this sheet.
+        /// </summary>
+        /// <exception cref="NPOI.Util.InvalidOperationException">if region intersects with a multi-cell array formula</exception>
+        /// <exception cref="NPOI.Util.InvalidOperationException">if at least one region intersects with another merged region in this sheet</exception>
+        void ValidateMergedRegions();
+        /// <summary>
         /// Determine whether printed output for this sheet will be horizontally centered.
         /// </summary>
         bool HorizontallyCenter { get; set; }
@@ -221,6 +256,12 @@ namespace NPOI.SS.UserModel
         void RemoveMergedRegion(int index);
 
         /// <summary>
+        /// Removes a number of merged regions of cells (hence letting them free)
+        /// </summary>
+        /// <param name="indices">A set of the regions to unmerge</param>
+        void RemoveMergedRegions(IList<int> indices);
+
+        /// <summary>
         /// Returns the number of merged regions
         /// </summary>
         int NumMergedRegions { get; }
@@ -229,7 +270,12 @@ namespace NPOI.SS.UserModel
         /// Returns the merged region at the specified index
         /// </summary>
         /// <param name="index">The index.</param>      
-        NPOI.SS.Util.CellRangeAddress GetMergedRegion(int index);
+        CellRangeAddress GetMergedRegion(int index);
+
+        /// <summary>
+        /// Returns the list of merged regions.
+        /// </summary>
+        List<CellRangeAddress> MergedRegions { get; }
 
         /// <summary>
         /// Gets the row enumerator.
@@ -240,18 +286,14 @@ namespace NPOI.SS.UserModel
         /// Call <see cref="NPOI.SS.UserModel.IRow.RowNum"/> on each row 
         /// if you care which one it is.
         /// </returns>
-        System.Collections.IEnumerator GetRowEnumerator();
+        IEnumerator GetRowEnumerator();
+
 
         /// <summary>
-        /// Alias for GetRowEnumerator() to allow <c>foreach</c> loops.
+        /// Get the row enumerator
         /// </summary>
-        /// <returns>
-        /// an iterator of the PHYSICAL rows.  Meaning the 3rd element may not
-        /// be the third row if say for instance the second row is undefined.
-        /// Call <see cref="NPOI.SS.UserModel.IRow.RowNum"/> on each row 
-        /// if you care which one it is.
-        /// </returns>
-        System.Collections.IEnumerator GetEnumerator();
+        /// <returns></returns>
+        IEnumerator GetEnumerator();
 
         /// <summary>
         /// Gets the flag indicating whether the window should show 0 (zero) in cells Containing zero value.
@@ -259,7 +301,7 @@ namespace NPOI.SS.UserModel
         /// </summary>
         /// <value>whether all zero values on the worksheet are displayed.</value>
         bool DisplayZeros { get; set; }
-        
+
         /// <summary>
         /// Gets or sets a value indicating whether the sheet displays Automatic Page Breaks.
         /// </summary>
@@ -316,6 +358,14 @@ namespace NPOI.SS.UserModel
         /// </summary>
         /// <returns><c>true</c> if this sheet displays gridlines.</returns>
         bool IsPrintGridlines { get; set; }
+
+        /// <summary>
+        /// Get or set the flag indicating whether this sheet prints the
+        /// row and column headings when printing.
+        /// 
+        /// return true if this sheet prints row and column headings.
+        /// </summary>
+        bool IsPrintRowAndColumnHeadings { get; set; }
 
         /// <summary>
         /// Gets the print Setup object.
@@ -397,8 +447,26 @@ namespace NPOI.SS.UserModel
         /// </summary>
         /// <param name="numerator">The numerator for the zoom magnification.</param>
         /// <param name="denominator">denominator for the zoom magnification.</param>
+        [Obsolete("deprecated 2015-11-23 (circa POI 3.14beta1). Use {@link #setZoom(int)} instead.")]
         void SetZoom(int numerator, int denominator);
-
+        /**
+         * Window zoom magnification for current view representing percent values.
+         * Valid values range from 10 to 400. Horizontal & Vertical scale together.
+         *
+         * For example:
+         * <pre>
+         * 10 - 10%
+         * 20 - 20%
+         * ...
+         * 100 - 100%
+         * ...
+         * 400 - 400%
+         * </pre>
+         *
+         * @param scale window zoom magnification
+         * @throws IllegalArgumentException if scale is invalid
+         */
+        void SetZoom(int scale);
         /// <summary>
         /// The top row in the visible view when the sheet is
         /// first viewed after opening it in a viewer
@@ -414,12 +482,11 @@ namespace NPOI.SS.UserModel
         short LeftCol { get; set; }
 
         /// <summary>
-        /// Sets desktop window pane display area, when the
-        /// file is first opened in a viewer.
+        /// Sets desktop window pane display area, when the file is first opened in a viewer.
         /// </summary>
-        /// <param name="toprow"> the top row to show in desktop window pane</param>
-        /// <param name="leftcol"> the left column to show in desktop window pane</param>
-        void ShowInPane(short toprow, short leftcol);
+        /// <param name="toprow">the top row to show in desktop window pane</param>
+        /// <param name="leftcol">the left column to show in desktop window pane</param>
+        void ShowInPane(int toprow, int leftcol);
 
         /// <summary>
         /// Shifts rows between startRow and endRow n number of rows.
@@ -537,7 +604,7 @@ namespace NPOI.SS.UserModel
         /// </summary>
         /// <param name="row">The row.</param>
         /// <param name="column">The column.</param>
-        void SetActiveCell(int row, int column);
+        //void SetActiveCell(int row, int column);
 
         /// <summary>
         /// Sets the active cell range.
@@ -659,7 +726,20 @@ namespace NPOI.SS.UserModel
         /// </summary>
         /// <param name="row">The row.</param>
         /// <param name="column">The column.</param>
+        [Obsolete("deprecated as of 2015-11-23 (circa POI 3.14beta1). Use {@link #getCellComment(CellAddress)} instead.")]
         IComment GetCellComment(int row, int column);
+        /// <summary>
+        /// Returns cell comment for the specified location
+        /// </summary>
+        /// <param name="ref1">cell location</param>
+        /// <returns>return cell comment or null if not found</returns>
+        IComment GetCellComment(CellAddress ref1);
+
+        /// <summary>
+        /// Returns all cell comments on this sheet.
+        /// </summary>
+        /// <returns>return A Dictionary of each Comment in the sheet, keyed on the cell address where the comment is located.</returns>
+        Dictionary<CellAddress, IComment> GetCellComments();
 
         /// <summary>
         /// Creates the top-level drawing patriarch.
@@ -684,8 +764,8 @@ namespace NPOI.SS.UserModel
         /// <summary>
         /// Sets whether sheet is selected.
         /// </summary>
-        /// <param name="sel">Whether to select the sheet or deselect the sheet.</param> 
-        void SetActive(bool sel);
+        /// <param name="value">Whether to select the sheet or deselect the sheet.</param> 
+        void SetActive(bool value);
 
         /// <summary>
         /// Sets array formula to specified region for result.
@@ -716,6 +796,12 @@ namespace NPOI.SS.UserModel
         IDataValidationHelper GetDataValidationHelper();
 
         /// <summary>
+        /// Returns the list of DataValidation in the sheet.
+        /// </summary>
+        /// <returns>list of DataValidation in the sheet</returns>
+        List<IDataValidation> GetDataValidations();
+
+        /// <summary>
         /// Creates a data validation object
         /// </summary>
         /// <param name="dataValidation">The data validation object settings</param>
@@ -738,7 +824,7 @@ namespace NPOI.SS.UserModel
         /// </summary>
         bool IsRightToLeft { get; set; }
 
-        
+
         /// <summary>
         ///  Get or set the repeating rows used when printing the sheet, as found in File->PageSetup->Sheet.
         /// <p/>
@@ -753,7 +839,7 @@ namespace NPOI.SS.UserModel
         /// <p/>
         /// If the Sheet does not have any repeating rows defined, null is returned.
         /// </summary>
-        //CellRangeAddress RepeatingRows { get; set; }
+        CellRangeAddress RepeatingRows { get; set; }
 
 
         /// <summary>
@@ -771,7 +857,61 @@ namespace NPOI.SS.UserModel
         /// If the Sheet does not have any repeating columns defined, null is 
         /// returned.
         /// </summary>
-        //CellRangeAddress RepeatingColumns { get; set; }
-    }
+        CellRangeAddress RepeatingColumns { get; set; }
 
+        /// <summary>
+        /// Copy sheet with a new name
+        /// </summary>
+        /// <param name="Name">new sheet name</param>
+        /// <returns>cloned sheet</returns>
+        ISheet CopySheet(String Name);
+
+        /// <summary>
+        /// Copy sheet with a new name
+        /// </summary>
+        /// <param name="Name">new sheet name</param>
+        /// <param name="copyStyle">whether to copy styles</param>
+        /// <returns>cloned sheet</returns>
+        ISheet CopySheet(String Name, Boolean copyStyle);
+
+        /// <summary>
+        /// Returns the column outline level. Increased as you
+        /// put it into more groups (outlines), reduced as
+        /// you take it out of them.
+        /// </summary>
+        /// <param name="columnIndex"></param>
+        /// <returns></returns>
+        int GetColumnOutlineLevel(int columnIndex);
+
+        bool IsDate1904();
+
+        /// <summary>
+        /// Get a Hyperlink in this sheet anchored at row, column
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="column"></param>
+        /// <returns>return hyperlink if there is a hyperlink anchored at row, column; otherwise returns null</returns>
+        IHyperlink GetHyperlink(int row, int column);
+
+        /// <summary>
+        /// Get a Hyperlink in this sheet located in a cell specified by {code addr}
+        /// </summary>
+        /// <param name="addr">The address of the cell containing the hyperlink</param>
+        /// <returns>return hyperlink if there is a hyperlink anchored at {@code addr}; otherwise returns {@code null}</returns>
+        IHyperlink GetHyperlink(CellAddress addr);
+
+        /// <summary>
+        /// Get a list of Hyperlinks in this sheet
+        /// </summary>
+        /// <returns>return Hyperlinks for the sheet</returns>
+        List<IHyperlink> GetHyperlinkList();
+
+        /// <summary>
+        /// get or set location of the active cell, e.g. <code>A1</code>.
+        /// </summary>
+        CellAddress ActiveCell { get; set; }
+
+
+        void CopyTo(IWorkbook dest, string name, bool copyStyle, bool keepFormulas);
+    }
 }

@@ -20,7 +20,6 @@
  */
 namespace NPOI.SS.Formula.Functions
 {
-    using System;
     using NPOI.SS.Formula.Eval;
 
     public class T : Fixed1ArgFunction
@@ -30,7 +29,9 @@ namespace NPOI.SS.Formula.Functions
             ValueEval arg = arg0;
             if (arg is RefEval)
             {
-                arg = ((RefEval)arg).InnerValueEval;
+                // always use the first sheet
+                RefEval re = (RefEval)arg;
+                arg = re.GetInnerValueEval(re.FirstSheetIndex);
             }
             else if (arg is AreaEval)
             {

@@ -16,11 +16,11 @@
 ==================================================================== */
 
 
+using NPOI.HSSF.Util;
+
 namespace NPOI.HSSF.UserModel
 {
     using System;
-    using System.IO;
-    using System.Collections;
     using NPOI.HSSF.Record;
     using NPOI.SS.UserModel;
 
@@ -78,19 +78,19 @@ namespace NPOI.HSSF.UserModel
         /// use the GetFontHeightInPoints which matches to the familiar 10, 12, 14 etc..
         /// </summary>
         /// <value>height in 1/20ths of a point.</value>
-        public short FontHeight
+        public double FontHeight
         {
             get { return font.FontHeight; }
-            set { font.FontHeight = value; }
+            set { font.FontHeight = (short)value; }
         }
 
         /// <summary>
         /// Gets or sets the font height in points.
         /// </summary>
         /// <value>height in the familiar Unit of measure - points.</value>
-        public short FontHeightInPoints
+        public double FontHeightInPoints
         {
-            get { return (short)(font.FontHeight / 20); }
+            get { return font.FontHeight / 20.0; }
             set { font.FontHeight=(short)(value * 20); }
         }
 
@@ -126,25 +126,53 @@ namespace NPOI.HSSF.UserModel
             set { font.ColorPaletteIndex=value; }
         }
 
+        /// <summary>
+        /// get the color value for the font
+        /// </summary>
+        /// <param name="wb">HSSFWorkbook</param>
+        /// <returns></returns>
+        public HSSFColor GetHSSFColor(HSSFWorkbook wb)
+        {
+            HSSFPalette pallette = wb.GetCustomPalette();
+            return pallette.GetColor(Color);
+        }
 
         /// <summary>
         /// Gets or sets the boldness to use
         /// </summary>
         /// <value>The boldweight.</value>
+        [Obsolete("deprecated POI 3.15 beta 2. Use IsBold instead.")]
         public short Boldweight
         {
             get { return font.BoldWeight; }
-            set { font.BoldWeight=value; }
+            set { font.BoldWeight = value; }
+        }
+        /**
+         * get or set if the font bold style
+         */
+        public bool IsBold
+        {
+            get
+            {
+                return font.BoldWeight == (short)FontBoldWeight.Bold;
+            }
+            set
+            {
+                if (value)
+                    font.BoldWeight = (short)FontBoldWeight.Bold;
+                else
+                    font.BoldWeight = (short)FontBoldWeight.Normal;
+            }
         }
 
         /// <summary>
         /// Gets or sets normal,base or subscript.
         /// </summary>
         /// <value>offset type to use (none,base,sub)</value>
-        public short TypeOffset
+        public FontSuperScript TypeOffset
         {
             get { return font.SuperSubScript; }
-            set { font.SuperSubScript=(short)value; }
+            set { font.SuperSubScript = value; }
         }
 
 
@@ -152,10 +180,10 @@ namespace NPOI.HSSF.UserModel
         /// Gets or sets the type of text Underlining to use
         /// </summary>
         /// <value>The Underlining type.</value>
-        public byte Underline
+        public FontUnderlineType Underline
         {
             get { return font.Underline; }
-            set { font.Underline=(byte)value; }
+            set { font.Underline = value; }
         }
 
 
@@ -226,6 +254,20 @@ namespace NPOI.HSSF.UserModel
                 return true;
             }
             return false;
+        }
+
+        public void CloneStyleFrom(IFont src)
+        {
+            FontName = src.FontName;
+            FontHeight = src.FontHeight;
+            IsBold = src.IsBold;
+            Boldweight = src.Boldweight;
+            IsItalic = src.IsItalic;
+            IsStrikeout = src.IsStrikeout;
+            Color = src.Color;
+            Underline = src.Underline;
+            Charset = src.Charset;
+            TypeOffset = src.TypeOffset;
         }
     }
 }

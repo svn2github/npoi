@@ -30,6 +30,7 @@ namespace TestCases.HPSF.Extractor
     using NPOI.HSSF.Extractor;
     using NPOI.HPSF.Extractor;
     using TestCases.HSSF;
+    using NPOI.HPSF;
 
     [TestFixture]
     public class TestHPSFPropertiesExtractor
@@ -53,7 +54,7 @@ namespace TestCases.HPSF.Extractor
             Assert.IsTrue(dinfText.IndexOf("COMPANY = sample company") > -1);
 
             // Now overall
-             text = ext.Text;
+            text = ext.Text;
             Assert.IsTrue(text.IndexOf("TEMPLATE = Normal") > -1);
             Assert.IsTrue(text.IndexOf("SUBJECT = sample subject") > -1);
             Assert.IsTrue(text.IndexOf("MANAGER = sample manager") > -1);
@@ -118,15 +119,50 @@ namespace TestCases.HPSF.Extractor
             }
             ExcelExtractor excelExt = new ExcelExtractor(wb);
 
-            String fsText = (new HPSFPropertiesExtractor(fs)).Text;
-            String hwText = (new HPSFPropertiesExtractor(wb)).Text;
-            String eeText = (new HPSFPropertiesExtractor(excelExt)).Text;
+            String fsText;
+            HPSFPropertiesExtractor fsExt = new HPSFPropertiesExtractor(fs);
+            fsExt.SetFilesystem(null); // Don't close re-used test resources!
+            try
+            {
+                fsText = fsExt.Text;
+            }
+            finally
+            {
+                fsExt.Close();
+            }
+
+            String hwText;
+            HPSFPropertiesExtractor hwExt = new HPSFPropertiesExtractor(wb);
+            hwExt.SetFilesystem(null); // Don't close re-used test resources!
+            try
+            {
+                hwText = hwExt.Text;
+            }
+            finally
+            {
+                hwExt.Close();
+            }
+
+            String eeText;
+            HPSFPropertiesExtractor eeExt = new HPSFPropertiesExtractor(excelExt);
+            eeExt.SetFilesystem(null); // Don't close re-used test resources!
+            try
+            {
+                eeText = eeExt.Text;
+            }
+            finally
+            {
+                eeExt.Close();
+            }
 
             Assert.AreEqual(fsText, hwText);
             Assert.AreEqual(fsText, eeText);
 
             Assert.IsTrue(fsText.IndexOf("AUTHOR = marshall") > -1);
             Assert.IsTrue(fsText.IndexOf("TITLE = Titel: \u00c4h") > -1);
+
+            // Finally tidy
+            wb.Close();
         }
 
         [Test]
@@ -138,6 +174,37 @@ namespace TestCases.HPSF.Extractor
             Assert.IsTrue(txt.IndexOf("PID_EDITTIME") != -1);
             Assert.IsTrue(txt.IndexOf("PID_REVNUMBER") != -1);
             Assert.IsTrue(txt.IndexOf("PID_THUMBNAIL") != -1);
+        }
+
+        [Test]
+        public void TestThumbnail()
+        {
+            POIFSFileSystem fs = new POIFSFileSystem(_samples.OpenResourceAsStream("TestThumbnail.xls"));
+            HSSFWorkbook wb = new HSSFWorkbook(fs);
+            Thumbnail thumbnail = new Thumbnail(wb.SummaryInformation.Thumbnail);
+            Assert.AreEqual(-1, thumbnail.ClipboardFormatTag);
+            Assert.AreEqual(3, thumbnail.GetClipboardFormat());
+            Assert.IsNotNull(thumbnail.GetThumbnailAsWMF());
+            //wb.Close();
+        }
+
+        [Test]
+        public void Test52258()
+        {
+            POIFSFileSystem fs = new POIFSFileSystem(_samples.OpenResourceAsStream("TestVisioWithCodepage.vsd"));
+            HPSFPropertiesExtractor ext = new HPSFPropertiesExtractor(fs);
+            try
+            {
+                Assert.IsNotNull(ext.DocSummaryInformation);
+                Assert.IsNotNull(ext.DocumentSummaryInformationText);
+                Assert.IsNotNull(ext.SummaryInformation);
+                Assert.IsNotNull(ext.SummaryInformationText);
+                Assert.IsNotNull(ext.Text);
+            }
+            finally
+            {
+                ext.Close();
+            }
         }
     }
 

@@ -16,8 +16,6 @@
 ==================================================================== */
 namespace NPOI.SS.UserModel
 {
-    using System;
-
     public enum AnchorType : int
     {
         /**
@@ -28,7 +26,7 @@ namespace NPOI.SS.UserModel
          * object is anchored to the actual from and to row and column)
          * </p>
          */
-        MOVE_AND_RESIZE = 0,
+        MoveAndResize = 0,
 
         /**
          * Move With Cells but Do Not Resize
@@ -42,7 +40,7 @@ namespace NPOI.SS.UserModel
          * the drawing shall move its to anchors as needed to maintain this same absolute size.
          * </p>
          */
-        MOVE_DONT_RESIZE = 2,
+        MoveDontResize = 2,
 
         /**
          * Do Not Move or Resize With Underlying Rows/Columns
@@ -57,7 +55,7 @@ namespace NPOI.SS.UserModel
          * to maintain this same absolute position.
          * </p>
          */
-        DONT_MOVE_AND_RESIZE = 3
+        DontMoveAndResize = 3
 
     }
 
@@ -141,7 +139,7 @@ namespace NPOI.SS.UserModel
          * @see #MOVE_DONT_RESIZE
          * @see #DONT_MOVE_AND_RESIZE
          */
-        int AnchorType { get; set; }
+        AnchorType AnchorType { get; set; }
 
     }
 }

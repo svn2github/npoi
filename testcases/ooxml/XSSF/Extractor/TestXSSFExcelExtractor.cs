@@ -20,7 +20,11 @@ using NUnit.Framework;
 using NPOI.HSSF.Extractor;
 using TestCases.HSSF;
 using System.Text.RegularExpressions;
-namespace NPOI.XSSF.Extractor
+using NPOI.XSSF.Extractor;
+using NPOI.XSSF;
+using NPOI;
+
+namespace TestCases.XSSF.Extractor
 {
 
     /**
@@ -29,9 +33,7 @@ namespace NPOI.XSSF.Extractor
     [TestFixture]
     public class TestXSSFExcelExtractor
     {
-
-
-        private static XSSFExcelExtractor GetExtractor(String sampleName)
+        protected XSSFExcelExtractor GetExtractor(String sampleName)
         {
             return new XSSFExcelExtractor(XSSFTestDataSamples.OpenSampleWorkbook(sampleName));
         }
@@ -96,6 +98,7 @@ namespace NPOI.XSSF.Extractor
                     CHUNK2 +
                     "Sheet3\n"
                     , text);
+            extractor.Close();
         }
         [Test]
         public void TestGetComplexText()
@@ -112,6 +115,7 @@ namespace NPOI.XSSF.Extractor
                             "Avgtxfull\n" +
                             "\t(iii) AVERAGE TAX RATES ON ANNUAL"
             ));
+            extractor.Close();
         }
 
         /**
@@ -140,27 +144,30 @@ namespace NPOI.XSSF.Extractor
                 Assert.IsTrue(pattern.IsMatch(text));
                 
             }
+            ole2Extractor.Close();
+            ooxmlExtractor.Close();
         }
 
         /**
          * From bug #45540
          */
            [Test]
-        public void TestHeaderFooter()
-        {
-            String[] files = new String[] {
-			"45540_classic_Header.xlsx", "45540_form_Header.xlsx",
-			"45540_classic_Footer.xlsx", "45540_form_Footer.xlsx",
-		};
-            foreach (String sampleName in files)
-            {
-                XSSFExcelExtractor extractor = GetExtractor(sampleName);
-                String text = extractor.Text;
+           public void TestHeaderFooter()
+           {
+               String[] files = new String[] {
+        "45540_classic_Header.xlsx", "45540_form_Header.xlsx",
+        "45540_classic_Footer.xlsx", "45540_form_Footer.xlsx",
+        };
+               foreach (String sampleName in files)
+               {
+                   XSSFExcelExtractor extractor = GetExtractor(sampleName);
+                   String text = extractor.Text;
 
-                Assert.IsTrue(text.Contains("testdoc"), "Unable to find expected word in text from " + sampleName + "\n" + text);
-                Assert.IsTrue(text.Contains("test phrase"), "Unable to find expected word in text\n" + text);
-            }
-        }
+                   Assert.IsTrue(text.Contains("testdoc"), "Unable to find expected word in text from " + sampleName + "\n" + text);
+                   Assert.IsTrue(text.Contains("test phrase"), "Unable to find expected word in text\n" + text);
+                   extractor.Close();
+               }
+           }
 
         /**
          * From bug #45544
@@ -181,6 +188,7 @@ namespace NPOI.XSSF.Extractor
             text = extractor.Text;
             Assert.IsTrue(text.Contains("testdoc"), "Unable to find expected word in text\n" + text);
             Assert.IsTrue(text.Contains("test phrase"), "Unable to find expected word in text\n" + text);
+            extractor.Close();
         }
         [Test]
         public void TestInlineStrings()
@@ -204,6 +212,61 @@ namespace NPOI.XSSF.Extractor
             // Formulas
             Assert.IsTrue(text.Contains("A2"), "Unable to find expected word in text\n" + text);
             Assert.IsTrue(text.Contains("A5-A$2"), "Unable to find expected word in text\n" + text);
+            extractor.Close();
+        }
+
+        [Test]
+        [Ignore("not found in poi")]
+        public void TestEmptyCells()
+        {
+            XSSFExcelExtractor extractor = GetExtractor("SimpleNormal.xlsx");
+
+            String text = extractor.Text;
+            Assert.IsTrue(text.Length > 0);
+            
+            // This sheet demonstrates the preservation of empty cells, as
+            // signified by sequential \t characters.
+            Assert.AreEqual(
+                // Sheet 1
+                "Sheet1\n" + 
+                "test\t\t1\n" + 
+                "test 2\t\t2\n" + 
+                "\t\t3\n" + 
+                "\t\t4\n" + 
+                "\t\t5\n" + 
+                "\t\t6\n" + 
+                // Sheet 2
+                "Sheet Number 2\n" + 
+                "This is sheet 2\n" + 
+                "Stuff\n" + 
+                "1\t2\t3\t4\t5\t6\n" + 
+                "1/1/90\n" + 
+                "10\t\t3\n", 
+                text);
+
+            extractor.Close();
+        }
+
+        /**
+	     * Simple test for text box text
+	     * @throws IOException
+	     */
+        [Test]
+        public void TestTextBoxes()
+        {
+            XSSFExcelExtractor extractor = GetExtractor("WithTextBox.xlsx");
+            try
+            {
+                extractor.SetFormulasNotResults(true);
+                String text = extractor.Text;
+                Assert.IsTrue(text.IndexOf("Line 1") > -1);
+                Assert.IsTrue(text.IndexOf("Line 2") > -1);
+                Assert.IsTrue(text.IndexOf("Line 3") > -1);
+            }
+            finally
+            {
+                extractor.Close();
+            }
         }
     }
 }

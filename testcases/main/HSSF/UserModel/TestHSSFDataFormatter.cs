@@ -71,60 +71,70 @@ namespace TestCases.HSSF.UserModel
 
             //valid date formats -- all should have "Jul" in output
             String[] goodDatePatterns = {
-			"[$-F800]dddd\\,\\ mmmm\\ dd\\,\\ yyyy",
-			"mmm/d/yy\\ h:mm PM;@",
-			"mmmm/d/yy\\ h:mm;@",
-			"mmmm/d;@",
-			"mmmm/d/yy;@",
-			"mmm/dd/yy;@",
-			"[$-409]d\\-mmm;@",
-			"[$-409]d\\-mmm\\-yy;@",
-			"[$-409]dd\\-mmm\\-yy;@",
-			"[$-409]mmm\\-yy;@",
-			"[$-409]mmmm\\-yy;@",
-			"[$-409]mmmm\\ d\\,\\ yyyy;@",
-			"[$-409]mmm/d/yy\\ h:mm:ss;@",
-			"[$-409]mmmm/d/yy\\ h:mm:ss am;@",
-			"[$-409]mmmmm;@",
-			"[$-409]mmmmm\\-yy;@",
-			"mmmm/d/yyyy;@",
-			"[$-409]d\\-mmm\\-yyyy;@"
-		};
+            "[$-F800]dddd\\,\\ mmmm\\ dd\\,\\ yyyy",
+            "mmm/d/yy\\ h:mm PM;@",
+            "mmmm/d/yy\\ h:mm;@",
+            "mmmm/d;@",
+            "mmmm/d/yy;@",
+            "mmm/dd/yy;@",
+            "[$-409]d\\-mmm;@",
+            "[$-409]d\\-mmm\\-yy;@",
+            "[$-409]dd\\-mmm\\-yy;@",
+            "[$-409]mmm\\-yy;@",
+            "[$-409]mmmm\\-yy;@",
+            "[$-409]mmmm\\ d\\,\\ yyyy;@",
+            "[$-409]mmm/d/yy\\ h:mm:ss;@",
+            "[$-409]mmmm/d/yy\\ h:mm:ss am;@",
+            "[$-409]mmmmm;@",
+            "[$-409]mmmmm\\-yy;@",
+            "mmmm/d/yyyy;@",
+            "[$-409]d\\-mmm\\-yyyy;@",
+            "[$-409]d\\-mmm;[$-3]d\\-mmm;@",      // international three-part
+            "[$-41f]d\\-mmm;[$-41f]d\\-mmm;@",      // turkish international three-part
+            "[$-F40f]d\\-mmm;[$-F40f]d\\-mmm;@",      // custom international three-part
+            "[$-F40f]d\\-mmm;[$-F40f]d\\-mmm;0;@"      // custom international four-part
+        };
 
             //valid time formats - all should have 11:23 in output
             String[] goodTimePatterns = {
-		   "HH:MM",
-		   "HH:MM:SS",
-		   "HH:MM;HH:MM;HH:MM", 
-		   // This is fun - blue if positive time,
-		   //  red if negative time or green for zero!
+           "HH:MM",
+           "HH:MM:SS",
+           "HH:MM;HH:MM;HH:MM", 
+           // This is fun - blue if positive time,
+           //  red if negative time or green for zero!
          "[BLUE]HH:MM;[RED]HH:MM;[GREEN]HH:MM", 
-		   "yyyy-mm-dd hh:mm",
+           "yyyy-mm-dd hh:mm",
          "yyyy-mm-dd hh:mm:ss",
-		};
+        };
 
             // valid number formats
             String[] goodNumPatterns = {
-				"#,##0.0000",
-				"#,##0;[Red]#,##0",
-				"(#,##0.00_);(#,##0.00)",
-				"($#,##0.00_);[Red]($#,##0.00)",
-				"$#,##0.00",
-				"[$-809]#,##0.00", // international format
-				"[$-2]#,##0.00", // international format
-				"0000.00000%",
-				"0.000E+00",
-				"0.00E+00",
-				"[BLACK]0.00;[COLOR 5]##.##",
-		};
+                "#,##0.0000",
+                "#,##0;[Red]#,##0",
+                "(#,##0.00_);(#,##0.00)",
+                "($#,##0.00_);[Red]($#,##0.00)",
+                "$#,##0.00",
+                "[$-809]#,##0.00", // international format
+                "[$-2]#,##0.00", // international format
+                "[$-041f]#,##0.00", // international format
+                "0000.00000%",
+                "0.000E+00",
+                "0.00E+00",
+                "[BLACK]0.00;[COLOR 5]##.##",
+                "[>999999]#,,\"M\";[>999]#,\"K\";#", // num/K/M
+				"[>999999]#.000,,\"M\";[>999]#.000,\"K\";#.000", // with decimals
+                "[$-809]#,##0.00;[$-809]#,##0.00", // two-part international format
+                "[$-809]#,##0.00;[$-809]#,##0.00;0", // three-part international format
+                "[$-809]#,##0.00;[$-809]#,##0.00;0;@", // four-part international format
+            };
 
             // invalid date formats -- will throw exception in DecimalFormat ctor
             String[] badNumPatterns = {
-				"#,#$'#0.0000",
-				"'#','#ABC#0;##,##0",
-				"000 '123 4'5'6 000",
-				"#''0#0'1#10L16EE"
-		};
+                "#,#$'#0.0000",
+                "'#','#ABC#0;##,##0",
+                "000 '123 4'5'6 000",
+                "#''0#0'1#10L16EE"
+            };
 
             // create cells with good date patterns
             for (int i = 0; i < goodDatePatterns.Length; i++)
@@ -163,7 +173,9 @@ namespace TestCases.HSSF.UserModel
             for (int i = 0; i < badNumPatterns.Length; i++)
             {
                 ICell cell = row.CreateCell(i);
-                cell.SetCellValue(1234567890.12345);
+                //cell.SetCellValue(1234567890.12345);
+                // If the '.' is any later, ExcelGeneralNumberFormat will render an integer, as Excel does.
+                cell.SetCellValue(12345678.9012345);
                 ICellStyle cellStyle = wb.CreateCellStyle();
                 cellStyle.DataFormat = (/*setter*/format.GetFormat(badNumPatterns[i]));
                 cell.CellStyle = (/*setter*/cellStyle);
@@ -201,10 +213,19 @@ namespace TestCases.HSSF.UserModel
             { // formula cell
                 row = sheet.CreateRow(7);
                 ICell cell = row.CreateCell(0);
-                cell.SetCellType(CellType.FORMULA);
+                cell.SetCellType(CellType.Formula);
                 cell.CellFormula = (/*setter*/"SUM(12.25,12.25)/100");
                 ICellStyle cellStyle = wb.CreateCellStyle();
                 cellStyle.DataFormat = (/*setter*/format.GetFormat("##.00%;"));
+                cell.CellStyle = (/*setter*/cellStyle);
+            }
+
+            { // special cell
+                row = sheet.CreateRow(8);
+                ICell cell = row.CreateCell(0);
+                cell.SetCellValue(1234567890.12345);
+                ICellStyle cellStyle = wb.CreateCellStyle();
+                cellStyle.DataFormat = format.GetFormat("#,##0.00 §â§å§Ò.;-#,##0.00 [$§â§å§Ò.-419]");
                 cell.CellStyle = (/*setter*/cellStyle);
             }
         }
@@ -223,7 +244,6 @@ namespace TestCases.HSSF.UserModel
             {
                 ICell cell = (ICell)it.Current;
                 String fmtval = formatter.FormatCellValue(cell);
-                log(fmtval);
 
                 // should not be equal to "555.555"
                 Assert.IsTrue(DateUtil.IsCellDateFormatted(cell));
@@ -240,6 +260,7 @@ namespace TestCases.HSSF.UserModel
                 {
                     jul = jul.Substring(0, 1);
                 }
+                log(fmt+"\t\t\t"+fmtval + "\t\t\t" + jul);
                 // check we found july properly
                 Assert.IsTrue(fmtval.IndexOf(jul) > -1, "Format came out incorrect - " + fmt);
             }
@@ -259,7 +280,8 @@ namespace TestCases.HSSF.UserModel
                 Assert.IsTrue(!"555.47431".Equals(fmtval));
 
                 // check we found the time properly
-                Assert.IsTrue(fmtval.IndexOf("11:23") > -1, "Format came out incorrect - " + fmt);
+                Assert.IsTrue(fmtval.IndexOf("11:23") > -1,
+                    "Format came out incorrect - " + fmt + ": " + fmtval + ", but expected to find '11:23'");
             }
 
             // Test number formats
@@ -269,10 +291,11 @@ namespace TestCases.HSSF.UserModel
             while (it.MoveNext())
             {
                 ICell cell = (ICell)it.Current;
-                log(formatter.FormatCellValue(cell));
+                string formatted = formatter.FormatCellValue(cell);
+                log(formatted);
 
-                // should not be equal to "1234567890.12345"
-                Assert.IsTrue(!"1234567890.12345".Equals(formatter.FormatCellValue(cell)));
+                // should not include "12345678" - note that the input value was negative
+                Assert.IsTrue(formatted != null && !formatted.Contains("12345678"));
             }
 
             // Test bad number formats
@@ -283,10 +306,9 @@ namespace TestCases.HSSF.UserModel
             {
                 ICell cell = (ICell)it.Current;
                 log(formatter.FormatCellValue(cell));
-                // should be equal to "1234567890.12345" 
                 // in some locales the the decimal delimiter is a comma, not a dot
                 string decimalSeparator = System.Globalization.CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
-                Assert.AreEqual("1234567890" + decimalSeparator + "12345", formatter.FormatCellValue(cell));
+                Assert.AreEqual("12345678" + decimalSeparator + "9", formatter.FormatCellValue(cell));
             }
 
             // Test Zip+4 format
@@ -369,7 +391,7 @@ namespace TestCases.HSSF.UserModel
             IRow row = sheet.GetRow(0);
             ICell cellA1 = row.GetCell(0);
 
-            Assert.AreEqual(CellType.NUMERIC, cellA1.CellType);
+            Assert.AreEqual(CellType.Numeric, cellA1.CellType);
             Assert.AreEqual(2345.0, cellA1.NumericCellValue, 0.0001);
             Assert.AreEqual("@", cellA1.CellStyle.GetDataFormatString());
 

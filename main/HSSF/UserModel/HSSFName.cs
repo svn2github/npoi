@@ -18,16 +18,12 @@
 namespace NPOI.HSSF.UserModel
 {
     using System;
-    using System.IO;
-    using System.Collections;
     using System.Text;
 
     using NPOI.HSSF.Record;
-    using NPOI.Util;
     using NPOI.HSSF.Model;
-    using NPOI.HSSF.Util;
-    using NPOI.SS.Formula;
     using NPOI.SS.Formula.PTG;
+    using System.Text.RegularExpressions;
 
 
     /// <summary>
@@ -36,6 +32,10 @@ namespace NPOI.HSSF.UserModel
     /// <remarks>@author Libin Roman (Vista Portal LDT. Developer)</remarks>
     public class HSSFName:NPOI.SS.UserModel.IName
     {
+        //private static Regex isValidName = new Regex(
+        //    "[\\p{IsAlphabetic}_\\\\]" +
+        //    "[\\p{IsAlphabetic}0-9_.\\\\]*",
+        //    RegexOptions.IgnoreCase);
         private HSSFWorkbook book;
         private NameRecord _definedNameRec;
         private NameCommentRecord _commentRec;
@@ -69,7 +69,7 @@ namespace NPOI.HSSF.UserModel
                 String result;
                 int indexToExternSheet = _definedNameRec.ExternSheetNumber;
 
-                result = book.Workbook.FindSheetNameFromExternSheet(indexToExternSheet);
+                result = book.Workbook.FindSheetFirstNameFromExternSheet(indexToExternSheet);
 
                 return result;
             }
@@ -100,9 +100,9 @@ namespace NPOI.HSSF.UserModel
                 _definedNameRec.NameText = value;
                 InternalWorkbook wb = book.Workbook;
                 int sheetNumber = _definedNameRec.SheetNumber;
-
+                int lastNameIndex = wb.NumNames - 1;
                 //Check to Ensure no other names have the same case-insensitive name
-                for (int i = wb.NumNames- 1; i >= 0; i--)
+                for (int i = lastNameIndex; i >= 0; i--)
                 {
                     NameRecord rec = wb.GetNameRecord(i);
                     if (rec != _definedNameRec)
@@ -126,12 +126,38 @@ namespace NPOI.HSSF.UserModel
         }
         private void ValidateName(String name)
         {
-            if (name.Length == 0) throw new ArgumentException("Name cannot be blank");
+            /* equivalent to:
+            Pattern.compile(
+                    "[\\p{IsAlphabetic}_]" +
+                    "[\\p{IsAlphabetic}0-9_\\\\]*",
+                    Pattern.CASE_INSENSITIVE).matcher(name).matches();
+            \p{IsAlphabetic} doesn't work on Java 6, and other regex-based character classes don't work on unicode
+            thus we are stuck with Character.isLetter (for now).
+            */
 
-            char c = name[0];
-            if (!(c == '_' || Char.IsLetter(c)) || name.IndexOf(' ') != -1)
+            if (name.Length == 0)
             {
-                throw new ArgumentException("Invalid name: '" + name + "'; Names must begin with a letter or underscore and not contain spaces");
+                throw new ArgumentException("Name cannot be blank");
+            }
+
+            // is first character valid?
+            char c = name[0];
+            String allowedSymbols = "_";
+            bool characterIsValid = (char.IsLetter(c) || allowedSymbols.IndexOf(c) != -1);
+            if (!characterIsValid)
+            {
+                throw new ArgumentException("Invalid name: '" + name + "': first character must be underscore or a letter");
+            }
+
+            // are all other characters valid?
+            allowedSymbols = "_\\"; //backslashes needed for unicode escape
+            foreach (char ch in name.ToCharArray())
+            {
+                characterIsValid = (char.IsLetterOrDigit(ch) || allowedSymbols.IndexOf(ch) != -1);
+                if (!characterIsValid)
+                {
+                    throw new ArgumentException("Invalid name: '" + name + "'");
+                }
             }
         }
 
@@ -153,7 +179,7 @@ namespace NPOI.HSSF.UserModel
             }
             set
             {
-                Ptg[] ptgs = HSSFFormulaParser.Parse(value, book, NPOI.SS.Formula.FormulaType.NAMEDRANGE, SheetIndex);
+                Ptg[] ptgs = HSSFFormulaParser.Parse(value, book, NPOI.SS.Formula.FormulaType.NamedRange, SheetIndex);
                 _definedNameRec.NameDefinition = ptgs;
             }
         }
@@ -196,6 +222,17 @@ namespace NPOI.HSSF.UserModel
                 return _definedNameRec.DescriptionText; 
             }
             set { _definedNameRec.DescriptionText = value; }
+        }
+
+
+        //
+        /// <summary>
+        /// Sets the NameParsedFormula structure that specifies the formula for the defined name.
+        /// </summary>
+        /// <param name="ptgs">the sequence of {@link Ptg}s for the formula.</param>
+        public void SetNameDefinition(Ptg[] ptgs)
+        {
+            _definedNameRec.NameDefinition = (ptgs);
         }
 
         /// <summary>

@@ -32,9 +32,9 @@ namespace NPOI.HPSF.Extractor
     /// build in and custom, returning them in
     /// textual form.
     /// </summary>
-    public class HPSFPropertiesExtractor : POITextExtractor
+    public class HPSFPropertiesExtractor : POIOLE2TextExtractor
     {
-        public HPSFPropertiesExtractor(POITextExtractor mainExtractor)
+        public HPSFPropertiesExtractor(POIOLE2TextExtractor mainExtractor)
             : base(mainExtractor)
         {
 
@@ -45,12 +45,12 @@ namespace NPOI.HPSF.Extractor
 
         }
         public HPSFPropertiesExtractor(POIFSFileSystem fs)
-            : base(new PropertiesOnlyDocument(fs))
+            : base(new HPSFPropertiesOnlyDocument(fs))
         {
 
         }
         public HPSFPropertiesExtractor(NPOIFSFileSystem fs)
-            : base(new PropertiesOnlyDocument(fs))
+            : base(new HPSFPropertiesOnlyDocument(fs))
         {
             
         }
@@ -62,6 +62,10 @@ namespace NPOI.HPSF.Extractor
         {
             get
             {
+                if (document == null)
+                {  // event based extractor does not have a document
+                    return "";
+                }
                 DocumentSummaryInformation dsi = document.DocumentSummaryInformation;
                 StringBuilder text = new StringBuilder();
 
@@ -77,7 +81,7 @@ namespace NPOI.HPSF.Extractor
                     while (keys.MoveNext())
                     {
                         String key = keys.Current.ToString();
-                        String val = GetPropertyValueText(cps[key]);
+                        String val = HelperPropertySet.GetPropertyValueText(cps[key]);
                         text.Append(key + " = " + val + "\n");
                     }
                 }
@@ -93,6 +97,10 @@ namespace NPOI.HPSF.Extractor
         {
             get
             {
+                if (document == null)
+                {  // event based extractor does not have a document
+                    return "";
+                }
                 SummaryInformation si = document.SummaryInformation;
 
                 // Just normal properties
@@ -126,48 +134,13 @@ namespace NPOI.HPSF.Extractor
                     type = typeObj.ToString();
                 }
 
-                String val = GetPropertyValueText(props[i].Value);
+                String val = HelperPropertySet.GetPropertyValueText(props[i].Value);
                 text.Append(type + " = " + val + "\n");
             }
 
             return text.ToString();
         }
-        /// <summary>
-        /// Gets the property value text.
-        /// </summary>
-        /// <param name="val">The val.</param>
-        /// <returns></returns>
-        private static String GetPropertyValueText(Object val)
-        {
-            if (val == null)
-            {
-                return "(not set)";
-            }
-            if (val is byte[])
-            {
-                byte[] b = (byte[])val;
-                if (b.Length == 0)
-                {
-                    return "";
-                }
-                if (b.Length == 1)
-                {
-                    return b[0].ToString(CultureInfo.InvariantCulture);
-                }
-                if (b.Length == 2)
-                {
-                    return LittleEndian.GetUShort(b).ToString(CultureInfo.InvariantCulture);
-                }
-                if (b.Length == 4)
-                {
-                    return LittleEndian.GetUInt(b).ToString(CultureInfo.InvariantCulture);
-                }
-                // Maybe it's a string? who knows!
-                return b.ToString();
-            }
-
-            return val.ToString();
-        }
+        
 
         /// <summary>
         /// Return the text of all the properties defined in
@@ -196,26 +169,19 @@ namespace NPOI.HPSF.Extractor
             }
         }
 
-        /// <summary>
-        /// So we can get at the properties of any
-        /// random OLE2 document.
-        /// </summary>
-        private class PropertiesOnlyDocument : POIDocument
+        public abstract class HelperPropertySet : SpecialPropertySet
         {
-            public PropertiesOnlyDocument(NPOIFSFileSystem fs)
-                : base(fs.Root)
+            public HelperPropertySet()
+                : base(null)
             {
-                
             }
-            public PropertiesOnlyDocument(POIFSFileSystem fs)
-                : base(fs)
+            public static String GetPropertyValueText(Object val)
             {
-
-            }
-
-            public override void Write(Stream out1)
-            {
-                throw new InvalidOperationException("Unable to write, only for properties!");
+                if (val == null)
+                {
+                    return "(not set)";
+                }
+                return SpecialPropertySet.GetPropertyStringValue(val);
             }
         }
     }

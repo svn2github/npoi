@@ -18,27 +18,61 @@
 using System.IO;
 using System;
 using NPOI.Util;
+using System.Collections.Generic;
+using System.Security;
+using System.Reflection;
+//using System.IO.MemoryMappedFiles;
 namespace NPOI.POIFS.NIO
 {
     /// <summary>
     /// A POIFS DataSource backed by a File
+    /// TODO - Return the ByteBuffers in such a way that in RW mode,
+    /// changes to the buffer end up on the disk (will fix the HPSF TestWrite
+    /// currently failing unit test when done)
     /// </summary>
     public class FileBackedDataSource : DataSource
     {
-        private Stream fileStream;
-        public FileBackedDataSource(FileInfo file)
-            {
-            if (file.Exists)
-                throw new FileNotFoundException(file.FullName);
-            }
+        private MemoryStream fileStream;
+        //private MemoryMappedFile mmFile;
+        //private MemoryMappedViewStream mmViewStream;
+        private FileInfo fileinfo;
+        private bool writable;
 
-        public FileBackedDataSource(FileStream stream)
+        // Buffers which map to a file-portion are not closed automatically when the Channel is closed
+        // therefore we need to keep the list of mapped buffers and do some ugly reflection to try to 
+        // clean the buffer during close().
+        // See https://bz.apache.org/bugzilla/show_bug.cgi?id=58480, 
+        // http://stackoverflow.com/questions/3602783/file-access-synchronized-on-java-object and
+        // http://bugs.java.com/view_bug.do?bug_id=4724038 for related discussions
+        private List<ByteBuffer> buffersToClean = new List<ByteBuffer>();
+
+        public FileBackedDataSource(FileInfo file)
+            : this(file, false)
+        {
+            
+        }
+        public FileBackedDataSource(FileInfo file, bool readOnly)
+        {
+            if (!file.Exists)
+                throw new FileNotFoundException(file.FullName);
+            this.fileinfo = file;
+            FileStream stream = new FileStream(file.FullName, FileMode.Open, FileAccess.Read);
+            byte[] temp = new byte[stream.Length];
+            stream.Read(temp, 0, (int)stream.Length);
+            MemoryStream ms = new MemoryStream(temp, 0, temp.Length);
+            fileStream = ms;
+            this.writable = !readOnly;
+            stream.Position = 0;
+        }
+        public FileBackedDataSource(FileStream stream, bool readOnly)
         {
             stream.Position = 0;
             byte[] temp = new byte[stream.Length];
             stream.Read(temp, 0, (int)stream.Length);
             MemoryStream ms = new MemoryStream(temp, 0, temp.Length);
             fileStream = ms;
+            this.writable = !readOnly;
+            stream.Position = 0;
         }
 
         #region IDisposable Members
@@ -68,6 +102,19 @@ namespace NPOI.POIFS.NIO
 
         #endregion
 
+        public bool IsWriteable
+        {
+            get
+            {
+                return this.writable;
+            }
+        }
+
+        public Stream Stream
+        {
+            get { return this.fileStream; }
+        }
+
         /// <summary>
         /// Reads a sequence of bytes from this FileStream starting at the given file position.
         /// </summary>
@@ -77,17 +124,30 @@ namespace NPOI.POIFS.NIO
         public override ByteBuffer Read(int length, long position)
         {
             if (position >= Size)
-                throw new ArgumentException("Position " + position + " past the end of the file");
+                throw new IndexOutOfRangeException("Position " + position + " past the end of the file");
 
-            // Read
-            fileStream.Position = position;
-            ByteBuffer dst = ByteBuffer.CreateBuffer(length);
+            // Do we read or map (for read/write)?
+            ByteBuffer dst;
+            if (writable)
+            {
+                //dst = channel.map(FileChannel.MapMode.READ_WRITE, position, length);
+                dst = ByteBuffer.CreateBuffer(length);
+                // remember this buffer for cleanup
+                buffersToClean.Add(dst);
+            }
+            else
+            {
+                // allocate the buffer on the heap if we cannot map the data in directly
+                fileStream.Position = position;
+                dst = ByteBuffer.CreateBuffer(length);
 
-            int worked = IOUtils.ReadFully(fileStream, dst.Buffer);
-            // Check
-            if(worked == -1)
-                throw new ArgumentException("Position " + position + " past the end of the file");
-
+                // Read the contents and check that we could read some data
+                int worked = IOUtils.ReadFully(fileStream, dst.Buffer);
+                // Check
+                if (worked == -1)
+                    throw new IndexOutOfRangeException("Position " + position + " past the end of the file");
+            }
+            // make it ready for reading
             dst.Position = 0;
 
             // All done
@@ -107,20 +167,80 @@ namespace NPOI.POIFS.NIO
 
         public override void CopyTo(Stream stream)
         {
-            byte[] tempBuffer = new byte[stream.Length];
-            stream.Write(tempBuffer, 0, tempBuffer.Length);
-
-            fileStream.Write(tempBuffer, 0, tempBuffer.Length);
-        }
+            //byte[] tempBuffer = new byte[stream.Length];
+            //fileStream.Read(tempBuffer, 0, tempBuffer.Length);
+            byte[] tempBuffer = fileStream.ToArray();
+            stream.Write(tempBuffer, 0, tempBuffer.Length);        }
 
         public override long Size
         {
-            get { return fileStream.Length; }
+            get 
+            {
+                if (fileStream != null)
+                {
+                    return fileStream.Length;
+                }
+                else
+                {
+                    return fileinfo.Length;
+                }
+            }
         }
 
         public override void Close()
         {
-            fileStream.Close();
+            // also ensure that all buffers are unmapped so we do not keep files locked on Windows
+            // We consider it a bug if a Buffer is still in use now! 
+            foreach (ByteBuffer buffer in buffersToClean)
+            {
+                unmap(buffer);
+            }
+            buffersToClean.Clear();
+
+            if (fileStream != null)
+            {
+                fileStream.Close();
+            }
+            
+        }
+
+        // need to use reflection to avoid depending on the sun.nio internal API
+        // unfortunately this might break silently with newer/other Java implementations, 
+        // but we at least have unit-tests which will indicate this when run on Windows
+        private static void unmap(ByteBuffer bb)
+        {
+            //TODO: try add clean method for ByteBuffer class.
+            //Type fcClass = bb.GetType();
+            //try
+            //{
+            //    // invoke bb.cleaner().clean(), but do not depend on sun.nio
+            //    // interfaces
+            //    MethodInfo cleanerMethod = fcClass.GetMethod("cleaner");
+            //    //cleanerMethod.setAccessible(true);
+            //    Object cleaner = cleanerMethod.Invoke(bb, null);
+            //    MethodInfo cleanMethod = cleaner.GetType().GetMethod("clean");
+            //    cleanMethod.Invoke(cleaner, null);
+            //}
+            //catch (NotSupportedException e)
+            //{
+            //    // e.printStackTrace();
+            //}
+            //catch (SecurityException e)
+            //{
+            //    // e.printStackTrace();
+            //}
+            //catch (MethodAccessException e)
+            //{
+            //    // e.printStackTrace();
+            //}
+            //catch (ArgumentException e)
+            //{
+            //    // e.printStackTrace();
+            //}
+            //catch (TargetException e)
+            //{
+            //    // e.printStackTrace();
+            //}
         }
     }
 

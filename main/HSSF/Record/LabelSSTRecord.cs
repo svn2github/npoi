@@ -35,7 +35,7 @@ namespace NPOI.HSSF.Record
      * @version 2.0-pre
      */
     [Serializable]
-    public class LabelSSTRecord : CellRecord
+    public class LabelSSTRecord : CellRecord, ICloneable
     {
         public const short sid = 0xfd;
         private int field_4_sst_index;
@@ -78,7 +78,7 @@ namespace NPOI.HSSF.Record
         protected override void AppendValueText(StringBuilder sb)
         {
             sb.Append("  .sstIndex = ");
-            sb.Append(HexDump.ShortToHex(XFIndex));
+            sb.Append(HexDump.ShortToHex(SSTIndex));
         }
 
         protected override void SerializeValue(ILittleEndianOutput out1)

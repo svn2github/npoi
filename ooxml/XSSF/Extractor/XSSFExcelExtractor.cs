@@ -20,12 +20,15 @@ using NPOI.OpenXml4Net.OPC;
 using System.Text;
 using NPOI.SS.UserModel;
 using System.Collections;
+using System.Globalization;
+using System.Collections.Generic;
+
 namespace NPOI.XSSF.Extractor
 {
     /**
      * Helper class to extract text from an OOXML Excel file
      */
-    public class XSSFExcelExtractor : POIXMLTextExtractor, NPOI.SS.Extractor.ExcelExtractor
+    public class XSSFExcelExtractor : POIXMLTextExtractor, NPOI.SS.Extractor.IExcelExtractor
     {
         public static XSSFRelation[] SUPPORTED_TYPES = new XSSFRelation[] {
       XSSFRelation.WORKBOOK, XSSFRelation.MACRO_TEMPLATE_WORKBOOK,
@@ -38,12 +41,8 @@ namespace NPOI.XSSF.Extractor
         private bool formulasNotResults = false;
         private bool includeCellComments = false;
         private bool includeHeadersFooters = true;
+        private bool includeTextBoxes = true;
 
-        public XSSFExcelExtractor(String path)
-            : this(new XSSFWorkbook(path))
-        {
-
-        }
         public XSSFExcelExtractor(OPCPackage Container)
             : this(new XSSFWorkbook(Container))
         {
@@ -55,7 +54,78 @@ namespace NPOI.XSSF.Extractor
 
             this.workbook = workbook;
         }
+        /// <summary>
+        ///  Should header and footer be included? Default is true
+        /// </summary>
+        public bool IncludeHeaderFooter
+        {
+            get
+            {
+                return this.includeHeadersFooters;
+            }
+            set
+            {
+                this.includeHeadersFooters = value;
+            }
+        }
+        /// <summary>
+        /// Should sheet names be included? Default is true
+        /// </summary>
+        /// <value>if set to <c>true</c> [include sheet names].</value>
+        public bool IncludeSheetNames
+        {
+            get
+            {
+                return this.includeSheetNames;
+            }
+            set
+            {
+                this.includeSheetNames = value;
+            }
+        }
+        /// <summary>
+        /// Should we return the formula itself, and not
+        /// the result it produces? Default is false
+        /// </summary>
+        /// <value>if set to <c>true</c> [formulas not results].</value>
+        public bool FormulasNotResults
+        {
+            get
+            {
+                return this.formulasNotResults;
+            }
+            set
+            {
+                this.formulasNotResults = value;
+            }
+        }
+        /// <summary>
+        /// Should cell comments be included? Default is false
+        /// </summary>
+        /// <value>if set to <c>true</c> [include cell comments].</value>
+        public bool IncludeCellComments
+        {
+            get
+            {
+                return this.includeCellComments;
+            }
+            set
+            {
+                this.includeCellComments = value;
+            }
+        }
 
+        public bool IncludeTextBoxes
+        {
+            get
+            {
+                return includeTextBoxes;
+            }
+            set
+            {
+                includeTextBoxes = value;
+            }
+        }
         /**
          * Should sheet names be included? Default is true
          */
@@ -72,7 +142,7 @@ namespace NPOI.XSSF.Extractor
             this.formulasNotResults = formulasNotResults;
         }
         /**
-         * Should cell comments be included? Default is true
+         * Should cell comments be included? Default is false
          */
         public void SetIncludeCellComments(bool includeCellComments)
         {
@@ -87,20 +157,44 @@ namespace NPOI.XSSF.Extractor
         }
 
         /**
+         * Should text within textboxes be included? Default is true
+         * @param includeTextBoxes
+         */
+        public void SetIncludeTextBoxes(bool includeTextBoxes)
+        {
+            this.includeTextBoxes = includeTextBoxes;
+        }
+        public void SetLocale(CultureInfo locale)
+        {
+            this.locale = locale;
+        }
+
+        private CultureInfo locale = null;
+        /**
          * Retreives the text contents of the file
          */
         public override String Text
         {
             get
             {
+                DataFormatter formatter;
+                if (locale == null)
+                {
+                    formatter = new DataFormatter();
+                }
+                else
+                {
+                    formatter = new DataFormatter(locale);
+                }
+
                 StringBuilder text = new StringBuilder();
 
-                for (int i = 0; i < workbook.NumberOfSheets; i++)
+                foreach (ISheet sh in workbook)
                 {
-                    XSSFSheet sheet = (XSSFSheet)workbook.GetSheetAt(i);
+                    XSSFSheet sheet = (XSSFSheet)sh;
                     if (includeSheetNames)
                     {
-                        text.Append(workbook.GetSheetName(i)+"\n");
+                        text.Append(sheet.SheetName + "\n");
                     }
 
                     // Header(s), if present
@@ -121,10 +215,13 @@ namespace NPOI.XSSF.Extractor
                     foreach (Object rawR in sheet)
                     {
                         IRow row = (IRow)rawR;
-                        IEnumerator ri =row.GetEnumerator();
-                        bool firsttime=true;
-                        while (ri.MoveNext())
+                        IEnumerator<ICell> ri = row.GetEnumerator();
+                        bool firsttime = true;
+                        for (int j = 0; j < row.LastCellNum; j++)
                         {
+                            ICell cell = row.GetCell(j);
+                            if (cell == null)
+                                continue;
                             if (!firsttime)
                             {
                                 text.Append("\t");
@@ -133,21 +230,35 @@ namespace NPOI.XSSF.Extractor
                             {
                                 firsttime = false;
                             }
-                            ICell cell = (ICell)ri.Current;
+                            
 
                             // Is it a formula one?
-                            if (cell.CellType == CellType.FORMULA && formulasNotResults)
+                            if (cell.CellType == CellType.Formula)
                             {
-                                text.Append(cell.CellFormula);
+                                if (formulasNotResults)
+                                {
+                                    text.Append(cell.CellFormula);
+                                }
+                                else
+                                {
+                                    if (cell.CachedFormulaResultType == CellType.String)
+                                    {
+                                        HandleStringCell(text, cell);
+                                    }
+                                    else
+                                    {
+                                        HandleNonStringCell(text, cell, formatter);
+                                    }
+                                }
+
                             }
-                            else if (cell.CellType == CellType.STRING)
+                            else if (cell.CellType == CellType.String)
                             {
-                                text.Append(cell.RichStringCellValue.String);
+                                HandleStringCell(text, cell);
                             }
                             else
                             {
-                                XSSFCell xc = (XSSFCell)cell;
-                                text.Append(xc.GetRawValue());
+                                HandleNonStringCell(text, cell, formatter);
                             }
 
                             // Output the comment, if requested and exists
@@ -159,9 +270,29 @@ namespace NPOI.XSSF.Extractor
                                 String commentText = comment.String.String.Replace('\n', ' ');
                                 text.Append(" Comment by ").Append(comment.Author).Append(": ").Append(commentText);
                             }
-                            
+
                         }
                         text.Append("\n");
+                    }
+                    // add textboxes
+                    if (includeTextBoxes)
+                    {
+                        XSSFDrawing drawing = sheet.GetDrawingPatriarch();
+                        if (drawing != null)
+                        {
+                            foreach (XSSFShape shape in drawing.GetShapes())
+                            {
+                                if (shape is XSSFSimpleShape)
+                                {
+                                    String boxText = ((XSSFSimpleShape)shape).Text;
+                                    if (boxText.Length > 0)
+                                    {
+                                        text.Append(boxText);
+                                        text.Append('\n');
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     // Finally footer(s), if present
@@ -182,7 +313,35 @@ namespace NPOI.XSSF.Extractor
                 return text.ToString();
             }
         }
+        private void HandleStringCell(StringBuilder text, ICell cell)
+        {
+            text.Append(cell.RichStringCellValue.String);
+        }
+        private void HandleNonStringCell(StringBuilder text, ICell cell, DataFormatter formatter)
+        {
+            CellType type = cell.CellType;
+            if (type == CellType.Formula)
+            {
+                type = cell.CachedFormulaResultType;
+            }
 
+            if (type == CellType.Numeric)
+            {
+                ICellStyle cs = cell.CellStyle;
+
+                if (cs.GetDataFormatString() != null)
+                {
+                    text.Append(formatter.FormatRawCellContents(
+                          cell.NumericCellValue, cs.DataFormat, cs.GetDataFormatString()
+                    ));
+                    return;
+                }
+            }
+
+            // No supported styling applies to this cell
+            XSSFCell xcell = (XSSFCell)cell;
+            text.Append(xcell.GetRawValue());
+        }
         private String ExtractHeaderFooter(IHeaderFooter hf)
         {
             return NPOI.HSSF.Extractor.ExcelExtractor.ExtractHeaderFooter(hf);

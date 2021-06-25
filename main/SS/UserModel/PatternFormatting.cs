@@ -19,8 +19,6 @@
 
 namespace NPOI.SS.UserModel
 {
-    using System;
-    
     /**
      * @author Yegor Kozlov
      */
@@ -30,7 +28,11 @@ namespace NPOI.SS.UserModel
 
         short FillForegroundColor { get; set; }
 
-        short FillPattern { get; set; }
+        IColor FillBackgroundColorColor { get; set; }
+
+        IColor FillForegroundColorColor { get; set; }
+
+        FillPattern FillPattern { get; set; }
     }
 
 }

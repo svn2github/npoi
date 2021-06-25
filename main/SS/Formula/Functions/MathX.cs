@@ -50,7 +50,7 @@ namespace NPOI.SS.Formula.Functions
          * @param n
          * @param p
          */
-        public static double round(double n, int p)
+        public static double Round(double n, int p)
         {
             double retval;
 
@@ -58,17 +58,21 @@ namespace NPOI.SS.Formula.Functions
             {
                 retval = double.NaN;
             }
+            else if (double.MaxValue == n)
+                return double.MaxValue;
+            else if (double.MinValue == n)
+                return 0;
             else
             {
-                //if (p != 0)
-                //{
-                    decimal temp = (decimal)Math.Pow(10, p);
-                    retval = (double)(Math.Round((decimal)n * temp) / temp);
-                //}
-                //else
-                //{
-                //    retval = Math.Round(n);
-                //}
+                if (p >= 0)
+                {
+                    retval = (double)Math.Round((decimal)n, p, MidpointRounding.AwayFromZero);
+                }
+                else
+                {
+                    int temp = (int)Math.Pow(10, Math.Abs(p));
+                    retval = (double)(Math.Round((decimal)(n) / temp, MidpointRounding.AwayFromZero) * temp);
+                }
             }
 
             return retval;
@@ -89,13 +93,25 @@ namespace NPOI.SS.Formula.Functions
          * @param n
          * @param p
          */
-        public static double roundUp(double n, int p)
+        public static double RoundUp(double n, int p)
         {
             double retval;
 
             if (double.IsNaN(n) || double.IsInfinity(n))
             {
                 retval = double.NaN;
+            }
+            else if (double.MaxValue == n)
+                return double.MaxValue;
+            else if (double.MinValue == n)
+            {
+                double digit = 1;
+                while (p > 0)
+                {
+                    digit = digit / 10;
+                    p--;
+                }
+                return digit;
             }
             else
             {
@@ -104,7 +120,7 @@ namespace NPOI.SS.Formula.Functions
                     double temp = Math.Pow(10, p);
                     double nat = Math.Abs(n * temp);
 
-                    retval = sign(n) *
+                    retval = Sign(n) *
                         ((nat == (long)nat)
                                 ? nat / temp
                                 : Math.Round(nat + 0.5) / temp);
@@ -112,7 +128,7 @@ namespace NPOI.SS.Formula.Functions
                 else
                 {
                     double na = Math.Abs(n);
-                    retval = sign(n) *
+                    retval = Sign(n) *
                         ((na == (long)na)
                             ? na
                             : (long)na + 1);
@@ -137,7 +153,7 @@ namespace NPOI.SS.Formula.Functions
          * @param n
          * @param p
          */
-        public static double roundDown(double n, int p)
+        public static double RoundDown(double n, int p)
         {
             double retval;
 
@@ -145,12 +161,16 @@ namespace NPOI.SS.Formula.Functions
             {
                 retval = double.NaN;
             }
+            else if (double.MaxValue == n)
+                return double.MaxValue;
+            else if (double.MinValue == n)
+                return 0;
             else
             {
                 if (p != 0)
                 {
                     double temp = Math.Pow(10, p);
-                    retval = sign(n) * Math.Round((Math.Abs(n) * temp) - 0.5, MidpointRounding.AwayFromZero) / temp;
+                    retval = Sign(n) * Math.Round((Math.Abs(n) * temp) - 0.5, MidpointRounding.AwayFromZero) / temp;
                 }
                 else
                 {
@@ -172,7 +192,7 @@ namespace NPOI.SS.Formula.Functions
          * of caller to Check for d IsNaN if some other value Is desired.
          * @param d
          */
-        public static short sign(double d)
+        public static short Sign(double d)
         {
             return (short)((d == 0)
                     ? 0
@@ -185,7 +205,7 @@ namespace NPOI.SS.Formula.Functions
          * average of all values
          * @param values
          */
-        public static double average(double[] values)
+        public static double Average(double[] values)
         {
             double ave = 0;
             double sum = 0;
@@ -202,7 +222,7 @@ namespace NPOI.SS.Formula.Functions
          * sum of all values
          * @param values
          */
-        public static double sum(double[] values)
+        public static double Sum(double[] values)
         {
             double sum = 0;
             for (int i = 0, iSize = values.Length; i < iSize; i++)
@@ -216,7 +236,7 @@ namespace NPOI.SS.Formula.Functions
          * sum of squares of all values
          * @param values
          */
-        public static double sumsq(double[] values)
+        public static double Sumsq(double[] values)
         {
             double sumsq = 0;
             for (int i = 0, iSize = values.Length; i < iSize; i++)
@@ -231,7 +251,7 @@ namespace NPOI.SS.Formula.Functions
          * product of all values
          * @param values
          */
-        public static double product(double[] values)
+        public static double Product(double[] values)
         {
             double product = 0;
             if (values != null && values.Length > 0)
@@ -250,7 +270,7 @@ namespace NPOI.SS.Formula.Functions
          * double.POSITIVE_INFINITY Is returned.
          * @param values
          */
-        public static double min(double[] values)
+        public static double Min(double[] values)
         {
             double min = double.PositiveInfinity;
             for (int i = 0, iSize = values.Length; i < iSize; i++)
@@ -265,7 +285,7 @@ namespace NPOI.SS.Formula.Functions
          * double.NEGATIVE_INFINITY Is returned.
          * @param values
          */
-        public static double max(double[] values)
+        public static double Max(double[] values)
         {
             double max = double.NegativeInfinity;
             for (int i = 0, iSize = values.Length; i < iSize; i++)
@@ -290,7 +310,7 @@ namespace NPOI.SS.Formula.Functions
          * @param n
          * @param s
          */
-        public static double floor(double n, double s)
+        public static double Floor(double n, double s)
         {
             double f;
 
@@ -321,7 +341,7 @@ namespace NPOI.SS.Formula.Functions
          * @param n
          * @param s
          */
-        public static double ceiling(double n, double s)
+        public static double Ceiling(double n, double s)
         {
             double c;
 
@@ -347,7 +367,7 @@ namespace NPOI.SS.Formula.Functions
          * If n &lt; 0, double.NaN Is returned. 
          * @param n
          */
-        public static double factorial(int n)
+        public static double Factorial(int n)
         {
             double d = 1;
 
@@ -388,7 +408,7 @@ namespace NPOI.SS.Formula.Functions
          * @param n
          * @param d
          */
-        public static double mod(double n, double d)
+        public static double Mod(double n, double d)
         {
             double result = 0;
 
@@ -396,7 +416,7 @@ namespace NPOI.SS.Formula.Functions
             {
                 result = double.NaN;
             }
-            else if (sign(n) == sign(d))
+            else if (Sign(n) == Sign(d))
             {
                 //double t = Math.Abs(n / d);
                 //t = t - (long)t;
@@ -420,7 +440,7 @@ namespace NPOI.SS.Formula.Functions
          * inverse hyperbolic cosine
          * @param d
          */
-        public static double acosh(double d)
+        public static double Acosh(double d)
         {
             return Math.Log(Math.Sqrt(Math.Pow(d, 2) - 1) + d);
         }
@@ -429,7 +449,7 @@ namespace NPOI.SS.Formula.Functions
          * inverse hyperbolic sine
          * @param d
          */
-        public static double asinh(double d)
+        public static double Asinh(double d)
         {
             double d2 = d * d;
             return Math.Log(Math.Sqrt(d * d + 1) + d);
@@ -439,7 +459,7 @@ namespace NPOI.SS.Formula.Functions
          * inverse hyperbolic tangent
          * @param d
          */
-        public static double atanh(double d)
+        public static double Atanh(double d)
         {
             return Math.Log((1 + d) / (1 - d)) / 2;
         }
@@ -448,7 +468,7 @@ namespace NPOI.SS.Formula.Functions
          * hyperbolic cosine
          * @param d
          */
-        public static double cosh(double d)
+        public static double Cosh(double d)
         {
             double ePowX = Math.Pow(Math.E, d);
             double ePowNegX = Math.Pow(Math.E, -d);
@@ -460,7 +480,7 @@ namespace NPOI.SS.Formula.Functions
          * hyperbolic sine
          * @param d
          */
-        public static double sinh(double d)
+        public static double Sinh(double d)
         {
             double ePowX = Math.Pow(Math.E, d);
             double ePowNegX = Math.Pow(Math.E, -d);
@@ -472,7 +492,7 @@ namespace NPOI.SS.Formula.Functions
          * hyperbolic tangent
          * @param d
          */
-        public static double tanh(double d)
+        public static double Tanh(double d)
         {
             double ePowX = Math.Pow(Math.E, d);
             double ePowNegX = Math.Pow(Math.E, -d);
@@ -487,7 +507,7 @@ namespace NPOI.SS.Formula.Functions
          * not of equal Length, the return value can be Unpredictable.
          * @param arrays
          */
-        public static double sumproduct(double[][] arrays)
+        public static double SumProduct(double[][] arrays)
         {
             double d = 0;
 
@@ -525,7 +545,7 @@ namespace NPOI.SS.Formula.Functions
          * @param xarr
          * @param yarr
          */
-        public static double sumx2my2(double[] xarr, double[] yarr)
+        public static double Sumx2my2(double[] xarr, double[] yarr)
         {
             double d = 0;
 
@@ -555,7 +575,7 @@ namespace NPOI.SS.Formula.Functions
          * @param xarr
          * @param yarr
          */
-        public static double sumx2py2(double[] xarr, double[] yarr)
+        public static double Sumx2py2(double[] xarr, double[] yarr)
         {
             double d = 0;
 
@@ -586,7 +606,7 @@ namespace NPOI.SS.Formula.Functions
          * @param xarr
          * @param yarr
          */
-        public static double sumxmy2(double[] xarr, double[] yarr)
+        public static double Sumxmy2(double[] xarr, double[] yarr)
         {
             double d = 0;
 
@@ -616,7 +636,7 @@ namespace NPOI.SS.Formula.Functions
          * @param n
          * @param k
          */
-        public static double nChooseK(int n, int k)
+        public static double NChooseK(int n, int k)
         {
             double d = 1;
             if (n < 0 || k < 0 || n < k)
@@ -631,7 +651,7 @@ namespace NPOI.SS.Formula.Functions
                 {
                     d *= i + 1;
                 }
-                d /= factorial(minnk);
+                d /= Factorial(minnk);
             }
 
             return d;

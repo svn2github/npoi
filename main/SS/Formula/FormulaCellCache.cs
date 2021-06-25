@@ -17,8 +17,6 @@
 
 namespace NPOI.SS.Formula
 {
-
-    using System;
     using System.Collections;
 
     public interface IEntryOperation
@@ -59,7 +57,10 @@ namespace NPOI.SS.Formula
          */
         public FormulaCellCacheEntry Get(IEvaluationCell cell)
         {
-            return (FormulaCellCacheEntry)_formulaEntriesByCell[cell.IdentityKey];
+            if (_formulaEntriesByCell.ContainsKey(cell.IdentityKey))
+                return (FormulaCellCacheEntry)_formulaEntriesByCell[cell.IdentityKey];
+            else
+                return null;
         }
 
         public void Put(IEvaluationCell cell, FormulaCellCacheEntry entry)

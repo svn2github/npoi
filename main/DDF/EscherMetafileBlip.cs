@@ -19,11 +19,11 @@ namespace NPOI.DDF
     using System;
     using System.IO;
     using System.Text;
-    using System.Collections;
     using System.Drawing;
     using NPOI.Util;
     using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
     using ICSharpCode.SharpZipLib.Zip.Compression;
+    using NPOI.HSSF.UserModel;
 
     /// <summary>
     /// @author Daniel Noll
@@ -45,11 +45,11 @@ namespace NPOI.DDF
 
         private const int HEADER_SIZE = 8;
 
-        private byte[] field_1_UID;
+        private byte[] field_1_UID = new byte[16];
         /**
          * The primary UID is only saved to disk if (blip_instance ^ blip_signature == 1)
          */
-        private byte[] field_2_UID;
+        private byte[] field_2_UID = new byte[16];
         private int field_2_cb;
         private int field_3_rcBounds_x1;
         private int field_3_rcBounds_y1;
@@ -78,11 +78,9 @@ namespace NPOI.DDF
             int bytesAfterHeader = ReadHeader( data, offset );
             int pos = offset + HEADER_SIZE;
 
-            field_1_UID = new byte[16];
             Array.Copy( data, pos, field_1_UID, 0, 16 ); pos += 16;
 
             if((Options ^ Signature) == 0x10){
-                field_2_UID = new byte[16];
                 Array.Copy( data, pos, field_2_UID, 0, 16 ); pos += 16;
             }
 
@@ -221,7 +219,14 @@ namespace NPOI.DDF
         public byte[] UID
         {
             get { return field_1_UID; }
-            set { this.field_1_UID = value; }
+            set
+            {
+                if (value == null || value.Length != 16)
+                {
+                    throw new ArgumentException("uid must be byte[16]");
+                }
+                Array.Copy(value, 0, field_1_UID, 0, field_1_UID.Length);
+            }
         }
 
         /// <summary>
@@ -231,7 +236,14 @@ namespace NPOI.DDF
         public byte[] PrimaryUID
         {
             get{return field_2_UID;}
-            set { this.field_2_UID = value; }
+            set
+            {
+                if (value == null || value.Length != 16)
+                {
+                    throw new ArgumentException("primaryUID must be byte[16]");
+                }
+                Array.Copy(value, 0, field_2_UID, 0, field_2_UID.Length);
+            }
         }
 
 
@@ -377,18 +389,53 @@ namespace NPOI.DDF
             get{
                 short sig = 0;
                 switch(RecordId){
-                    case RECORD_ID_EMF: 
-                        sig = SIGNATURE_EMF; 
+                    case RECORD_ID_EMF:
+                        sig = HSSFPictureData.MSOBI_EMF; 
                         break;
-                    case RECORD_ID_WMF: 
-                        sig = SIGNATURE_WMF; 
+                    case RECORD_ID_WMF:
+                        sig = HSSFPictureData.MSOBI_WMF; 
                         break;
-                    case RECORD_ID_PICT: 
-                        sig = SIGNATURE_PICT; 
+                    case RECORD_ID_PICT:
+                        sig = HSSFPictureData.MSOBI_PICT; 
                         break;
                     default: log.Log(POILogger.WARN, "Unknown metafile: " + RecordId); break;
                 }
                 return sig;
+            }
+        }
+
+        public void SetPictureData(byte[] pictureData)
+        {
+            base.PictureData = (pictureData);
+            UncompressedSize = (pictureData.Length);
+
+            // info of chicago project:
+            // "... LZ compression algorithm in the format used by GNU Zip deflate/inflate with a 32k window ..."
+            // not sure what to do, when lookup tables exceed 32k ...
+
+            try
+            {
+                MemoryStream bos = new MemoryStream();
+                DeflaterOutputStream dos = new DeflaterOutputStream(bos);
+                dos.Write(pictureData, 0, pictureData.Length);
+                dos.Close();
+                raw_pictureData = bos.ToArray();
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeException("Can't compress metafile picture data", e);
+            }
+
+            CompressedSize=(raw_pictureData.Length);
+            IsCompressed = (true);
+        }
+
+        public byte Filter
+        {
+            get { return field_7_fFilter; }
+            set
+            {
+                field_7_fFilter = value;
             }
         }
     }

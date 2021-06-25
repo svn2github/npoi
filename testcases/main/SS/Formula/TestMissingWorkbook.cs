@@ -23,21 +23,33 @@ using NPOI.SS.UserModel;
 using NPOI.Util;
 using NUnit.Framework;
 using TestCases.HSSF;
+using System.Collections.Generic;
 
 namespace TestCases.SS.Formula
 {
     [TestFixture]
     public class TestMissingWorkbook
     {
-        private static String MAIN_WORKBOOK_FILENAME = "52575_main.xls";
-        private static String SOURCE_DUMMY_WORKBOOK_FILENAME = "source_dummy.xls";
-        private static String SOURCE_WORKBOOK_FILENAME = "52575_source.xls";
+        protected String MAIN_WORKBOOK_FILENAME = "52575_main.xls";
+        protected String SOURCE_DUMMY_WORKBOOK_FILENAME = "source_dummy.xls";
+        protected String SOURCE_WORKBOOK_FILENAME = "52575_source.xls";
 
-        private HSSFWorkbook mainWorkbook;
-        private HSSFWorkbook sourceWorkbook;
-
-        [TestFixtureSetUp]
-        protected void setUp()
+        protected IWorkbook mainWorkbook;
+        protected IWorkbook sourceWorkbook;
+        public TestMissingWorkbook()
+            : this("52575_main.xls", "source_dummy.xls", "52575_source.xls")
+        {
+            ;
+        }
+        protected TestMissingWorkbook(String MAIN_WORKBOOK_FILENAME,
+                String SOURCE_DUMMY_WORKBOOK_FILENAME, String SOURCE_WORKBOOK_FILENAME)
+        {
+            this.MAIN_WORKBOOK_FILENAME = MAIN_WORKBOOK_FILENAME;
+            this.SOURCE_DUMMY_WORKBOOK_FILENAME = SOURCE_DUMMY_WORKBOOK_FILENAME;
+            this.SOURCE_WORKBOOK_FILENAME = SOURCE_WORKBOOK_FILENAME;
+        }
+        [SetUp]
+        protected virtual void SetUp()
         {
             mainWorkbook = HSSFTestDataSamples.OpenSampleWorkbook(MAIN_WORKBOOK_FILENAME);
             sourceWorkbook = HSSFTestDataSamples.OpenSampleWorkbook(SOURCE_WORKBOOK_FILENAME);
@@ -51,11 +63,11 @@ namespace TestCases.SS.Formula
         {
             IFormulaEvaluator evaluator = mainWorkbook.GetCreationHelper().CreateFormulaEvaluator();
 
-            HSSFSheet lSheet = (HSSFSheet)mainWorkbook.GetSheetAt(0);
-            HSSFRow lARow = (HSSFRow)lSheet.GetRow(0);
-            HSSFCell lA1Cell = (HSSFCell)lARow.GetCell(0);
+            ISheet lSheet = mainWorkbook.GetSheetAt(0);
+            IRow lARow = lSheet.GetRow(0);
+            ICell lA1Cell = lARow.GetCell(0);
 
-            Assert.AreEqual(CellType.FORMULA, lA1Cell.CellType);
+            Assert.AreEqual(CellType.Formula, lA1Cell.CellType);
             try
             {
                 evaluator.EvaluateFormulaCell(lA1Cell);
@@ -70,22 +82,27 @@ namespace TestCases.SS.Formula
         [Test]
         public void TestMissingWorkbookMissingOverride()
         {
-            mainWorkbook = HSSFTestDataSamples.OpenSampleWorkbook(MAIN_WORKBOOK_FILENAME);
-            HSSFSheet lSheet = (HSSFSheet)mainWorkbook.GetSheetAt(0);
-            HSSFCell lA1Cell = (HSSFCell)lSheet.GetRow(0).GetCell(0);
-            HSSFCell lB1Cell = (HSSFCell)lSheet.GetRow(1).GetCell(0);
-            HSSFCell lC1Cell = (HSSFCell)lSheet.GetRow(2).GetCell(0);
+            ISheet lSheet = mainWorkbook.GetSheetAt(0);
+            ICell lA1Cell = lSheet.GetRow(0).GetCell(0);
+            ICell lB1Cell = lSheet.GetRow(1).GetCell(0);
+            ICell lC1Cell = lSheet.GetRow(2).GetCell(0);
 
-            Assert.AreEqual(CellType.FORMULA, lA1Cell.CellType);
-            Assert.AreEqual(CellType.FORMULA, lB1Cell.CellType);
-            Assert.AreEqual(CellType.FORMULA, lC1Cell.CellType);
+            Assert.AreEqual(CellType.Formula, lA1Cell.CellType);
+            Assert.AreEqual(CellType.Formula, lB1Cell.CellType);
+            Assert.AreEqual(CellType.Formula, lC1Cell.CellType);
 
-            HSSFFormulaEvaluator evaluator = (HSSFFormulaEvaluator)mainWorkbook.GetCreationHelper().CreateFormulaEvaluator();
+            // Check cached values
+            Assert.AreEqual(10.0d, lA1Cell.NumericCellValue, 0.00001d);
+            Assert.AreEqual("POI rocks!", lB1Cell.StringCellValue);
+            Assert.AreEqual(true, lC1Cell.BooleanCellValue);
+
+            // Evaluate
+            IFormulaEvaluator evaluator = mainWorkbook.GetCreationHelper().CreateFormulaEvaluator();
             evaluator.IgnoreMissingWorkbooks = (true);
 
-            Assert.AreEqual(CellType.NUMERIC, evaluator.EvaluateFormulaCell(lA1Cell));
-            Assert.AreEqual(CellType.STRING, evaluator.EvaluateFormulaCell(lB1Cell));
-            Assert.AreEqual(CellType.BOOLEAN, evaluator.EvaluateFormulaCell(lC1Cell));
+            Assert.AreEqual(CellType.Numeric, evaluator.EvaluateFormulaCell(lA1Cell));
+            Assert.AreEqual(CellType.String, evaluator.EvaluateFormulaCell(lB1Cell));
+            Assert.AreEqual(CellType.Boolean, evaluator.EvaluateFormulaCell(lC1Cell));
 
             Assert.AreEqual(10.0d, lA1Cell.NumericCellValue, 0.00001d);
             Assert.AreEqual("POI rocks!", lB1Cell.StringCellValue);
@@ -95,24 +112,25 @@ namespace TestCases.SS.Formula
         [Test]
         public void TestExistingWorkbook()
         {
-            HSSFSheet lSheet = (HSSFSheet)mainWorkbook.GetSheetAt(0);
-            HSSFCell lA1Cell = (HSSFCell)lSheet.GetRow(0).GetCell(0);
-            HSSFCell lB1Cell = (HSSFCell)lSheet.GetRow(1).GetCell(0);
-            HSSFCell lC1Cell = (HSSFCell)lSheet.GetRow(2).GetCell(0);
+            ISheet lSheet = mainWorkbook.GetSheetAt(0);
+            ICell lA1Cell = lSheet.GetRow(0).GetCell(0);
+            ICell lB1Cell = lSheet.GetRow(1).GetCell(0);
+            ICell lC1Cell = lSheet.GetRow(2).GetCell(0);
 
-            Assert.AreEqual(CellType.FORMULA, lA1Cell.CellType);
-            Assert.AreEqual(CellType.FORMULA, lB1Cell.CellType);
-            Assert.AreEqual(CellType.FORMULA, lC1Cell.CellType);
+            Assert.AreEqual(CellType.Formula, lA1Cell.CellType);
+            Assert.AreEqual(CellType.Formula, lB1Cell.CellType);
+            Assert.AreEqual(CellType.Formula, lC1Cell.CellType);
 
-            HSSFFormulaEvaluator lMainWorkbookEvaluator = new HSSFFormulaEvaluator(mainWorkbook);
-            HSSFFormulaEvaluator lSourceEvaluator = new HSSFFormulaEvaluator(sourceWorkbook);
-            HSSFFormulaEvaluator.SetupEnvironment(
-                    new String[] { MAIN_WORKBOOK_FILENAME, SOURCE_DUMMY_WORKBOOK_FILENAME },
-                    new HSSFFormulaEvaluator[] { lMainWorkbookEvaluator, lSourceEvaluator });
+            IFormulaEvaluator lMainWorkbookEvaluator = mainWorkbook.GetCreationHelper().CreateFormulaEvaluator();
+            IFormulaEvaluator lSourceEvaluator = sourceWorkbook.GetCreationHelper().CreateFormulaEvaluator();
+            Dictionary<String, IFormulaEvaluator> workbooks = new Dictionary<String, IFormulaEvaluator>();
+            workbooks.Add(MAIN_WORKBOOK_FILENAME, lMainWorkbookEvaluator);
+            workbooks.Add(SOURCE_DUMMY_WORKBOOK_FILENAME, lSourceEvaluator);
+            lMainWorkbookEvaluator.SetupReferencedWorkbooks(workbooks);
 
-            Assert.AreEqual(CellType.NUMERIC, lMainWorkbookEvaluator.EvaluateFormulaCell(lA1Cell));
-            Assert.AreEqual(CellType.STRING, lMainWorkbookEvaluator.EvaluateFormulaCell(lB1Cell));
-            Assert.AreEqual(CellType.BOOLEAN, lMainWorkbookEvaluator.EvaluateFormulaCell(lC1Cell));
+            Assert.AreEqual(CellType.Numeric, lMainWorkbookEvaluator.EvaluateFormulaCell(lA1Cell));
+            Assert.AreEqual(CellType.String, lMainWorkbookEvaluator.EvaluateFormulaCell(lB1Cell));
+            Assert.AreEqual(CellType.Boolean, lMainWorkbookEvaluator.EvaluateFormulaCell(lC1Cell));
 
             Assert.AreEqual(20.0d, lA1Cell.NumericCellValue, 0.00001d);
             Assert.AreEqual("Apache rocks!", lB1Cell.StringCellValue);

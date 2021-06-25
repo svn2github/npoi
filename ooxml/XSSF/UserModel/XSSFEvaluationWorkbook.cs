@@ -21,9 +21,12 @@ using NPOI.SS;
 using NPOI.SS.Formula;
 using NPOI.SS.Formula.Functions;
 using NPOI.SS.Formula.PTG;
-using NPOI.SS.Formula.Udf;
+using NPOI.SS.Formula.UDF;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.Model;
+using NPOI.Util;
+using NPOI.SS.Util;
+using System.Collections.Generic;
 
 namespace NPOI.XSSF.UserModel
 {
@@ -32,11 +35,9 @@ namespace NPOI.XSSF.UserModel
      *
      * @author Josh Micich
      */
-    public class XSSFEvaluationWorkbook : IFormulaRenderingWorkbook, 
-        IEvaluationWorkbook, IFormulaParsingWorkbook
+    public class XSSFEvaluationWorkbook : BaseXSSFEvaluationWorkbook
     {
-
-        private XSSFWorkbook _uBook;
+        private XSSFEvaluationSheet[] _sheetCache;
 
         public static XSSFEvaluationWorkbook Create(IWorkbook book)
         {
@@ -44,215 +45,56 @@ namespace NPOI.XSSF.UserModel
             {
                 return null;
             }
-            return new XSSFEvaluationWorkbook(book);
+            return new XSSFEvaluationWorkbook(book as XSSFWorkbook);
         }
 
-        private XSSFEvaluationWorkbook(IWorkbook book)
+        protected XSSFEvaluationWorkbook(XSSFWorkbook book)
+            : base(book)
         {
-            _uBook = (XSSFWorkbook)book;
+
         }
 
-        private int ConvertFromExternalSheetIndex(int externSheetIndex)
+        public override void ClearAllCachedResultValues()
         {
-            return externSheetIndex;
-        }
-        /**
-         * @return the sheet index of the sheet with the given external index.
-         */
-        public int ConvertFromExternSheetIndex(int externSheetIndex)
-        {
-            return externSheetIndex;
-        }
-        /**
-         * @return  the external sheet index of the sheet with the given internal
-         * index. Used by some of the more obscure formula and named range things.
-         * Fairly easy on XSSF (we think...) since the internal and external
-         * indicies are the same
-         */
-        private int ConvertToExternalSheetIndex(int sheetIndex)
-        {
-            return sheetIndex;
+            base.ClearAllCachedResultValues();
+            _sheetCache = null;
         }
 
-        public int GetExternalSheetIndex(String sheetName)
+        public override int GetSheetIndex(IEvaluationSheet evalSheet)
         {
-            int sheetIndex = _uBook.GetSheetIndex(sheetName);
-            return ConvertToExternalSheetIndex(sheetIndex);
-        }
-
-        public IEvaluationName GetName(String name, int sheetIndex)
-        {
-            for (int i = 0; i < _uBook.NumberOfNames; i++)
-            {
-                IName nm = _uBook.GetNameAt(i);
-                String nameText = nm.NameName;
-                if (name.Equals(nameText, StringComparison.InvariantCultureIgnoreCase) && nm.SheetIndex == sheetIndex)
-                {
-                    return new Name(_uBook.GetNameAt(i), i, this);
-                }
-            }
-            return sheetIndex == -1 ? null : GetName(name, -1);
-        }
-
-        public int GetSheetIndex(IEvaluationSheet EvalSheet)
-        {
-            XSSFSheet sheet = ((XSSFEvaluationSheet)EvalSheet).GetXSSFSheet();
+            XSSFSheet sheet = ((XSSFEvaluationSheet)evalSheet).GetXSSFSheet();
             return _uBook.GetSheetIndex(sheet);
         }
 
-        public String GetSheetName(int sheetIndex)
+        public override IEvaluationSheet GetSheet(int sheetIndex)
         {
-            return _uBook.GetSheetName(sheetIndex);
-        }
-
-        public ExternalName GetExternalName(int externSheetIndex, int externNameIndex)
-        {
-            throw new NotImplementedException();
-        }
-
-        public NameXPtg GetNameXPtg(String name)
-        {
-            IndexedUDFFinder udfFinder = (IndexedUDFFinder)GetUDFFinder();
-            FreeRefFunction func = udfFinder.FindFunction(name);
-            if (func == null) return null;
-            else return new NameXPtg(0, udfFinder.GetFunctionIndex(name));
-        }
-
-        public String ResolveNameXText(NameXPtg n)
-        {
-            int idx = n.NameIndex;
-            IndexedUDFFinder udfFinder = (IndexedUDFFinder)GetUDFFinder();
-            return udfFinder.GetFunctionName(idx);
-        }
-
-        public IEvaluationSheet GetSheet(int sheetIndex)
-        {
-            return new XSSFEvaluationSheet(_uBook.GetSheetAt(sheetIndex));
-        }
-
-        public ExternalSheet GetExternalSheet(int externSheetIndex)
-        {
-            // TODO Auto-generated method stub
-            return null;
-        }
-        public int GetExternalSheetIndex(String workbookName, String sheetName)
-        {
-            throw new Exception("not implemented yet");
-        }
-        public int GetSheetIndex(String sheetName)
-        {
-            return _uBook.GetSheetIndex(sheetName);
-        }
-
-        public String GetSheetNameByExternSheet(int externSheetIndex)
-        {
-            int sheetIndex = ConvertFromExternalSheetIndex(externSheetIndex);
-            return _uBook.GetSheetName(sheetIndex);
-        }
-
-        public String GetNameText(NamePtg namePtg)
-        {
-            return _uBook.GetNameAt(namePtg.Index).NameName;
-        }
-        public IEvaluationName GetName(NamePtg namePtg)
-        {
-            int ix = namePtg.Index;
-            return new Name(_uBook.GetNameAt(ix), ix, this);
-        }
-        public Ptg[] GetFormulaTokens(IEvaluationCell EvalCell)
-        {
-            XSSFCell cell = ((XSSFEvaluationCell)EvalCell).GetXSSFCell();
-            XSSFEvaluationWorkbook frBook = XSSFEvaluationWorkbook.Create(_uBook);
-            String formulaText = CleanXSSFFormulaText(cell.CellFormula);
-            return FormulaParser.Parse(formulaText, frBook, FormulaType.CELL, _uBook.GetSheetIndex(cell.Sheet));
-        }
-
-        public UDFFinder GetUDFFinder()
-        {
-            return _uBook.GetUDFFinder();
-        }
-
-        /**
-         * XSSF allows certain extra textual characters in the formula that
-         *  HSSF does not. As these can't be composed down to HSSF-compatible
-         *  Ptgs, this method strips them out for us.
-         */
-        private String CleanXSSFFormulaText(String text)
-        {
-            // Newlines are allowed in XSSF
-            text = text.Replace("\\n", "").Replace("\\r", "");
-
-            // All done with cleaning
-            return text;
-        }
-
-        private class Name : IEvaluationName
-        {
-
-            private XSSFName _nameRecord;
-            private int _index;
-            private IFormulaParsingWorkbook _fpBook;
-
-            public Name(IName name, int index, IFormulaParsingWorkbook fpBook)
+            // Performance optimization: build sheet cache the first time this is called
+            // to avoid re-creating the XSSFEvaluationSheet each time a new cell is evaluated
+            // EvaluationWorkbooks make not guarantee to synchronize changes made to
+            // the underlying workbook after the EvaluationWorkbook is created.
+            if (_sheetCache == null)
             {
-                _nameRecord = (XSSFName)name;
-                _index = index;
-                _fpBook = fpBook;
-            }
-
-            public Ptg[] NameDefinition
-            {
-                get
+                int numberOfSheets = _uBook.NumberOfSheets;
+                _sheetCache = new XSSFEvaluationSheet[numberOfSheets];
+                for (int i = 0; i < numberOfSheets; i++)
                 {
-
-                    return FormulaParser.Parse(_nameRecord.RefersToFormula, _fpBook, 
-                        FormulaType.NAMEDRANGE, _nameRecord.SheetIndex);
+                    _sheetCache[i] = new XSSFEvaluationSheet(_uBook.GetSheetAt(i));
                 }
             }
-
-            public String NameText
+            if (sheetIndex < 0 || sheetIndex >= _sheetCache.Length)
             {
-                get
-                {
-                    return _nameRecord.NameName;
-                }
+                // do this to reuse the out-of-bounds logic and message from XSSFWorkbook
+                _uBook.GetSheetAt(sheetIndex);
             }
-
-            public bool HasFormula
-            {
-                get
-                {
-                    // TODO - no idea if this is right
-                    CT_DefinedName ctn = _nameRecord.GetCTName();
-                    String strVal = ctn.Value;
-                    return !ctn.function && strVal != null && strVal.Length > 0;
-                }
-            }
-
-            public bool IsFunctionName
-            {
-                get
-                {
-                    return _nameRecord.IsFunctionName;
-                }
-            }
-
-            public bool IsRange
-            {
-                get
-                {
-                    return HasFormula; // TODO - is this right?
-                }
-            }
-            public NamePtg CreatePtg()
-            {
-                return new NamePtg(_index);
-            }
+            return _sheetCache[sheetIndex];
         }
 
-        public SpreadsheetVersion GetSpreadsheetVersion()
+        public override Ptg[] GetFormulaTokens(IEvaluationCell evalCell)
         {
-            return SpreadsheetVersion.EXCEL2007;
+            XSSFCell cell = ((XSSFEvaluationCell)evalCell).GetXSSFCell();
+            int sheetIndex = _uBook.GetSheetIndex(cell.Sheet);
+            int rowIndex = cell.RowIndex;
+            return FormulaParser.Parse(cell.GetCellFormula(this), this, FormulaType.Cell, sheetIndex, rowIndex);
         }
     }
 }

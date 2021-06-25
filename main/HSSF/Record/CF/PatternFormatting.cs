@@ -22,11 +22,13 @@
  *
  * Created on January 22, 2008, 10:05 PM
  */
+
 namespace NPOI.HSSF.Record.CF
 {
     using System;
     using System.Text;
     using NPOI.HSSF.Record;
+    using NPOI.SS.UserModel;
     using NPOI.Util;
 
 
@@ -38,45 +40,6 @@ namespace NPOI.HSSF.Record.CF
 
     public class PatternFormatting : ICloneable
     {
-        /**  No background */
-        public static short NO_Fill = 0;
-        /**  Solidly Filled */
-        public static short SOLID_FOREGROUND = 1;
-        /**  Small fine dots */
-        public static short FINE_DOTS = 2;
-        /**  Wide dots */
-        public static short ALT_BARS = 3;
-        /**  SParse dots */
-        public static short SPARSE_DOTS = 4;
-        /**  Thick horizontal bands */
-        public static short THICK_HORZ_BANDS = 5;
-        /**  Thick vertical bands */
-        public static short THICK_VERT_BANDS = 6;
-        /**  Thick backward facing diagonals */
-        public static short THICK_BACKWARD_DIAG = 7;
-        /**  Thick forward facing diagonals */
-        public static short THICK_FORWARD_DIAG = 8;
-        /**  Large spots */
-        public static short BIG_SPOTS = 9;
-        /**  Brick-like layout */
-        public static short BRICKS = 10;
-        /**  Thin horizontal bands */
-        public static short THIN_HORZ_BANDS = 11;
-        /**  Thin vertical bands */
-        public static short THIN_VERT_BANDS = 12;
-        /**  Thin backward diagonal */
-        public static short THIN_BACKWARD_DIAG = 13;
-        /**  Thin forward diagonal */
-        public static short THIN_FORWARD_DIAG = 14;
-        /**  Squares */
-        public static short SQUARES = 15;
-        /**  Diamonds */
-        public static short DIAMONDS = 16;
-        /**  Less Dots */
-        public static short LESS_DOTS = 17;
-        /**  Least Dots */
-        public static short LEAST_DOTS = 18;
-
         public PatternFormatting()
         {
             field_15_pattern_style = (short)0;
@@ -89,7 +52,13 @@ namespace NPOI.HSSF.Record.CF
             field_15_pattern_style = in1.ReadShort();
             field_16_pattern_color_indexes = in1.ReadShort();
         }
-
+        public int DataLength
+        {
+            get
+            {
+                return 4;
+            }
+        }
         // PATTERN FORMATING BLOCK
         // For Pattern Styles see constants at HSSFCellStyle (from NO_Fill to LEAST_DOTS)
         private short field_15_pattern_style;
@@ -104,16 +73,12 @@ namespace NPOI.HSSF.Record.CF
          * @return Fill pattern
          */
 
-        public short FillPattern
-        {
-            get
-            {
-                return FillPatternStyle.GetShortValue(field_15_pattern_style);
+        public FillPattern FillPattern {
+            get {
+                return (FillPattern) FillPatternStyle.GetShortValue (field_15_pattern_style);
             }
-            set 
-            {
-                field_15_pattern_style
-                = FillPatternStyle.SetShortValue(field_15_pattern_style, value); 
+            set {
+                field_15_pattern_style = FillPatternStyle.SetShortValue (field_15_pattern_style, (short) value); 
             }
         }
 
@@ -156,7 +121,7 @@ namespace NPOI.HSSF.Record.CF
         {
             StringBuilder buffer = new StringBuilder();
             buffer.Append("    [Pattern Formatting]\n");
-            buffer.Append("          .Fillpattern= ").Append(StringUtil.ToHexString(FillPattern)).Append("\n");
+            buffer.Append("          .Fillpattern= ").Append(StringUtil.ToHexString((int) FillPattern)).Append("\n");
             buffer.Append("          .fgcoloridx= ").Append(StringUtil.ToHexString(FillForegroundColor)).Append("\n");
             buffer.Append("          .bgcoloridx= ").Append(StringUtil.ToHexString(FillBackgroundColor)).Append("\n");
             buffer.Append("    [/Pattern Formatting]\n");

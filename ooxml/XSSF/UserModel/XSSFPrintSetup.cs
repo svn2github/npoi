@@ -153,6 +153,10 @@ namespace NPOI.XSSF.UserModel
         {
             get
             {
+                if(pageSetup.scale == 0)
+                {
+                    return 100;
+                }
                 return (short)pageSetup.scale;
             }
             set 
@@ -230,6 +234,8 @@ namespace NPOI.XSSF.UserModel
             {
                 if (value)
                     PageOrder = (PageOrder.OVER_THEN_DOWN);
+                else
+                    PageOrder = (PageOrder.DOWN_THEN_OVER);
             }
         }
 
@@ -248,6 +254,8 @@ namespace NPOI.XSSF.UserModel
             {
                 if (value)
                     Orientation =(PrintOrientation.LANDSCAPE);
+                else
+                    Orientation = (PrintOrientation.PORTRAIT);
             }
         }
 
@@ -454,11 +462,11 @@ namespace NPOI.XSSF.UserModel
         {
             get
             {
-                throw new System.NotImplementedException();
+                return (DisplayCellErrorType)pageSetup.errors;
             }
             set
             {
-                throw new System.NotImplementedException();
+                pageSetup.errors = (ST_PrintError)value;
             }
         }
 
@@ -466,6 +474,7 @@ namespace NPOI.XSSF.UserModel
         {
             get
             {
+                
                 throw new System.NotImplementedException();
             }
             set

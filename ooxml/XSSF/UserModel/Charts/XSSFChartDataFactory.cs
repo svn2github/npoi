@@ -41,6 +41,15 @@ namespace NPOI.XSSF.UserModel.Charts
             return new XSSFScatterChartData<Tx, Ty>();
         }
 
+        public ILineChartData<Tx, Ty> CreateLineChartData<Tx, Ty>()
+        {
+            return new XSSFLineChartData<Tx, Ty>();
+        }
+
+        public IBarChartData<Tx, Ty> CreateBarChartData<Tx, Ty>()
+        {
+            return new XSSFBarChartData<Tx, Ty>();
+        }
         /**
          * @return factory instance
          */

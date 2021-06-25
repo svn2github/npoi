@@ -8,7 +8,7 @@ namespace TestCases.OpenXml4Net
 {
     public class OpenXml4NetTestDataSamples
     {
-        private static POIDataSamples _samples = POIDataSamples.GetOpenXml4NetInstance();
+        private static POIDataSamples _samples = POIDataSamples.GetOpenXML4JInstance();
 
         private OpenXml4NetTestDataSamples()
         {
@@ -21,18 +21,19 @@ namespace TestCases.OpenXml4Net
         }
         public static String GetSampleFileName(String sampleFileName)
         {
-            return new FileInfo(_samples.ResolvedDataDir+sampleFileName).FullName;
+            return new FileInfo(Path.Combine(_samples.ResolvedDataDir,sampleFileName)).FullName;
         }
 
         public static FileInfo GetSampleFile(String sampleFileName)
         {
-            return new FileInfo(_samples.ResolvedDataDir+sampleFileName);
+            return new FileInfo(Path.Combine(_samples.ResolvedDataDir,sampleFileName));
         }
 
         public static FileInfo GetOutputFile(String outputFileName)
         {
-            String suffix = outputFileName.Substring(outputFileName.LastIndexOf('.'));
-            string path= TempFile.GetTempFilePath(outputFileName, suffix);
+            int dotPos = outputFileName.LastIndexOf('.');
+            String suffix = outputFileName.Substring(dotPos);
+            string path= TempFile.GetTempFilePath(outputFileName.Substring(0,dotPos), suffix);
             FileStream fs = File.Create(path);
             fs.Close();
             return new FileInfo(path);

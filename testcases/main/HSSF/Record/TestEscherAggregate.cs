@@ -25,6 +25,7 @@ namespace TestCases.HSSF.Record
     using NPOI.HSSF.Model;
     using NPOI.HSSF.Record;
     using NUnit.Framework;
+    using System.Collections.Generic;
 
     /**
      * Tests the EscherAggregate class.
@@ -66,23 +67,22 @@ namespace TestCases.HSSF.Record
                     "0B 00 0C 00 00 00 11 F0 00 00 00 00";
 
             DrawingRecord d1 = new DrawingRecord();
-            d1.Data = (HexRead.ReadFromString(msoDrawingRecord1));
+            d1.SetData(HexRead.ReadFromString(msoDrawingRecord1));
 
             ObjRecord r1 = new ObjRecord();
 
             DrawingRecord d2 = new DrawingRecord();
-            d2.Data = (HexRead.ReadFromString(msoDrawingRecord2));
+            d2.SetData(HexRead.ReadFromString(msoDrawingRecord2));
 
             ObjRecord r2 = new ObjRecord();
 
-            ArrayList records = new ArrayList();
+            List<RecordBase> records = new List<RecordBase>();
             records.Add(d1);
             records.Add(r1);
             records.Add(d2);
             records.Add(r2);
 
-            DrawingManager2 drawingManager = new DrawingManager2(new EscherDggRecord());
-            EscherAggregate aggregate = EscherAggregate.CreateAggregate(records, 0, drawingManager);
+            EscherAggregate aggregate = EscherAggregate.CreateAggregate(records, 0);
 
             Assert.AreEqual(1, aggregate.EscherRecords.Count);
             Assert.AreEqual(unchecked((short)0xF002), aggregate.GetEscherRecord(0).RecordId);
@@ -124,7 +124,7 @@ namespace TestCases.HSSF.Record
             spContainer2.AddChildRecord(d2);
             spContainer3.AddChildRecord(d3);
 
-            EscherAggregate aggregate = new EscherAggregate(null);
+            EscherAggregate aggregate = new EscherAggregate(false);
             aggregate.AddEscherRecord(container1);
             aggregate.AssociateShapeToObjRecord(d2, new ObjRecord());
             aggregate.AssociateShapeToObjRecord(d3, new ObjRecord());
@@ -132,7 +132,7 @@ namespace TestCases.HSSF.Record
             byte[] data = new byte[112];
             int bytesWritten = aggregate.Serialize(0, data);
             Assert.AreEqual(112, bytesWritten);
-            Assert.AreEqual("[EC, 00, 40, 00, 0F, 00, 00, 00, 58, 00, 00, 00, 0F, 00, 04, F0, 10, 00, 00, 00, 00, 00, 0A, F0, 08, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0F, 00, 04, F0, 18, 00, 00, 00, 00, 00, 0A, F0, 08, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 11, F0, 00, 00, 00, 00, 5D, 00, 00, 00, EC, 00, 20, 00, 0F, 00, 04, F0, 18, 00, 00, 00, 00, 00, 0A, F0, 08, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 11, F0, 00, 00, 00, 00, 5D, 00, 00, 00, ]",
+            Assert.AreEqual("[EC, 00, 40, 00, 0F, 00, 00, 00, 58, 00, 00, 00, 0F, 00, 04, F0, 10, 00, 00, 00, 00, 00, 0A, F0, 08, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0F, 00, 04, F0, 18, 00, 00, 00, 00, 00, 0A, F0, 08, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 11, F0, 00, 00, 00, 00, 5D, 00, 00, 00, EC, 00, 20, 00, 0F, 00, 04, F0, 18, 00, 00, 00, 00, 00, 0A, F0, 08, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 11, F0, 00, 00, 00, 00, 5D, 00, 00, 00]",
                     HexDump.ToHex(data));
         }
 

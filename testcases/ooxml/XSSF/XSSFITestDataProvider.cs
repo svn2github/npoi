@@ -44,14 +44,35 @@ namespace NPOI.XSSF
         {
             if (!(original is XSSFWorkbook))
             {
-                throw new ArgumentException("Expected an instance of XSSFWorkbook");
+                throw new ArgumentException("Expected an instance of XSSFWorkbook, but had " + original.GetType().Name);
             }
             return XSSFTestDataSamples.WriteOutAndReadBack((XSSFWorkbook)original);
         }
+
         public IWorkbook CreateWorkbook()
         {
             return new XSSFWorkbook();
         }
+
+        //************ SXSSF-specific methods ***************//
+        /**
+         * Provides way of creating a SXSSFWorkbook with a specific row access window size.
+         * Equivalent to createWorkbook on others.
+         * @return an instance of Workbook
+         */
+        public IWorkbook CreateWorkbook(int rowAccessWindowSize)
+        {
+            return CreateWorkbook();
+        }
+        
+        public void TrackAllColumnsForAutosizing(ISheet sheet) { }
+        //************ End SXSSF-specific methods ***************//
+
+        public IFormulaEvaluator CreateFormulaEvaluator(IWorkbook wb)
+        {
+            return new XSSFFormulaEvaluator((XSSFWorkbook)wb);
+        }
+
         public byte[] GetTestDataFileContent(String fileName)
         {
             return POIDataSamples.GetSpreadSheetInstance().ReadFile(fileName);
@@ -67,6 +88,8 @@ namespace NPOI.XSSF
                 return "xlsx";
             }
         }
+
+        
     }
 }
 

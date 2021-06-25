@@ -22,7 +22,6 @@ namespace NPOI.DDF
     using System;
     using System.IO;
     using System.Text;
-    using System.Collections;
 
 
     using NPOI.Util;
@@ -777,7 +776,7 @@ namespace NPOI.DDF
             String result = "";
             result += (short)(n32 >> 16);
             result += '.';
-            result += (short)(n32 & unchecked((short)0xFFFF));
+            result += (short)(n32 & 0xFFFF);
             return result;
         }
 

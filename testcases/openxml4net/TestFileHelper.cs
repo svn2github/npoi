@@ -15,12 +15,13 @@
    limitations under the License.
 ==================================================================== */
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using NPOI.OpenXml4Net.OPC.Internal;
-namespace TestCases.OPC
+using NUnit.Framework;
+namespace TestCases.OpenXml4Net.OPC
 {
 
     /**
@@ -28,7 +29,7 @@ namespace TestCases.OPC
      *
      * @author Julien Chable
      */
-    [TestClass]
+    [TestFixture]
     public class TestFileHelper
     {
 
@@ -37,7 +38,7 @@ namespace TestCases.OPC
          * {@link File#getParentFile()} instead of {@link FileHelper#getDirectory(File)
          * {@link File#getName()} instead of {@link FileHelper#getFilename(File)
          */
-        [TestMethod]
+        [Test]
         public void TestGetDirectory()
         {
             Dictionary<String, String> expectedValue = new Dictionary<String, String>();

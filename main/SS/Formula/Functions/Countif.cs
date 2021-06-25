@@ -27,19 +27,19 @@ namespace NPOI.SS.Formula.Functions
 
     /**
      * Implementation for the function COUNTIF<p/>
-     * 
+     *
      * Syntax: COUNTIF ( range, criteria )
      *    <table border="0" cellpAdding="1" cellspacing="0" summary="Parameter descriptions">
      *      <tr><th>range </th><td>is the range of cells to be Counted based on the criteria</td></tr>
      *      <tr><th>criteria</th><td>is used to determine which cells to Count</td></tr>
      *    </table>
      * <p/>
-     * 
+     *
      * @author Josh Micich
      */
     public class Countif : Fixed2ArgFunction
     {
-        private class CmpOp
+        public class CmpOp
         {
             public const int NONE = 0;
             public const int EQ = 1;
@@ -49,13 +49,13 @@ namespace NPOI.SS.Formula.Functions
             public const int GT = 5;
             public const int GE = 6;
 
-            public static CmpOp OP_NONE = op("", NONE);
-            public static CmpOp OP_EQ = op("=", EQ);
-            public static CmpOp OP_NE = op("<>", NE);
-            public static CmpOp OP_LE = op("<=", LE);
-            public static CmpOp OP_LT = op("<", LT);
-            public static CmpOp OP_GT = op(">", GT);
-            public static CmpOp OP_GE = op(">=", GE);
+            public static readonly CmpOp OP_NONE = op("", NONE);
+            public static readonly CmpOp OP_EQ = op("=", EQ);
+            public static readonly CmpOp OP_NE = op("<>", NE);
+            public static readonly CmpOp OP_LE = op("<=", LE);
+            public static readonly CmpOp OP_LT = op("<", LT);
+            public static readonly CmpOp OP_GT = op(">", GT);
+            public static readonly CmpOp OP_GE = op(">=", GE);
             private String _representation;
             private int _code;
 
@@ -168,11 +168,11 @@ namespace NPOI.SS.Formula.Functions
                 }
             }
         }
-        private abstract class MatcherBase : I_MatchPredicate
+        public abstract class MatcherBase : IMatchPredicate
         {
             private CmpOp _operator;
 
-            protected MatcherBase(CmpOp operator1)
+            public MatcherBase(CmpOp operator1)
             {
                 _operator = operator1;
             }
@@ -205,7 +205,7 @@ namespace NPOI.SS.Formula.Functions
             public abstract bool Matches(ValueEval x);
         }
 
-        private class ErrorMatcher : MatcherBase
+        public class ErrorMatcher : MatcherBase
         {
 
             private int _value;
@@ -220,7 +220,7 @@ namespace NPOI.SS.Formula.Functions
             {
                 get
                 {
-                    return ErrorConstants.GetText(_value);
+                    return FormulaError.ForInt(_value).String;
                 }
             }
 
@@ -232,6 +232,13 @@ namespace NPOI.SS.Formula.Functions
                     return Evaluate(testValue - _value);
                 }
                 return false;
+            }
+            public int Value
+            {
+                get
+                {
+                    return _value;
+                }
             }
         }
         private class NumberMatcher : MatcherBase
@@ -382,7 +389,7 @@ namespace NPOI.SS.Formula.Functions
                 get { return _value == 1 ? "TRUE" : "FALSE"; }
             }
         }
-        private class StringMatcher : MatcherBase
+        internal class StringMatcher : MatcherBase
         {
 
             private String _value;
@@ -405,7 +412,6 @@ namespace NPOI.SS.Formula.Functions
                         break;
                 }
             }
-
             public override bool Matches(ValueEval x)
             {
                 if (x is BlankEval)
@@ -425,7 +431,8 @@ namespace NPOI.SS.Formula.Functions
                 }
                 if (!(x is StringEval))
                 {
-                    // must always be string
+                    if (_operator.Code==CmpOp.NE) return true;
+                    // must almost always be string
                     // even if match str is wild, but contains only digits
                     // e.g. '4*7', NumberEval(4567) does not match
                     return false;
@@ -456,7 +463,7 @@ namespace NPOI.SS.Formula.Functions
             /// </summary>
             /// <param name="value">Excel wildcard expression</param>
             /// <returns>return null if the specified value contains no special wildcard characters.</returns>
-            private static Regex GetWildCardPattern(String value)
+            internal static Regex GetWildCardPattern(String value)
             {
                 int len = value.Length;
                 StringBuilder sb = new StringBuilder(len);
@@ -502,7 +509,7 @@ namespace NPOI.SS.Formula.Functions
                         case ']':
                         case '(':
                         case ')':
-                            // escape literal characters that would have special meaning in regex 
+                            // escape literal characters that would have special meaning in regex
                             sb.Append("\\").Append(ch);
                             continue;
                     }
@@ -511,7 +518,7 @@ namespace NPOI.SS.Formula.Functions
                 sb.Append("$");
                 if (hasWildCard)
                 {
-                    return new Regex(sb.ToString());
+                    return new Regex(sb.ToString(), RegexOptions.IgnoreCase);
                 }
                 return null;
             }
@@ -529,31 +536,31 @@ namespace NPOI.SS.Formula.Functions
             }
         }
 
-        
+
         /**
-	 * @return the number of evaluated cells in the range that match the specified criteria
-	 */
-        private double CountMatchingCellsInArea(ValueEval rangeArg, I_MatchPredicate criteriaPredicate)
+     * @return the number of evaluated cells in the range that match the specified criteria
+     */
+        private double CountMatchingCellsInArea(ValueEval rangeArg, IMatchPredicate criteriaPredicate)
         {
             if (rangeArg is RefEval)
             {
-                return CountUtils.CountMatchingCell((RefEval)rangeArg, criteriaPredicate);
+                return CountUtils.CountMatchingCellsInRef((RefEval)rangeArg, criteriaPredicate);
             }
-            else if (rangeArg is TwoDEval)
+            else if (rangeArg is ThreeDEval)
             {
-                return CountUtils.CountMatchingCellsInArea((TwoDEval)rangeArg, criteriaPredicate);
+                return CountUtils.CountMatchingCellsInArea((ThreeDEval)rangeArg, criteriaPredicate);
             }
             else
             {
                 throw new ArgumentException("Bad range arg type (" + rangeArg.GetType().Name + ")");
             }
         }
-        
-        
+
+
         /**
-	 *
-	 * @return the de-referenced criteria arg (possibly {@link ErrorEval})
-	 */
+     *
+     * @return the de-referenced criteria arg (possibly {@link ErrorEval})
+     */
         private static ValueEval EvaluateCriteriaArg(ValueEval arg, int srcRowIndex, int srcColumnIndex)
         {
             try
@@ -566,9 +573,9 @@ namespace NPOI.SS.Formula.Functions
             }
         }
         /**
-	 * When the second argument is a string, many things are possible
-	 */
-        private static I_MatchPredicate CreateGeneralMatchPredicate(StringEval stringEval)
+     * When the second argument is a string, many things are possible
+     */
+        private static IMatchPredicate CreateGeneralMatchPredicate(StringEval stringEval)
         {
             String value = stringEval.StringValue;
             CmpOp operator1 = CmpOp.GetOperator(value);
@@ -595,10 +602,10 @@ namespace NPOI.SS.Formula.Functions
             return new StringMatcher(value, operator1);
         }
         /**
-	 * Creates a criteria predicate object for the supplied criteria arg
-	 * @return <code>null</code> if the arg evaluates to blank.
-	 */
-        public static I_MatchPredicate CreateCriteriaPredicate(ValueEval arg, int srcRowIndex, int srcColumnIndex)
+     * Creates a criteria predicate object for the supplied criteria arg
+     * @return <code>null</code> if the arg evaluates to blank.
+     */
+        public static IMatchPredicate CreateCriteriaPredicate(ValueEval arg, int srcRowIndex, int srcColumnIndex)
         {
 
             ValueEval evaluatedCriteriaArg = EvaluateCriteriaArg(arg, srcRowIndex, srcColumnIndex);
@@ -644,7 +651,7 @@ namespace NPOI.SS.Formula.Functions
             return null;
         }
         /**
-         * bool literals ('TRUE', 'FALSE') treated similarly but NOT same as numbers. 
+         * bool literals ('TRUE', 'FALSE') treated similarly but NOT same as numbers.
          */
         /* package */
         public static bool? ParseBoolean(String strRep)
@@ -675,7 +682,7 @@ namespace NPOI.SS.Formula.Functions
 
         public override ValueEval Evaluate(int srcRowIndex, int srcColumnIndex, ValueEval arg0, ValueEval arg1)
         {
-            I_MatchPredicate mp = CreateCriteriaPredicate(arg1, srcRowIndex, srcColumnIndex);
+            IMatchPredicate mp = CreateCriteriaPredicate(arg1, srcRowIndex, srcColumnIndex);
             if (mp == null)
             {
                 // If the criteria arg is a reference to a blank cell, countif always returns zero.

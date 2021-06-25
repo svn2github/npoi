@@ -20,8 +20,6 @@
  */
 namespace NPOI.SS.Formula.Functions
 {
-    using NPOI.SS.Formula.Eval;
-
     /**
      * @author Amol S. Deshmukh &lt; amolweb at ya hoo dot com &gt;
      * Support for hyperbolic trig functions was Added as a part of
@@ -35,7 +33,7 @@ namespace NPOI.SS.Formula.Functions
     {
         public override double Evaluate(double d)
         {
-            return MathX.acosh(d);
+            return MathX.Acosh(d);
         }
 
     }

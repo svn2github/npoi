@@ -28,6 +28,7 @@ namespace TestCases.HSSF.UserModel
 
     using NUnit.Framework;
 
+
     /**
      * Tests the capabilities of the EscherGraphics class.
      * 
@@ -71,15 +72,17 @@ namespace TestCases.HSSF.UserModel
                 Assert.AreEqual("[Font: Name=Arial, Size=10, Units=3, GdiCharSet=1, GdiVerticalFont=False]", f.ToString());
             }
         }
-
+        //[Test]
         //public void TestGetFontMetrics()
         //{
         //    Font f = graphics.Font;
         //    if (f.ToString().IndexOf("dialog") != -1 || f.ToString().IndexOf("Dialog") != -1)
         //        return;
-        //    FontMetrics fontMetrics = graphics.GetFontMetrics(graphics.Font);
-        //    Assert.AreEqual(7, fontMetrics.charWidth('X'));
-        //    Assert.AreEqual("java.awt.Font[family=Arial,name=Arial,style=plain,size=10]", fontMetrics.GetFont().ToString());
+
+        //    Assert.AreEqual(7, TextRenderer.MeasureText("X", f).Width);
+        //    Assert.AreEqual("Arial", f.FontFamily.Name);
+        //    Assert.AreEqual(10, f.Size);
+        //    //Assert.AreEqual("java.awt.Font[family=Arial,name=Arial,style=plain,size=10]", fontMetrics.GetFont().ToString());
         //}
         [Test]
         public void TestSetFont()
@@ -113,7 +116,7 @@ namespace TestCases.HSSF.UserModel
         {
             graphics.DrawString("This is a Test", 10, 10);
             HSSFTextbox t = (HSSFTextbox)escherGroupA.Children[0];
-            Assert.AreEqual("This is a Test", t.String.String.ToString());
+            Assert.AreEqual("This is a Test", t.String.String);
         }
 
         [Test]
@@ -283,7 +286,7 @@ namespace TestCases.HSSF.UserModel
             Assert.IsTrue(patriarch.Children[0] is HSSFShapeGroup);
             Assert.IsTrue(patriarch.Children[1] is HSSFShapeGroup);
             Assert.IsTrue(patriarch.Children[2] is HSSFTextbox);
-	
+    
 
             s1 = (HSSFShapeGroup)patriarch.Children[0];
             tbox1 = (HSSFTextbox)patriarch.Children[2];

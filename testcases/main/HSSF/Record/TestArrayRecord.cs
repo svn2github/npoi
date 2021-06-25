@@ -25,6 +25,7 @@ namespace TestCases.HSSF.Record
     using NPOI.Util;
     using TestCases.HSSF.Record;
     using NPOI.HSSF.Record;
+    using NPOI.HSSF.UserModel;
 
     [TestFixture]
     public class TestArrayRecord
@@ -49,7 +50,7 @@ namespace TestCases.HSSF.Record
             Assert.AreEqual(FormulaRenderer.ToFormulaString(null, ptg), "MAX(C1:C2-D1:D2)");
 
             //construct a new ArrayRecord with the same contents as r1
-            Ptg[] fmlaPtg = FormulaParser.Parse("MAX(C1:C2-D1:D2)", null, FormulaType.ARRAY, 0);
+            Ptg[] fmlaPtg = FormulaParser.Parse("MAX(C1:C2-D1:D2)", null, FormulaType.Array, 0, -1);
             ArrayRecord r2 = new ArrayRecord(Formula.Create(fmlaPtg), new CellRangeAddress8Bit(1, 1, 1, 1));
             byte[] ser = r2.Serialize();
             //serialize and check that the data is the same as in r1
@@ -57,5 +58,25 @@ namespace TestCases.HSSF.Record
 
 
         }
+
+        [Test]
+        public void TestBug57231()
+        {
+            HSSFWorkbook wb = HSSFTestDataSamples
+                    .OpenSampleWorkbook("57231_MixedGasReport.xls");
+            HSSFSheet sheet = wb.GetSheet("master") as HSSFSheet;
+
+            HSSFSheet newSheet = wb.CloneSheet(wb.GetSheetIndex(sheet)) as HSSFSheet;
+            int idx = wb.GetSheetIndex(newSheet);
+            wb.SetSheetName(idx, "newName");
+
+            // Write the output to a file
+            HSSFWorkbook wbBack = HSSFTestDataSamples.WriteOutAndReadBack(wb);
+            Assert.IsNotNull(wbBack);
+
+            Assert.IsNotNull(wbBack.GetSheet("master"));
+            Assert.IsNotNull(wbBack.GetSheet("newName"));
+        }
+
     }
 }

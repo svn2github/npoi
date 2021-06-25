@@ -27,9 +27,6 @@ namespace NPOI.HSSF.Record
     using NPOI.Util;
     using System;
     using System.Text;
-    using System.Collections;
-    using System.IO;
-    using NPOI.HSSF.Util;
 
     /**
      * Title:        Mulitple Blank cell record 
@@ -43,7 +40,7 @@ namespace NPOI.HSSF.Record
      * @see org.apache.poi.hssf.record.BlankRecord
      */
 
-    public class MulBlankRecord : StandardRecord
+    public class MulBlankRecord : StandardRecord, ICloneable
     {
         public const short sid = 0xbe;
         //private short             field_1_row;

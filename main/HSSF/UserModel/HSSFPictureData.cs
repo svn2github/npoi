@@ -20,6 +20,7 @@ namespace NPOI.HSSF.UserModel
     using System;
     using NPOI.DDF;
     using NPOI.SS.UserModel;
+    using NPOI.Util;
 
     /// <summary>
     /// Represents binary data stored in the file.  Eg. A GIF, JPEG etc...
@@ -35,7 +36,7 @@ namespace NPOI.HSSF.UserModel
         public const short MSOBI_JPEG = 0x46A0;
         public const short MSOBI_DIB = 0x7A80;
         // Mask of the bits in the options used to store the image format.
-        public static short FORMAT_MASK = unchecked((short)0xFFF0);
+        public const short FORMAT_MASK = unchecked((short)0xFFF0);
 
         /**
          * Underlying escher blip record containing the bitmap data.
@@ -57,7 +58,21 @@ namespace NPOI.HSSF.UserModel
         /// <value>the picture data.</value>
         public byte[] Data
         {
-            get { return blip.PictureData; }
+            get
+            {
+                byte[] pictureData = blip.PictureData;
+
+                //PNG created on MAC may have a 16-byte prefix which prevents successful reading.
+                //Just cut it off!.
+                if (PngUtils.MatchesPngHeader(pictureData, 16))
+                {
+                    byte[] png = new byte[pictureData.Length - 16];
+                    System.Array.Copy(pictureData, 16, png, 0, png.Length);
+                    pictureData = png;
+                }
+
+                return pictureData;
+            }
         }
         /// <summary>
         /// gets format of the picture.
@@ -117,6 +132,40 @@ namespace NPOI.HSSF.UserModel
                         return "image/bmp";
                     default:
                         return "image/unknown";
+                }
+            }
+        }
+
+        /**
+     * @return the POI internal image type, -1 if not unknown image type
+     *
+     * @see Workbook#PICTURE_TYPE_DIB
+     * @see Workbook#PICTURE_TYPE_EMF
+     * @see Workbook#PICTURE_TYPE_JPEG
+     * @see Workbook#PICTURE_TYPE_PICT
+     * @see Workbook#PICTURE_TYPE_PNG
+     * @see Workbook#PICTURE_TYPE_WMF
+     */
+        public PictureType PictureType
+        {
+            get
+            {
+                switch (blip.RecordId)
+                {
+                    case EscherMetafileBlip.RECORD_ID_WMF:
+                        return PictureType.WMF;
+                    case EscherMetafileBlip.RECORD_ID_EMF:
+                        return PictureType.EMF;
+                    case EscherMetafileBlip.RECORD_ID_PICT:
+                        return PictureType.PICT;
+                    case EscherBitmapBlip.RECORD_ID_PNG:
+                        return PictureType.PNG;
+                    case EscherBitmapBlip.RECORD_ID_JPEG:
+                        return PictureType.JPEG;
+                    case EscherBitmapBlip.RECORD_ID_DIB:
+                        return PictureType.DIB;
+                    default:
+                        return PictureType.Unknown;
                 }
             }
         }

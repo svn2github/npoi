@@ -15,16 +15,11 @@
    limitations under the License.
 ==================================================================== */
 
-namespace NPOI.XWPF.Model
+namespace TestCases.XWPF.Model
 {
-    using System;
-
-
-
-    using NUnit.Framework;
-
-    using NPOI.XWPF;
+    using NPOI.XWPF.Model;
     using NPOI.XWPF.UserModel;
+    using NUnit.Framework;
 
     /**
      * Tests for the various XWPF decorators
@@ -53,43 +48,22 @@ namespace NPOI.XWPF.Model
 
             // Simple text
             ps = simple.Paragraphs[(0)];
-            Assert.AreEqual("I am a test document", ps.GetParagraphText());
-            Assert.AreEqual(1, ps.GetRuns().Count);
+            Assert.AreEqual("I am a test document", ps.ParagraphText);
+            Assert.AreEqual(1, ps.Runs.Count);
 
             ph = hyperlink.Paragraphs[(4)];
-            Assert.AreEqual("We have a hyperlink here, and another.", ph.GetParagraphText());
-            Assert.AreEqual(3, ph.GetRuns().Count);
+            Assert.AreEqual("We have a hyperlink here, and another.", ph.ParagraphText);
+            Assert.AreEqual(3, ph.Runs.Count);
 
 
             // The proper way to do hyperlinks(!)
-            Assert.IsFalse(ps.GetRuns()[(0)] is XWPFHyperlinkRun);
-            Assert.IsFalse(ph.GetRuns()[(0)] is XWPFHyperlinkRun);
-            Assert.IsTrue(ph.GetRuns()[(1)] is XWPFHyperlinkRun);
-            Assert.IsFalse(ph.GetRuns()[(2)] is XWPFHyperlinkRun);
+            Assert.IsFalse(ps.Runs[(0)] is XWPFHyperlinkRun);
+            Assert.IsFalse(ph.Runs[(0)] is XWPFHyperlinkRun);
+            Assert.IsTrue(ph.Runs[(1)] is XWPFHyperlinkRun);
+            Assert.IsFalse(ph.Runs[(2)] is XWPFHyperlinkRun);
 
-            XWPFHyperlinkRun link = (XWPFHyperlinkRun)ph.GetRuns()[(1)];
+            XWPFHyperlinkRun link = (XWPFHyperlinkRun)ph.Runs[(1)];
             Assert.AreEqual("http://poi.apache.org/", link.GetHyperlink(hyperlink).URL);
-
-
-            // Test the old style decorator
-            // You probably don't want to still be using it...
-            Assert.AreEqual(
-                  "I am a test document",
-                  (new XWPFHyperlinkDecorator(ps, null, false)).GetText()
-            );
-            Assert.AreEqual(
-                  "I am a test document",
-                  (new XWPFHyperlinkDecorator(ps, null, true)).GetText()
-            );
-
-            Assert.AreEqual(
-                  "We have a hyperlink here, and another.hyperlink",
-                  (new XWPFHyperlinkDecorator(ph, null, false)).GetText()
-            );
-            Assert.AreEqual(
-                  "We have a hyperlink here, and another.hyperlink <http://poi.apache.org/>",
-                  (new XWPFHyperlinkDecorator(ph, null, true)).GetText()
-            );
         }
 
         [Test]

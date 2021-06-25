@@ -27,13 +27,11 @@
 
 
 using System;
-using System.Collections;
 using System.IO;
 using System.Collections.Generic;
 
 using NPOI.POIFS.Common;
 using NPOI.Util;
-using NPOI.POIFS.NIO;
 
 namespace NPOI.POIFS.Storage
 {
@@ -306,20 +304,21 @@ namespace NPOI.POIFS.Storage
          *  For 512 byte block sizes, this means we may over-estimate by up to 65kb.
          *  For 4096 byte block sizes, this means we may over-estimate by up to 4mb
          */
-        public static int CalculateMaximumSize(POIFSBigBlockSize bigBlockSize,
+        public static long CalculateMaximumSize(POIFSBigBlockSize bigBlockSize,
               int numBATs)
         {
-            int size = 1; // Header isn't FAT addressed
+            // Header isn't FAT addressed
+            long size = 1;
 
             // The header has up to 109 BATs, and extra ones are referenced
             //  from XBATs
             // However, all BATs can contain 128/1024 blocks
-            size += (numBATs * bigBlockSize.GetBATEntriesPerBlock());
+            size += (((long)numBATs) * bigBlockSize.GetBATEntriesPerBlock());
 
             // So far we've been in sector counts, turn into bytes
             return size * bigBlockSize.GetBigBlockSize();
         }
-        public static int CalculateMaximumSize(HeaderBlock header)
+        public static long CalculateMaximumSize(HeaderBlock header)
         {
             return CalculateMaximumSize(header.BigBlockSize, header.BATCount);
         }
@@ -327,18 +326,20 @@ namespace NPOI.POIFS.Storage
         public static BATBlockAndIndex GetBATBlockAndIndex(int offset, HeaderBlock header, List<BATBlock> bats)
         {
             POIFSBigBlockSize bigBlockSize = header.BigBlockSize;
+            int entriesPerBlock = bigBlockSize.GetBATEntriesPerBlock();
 
-            int whichBAT = (int)Math.Floor(1.0*offset / bigBlockSize.GetBATEntriesPerBlock());
-            int index = offset % bigBlockSize.GetBATEntriesPerBlock();
+            int whichBAT = (int)Math.Floor(1.0*offset / entriesPerBlock);
+            int index = offset % entriesPerBlock;
             return new BATBlockAndIndex(index, bats[whichBAT]);
         }
 
         public static BATBlockAndIndex GetSBATBlockAndIndex(int offset, HeaderBlock header, List<BATBlock> sbats)
         {
             POIFSBigBlockSize bigBlockSize = header.BigBlockSize;
+            int entriesPerBlock = bigBlockSize.GetBATEntriesPerBlock();
 
-            int whichSBAT = (int)Math.Floor(1.0*offset / bigBlockSize.GetBATEntriesPerBlock());
-            int index = offset % bigBlockSize.GetBATEntriesPerBlock();
+            int whichSBAT = (int)Math.Floor(1.0*offset / entriesPerBlock);
+            int index = offset % entriesPerBlock;
 
             return new BATBlockAndIndex(index, sbats[whichSBAT]);
         }
@@ -390,6 +391,25 @@ namespace NPOI.POIFS.Storage
             {
                 return _has_free_sectors;
             }
+        }
+
+        /**
+         * How many sectors in this block are taken?
+         * Note that calling {@link #hasFreeSectors()} is much quicker
+         */
+        public int GetUsedSectors(bool isAnXBAT)
+        {
+            int usedSectors = 0;
+            int toCheck = _values.Length;
+            if (isAnXBAT) toCheck--; // Last is a chain location
+            for (int k = 0; k < toCheck; k++)
+            {
+                if (_values[k] != POIFSConstants.UNUSED_BLOCK)
+                {
+                    usedSectors++;
+                }
+            }
+            return usedSectors;
         }
 
         public int GetValueAt(int relativeOffset)

@@ -21,7 +21,6 @@ namespace NPOI.HSSF.Record
 {
 
     using NPOI.Util;
-    using System.Collections;
     using System;
     using System.Text;
 
@@ -36,7 +35,7 @@ namespace NPOI.HSSF.Record
      */
 
     public class DefaultRowHeightRecord
-       : StandardRecord
+       : StandardRecord, ICloneable
     {
         public const short sid = 0x225;
         private short field_1_option_flags;
@@ -44,7 +43,7 @@ namespace NPOI.HSSF.Record
         /**
      * The default row height for empty rows is 255 twips (255 / 20 == 12.75 points)
      */
-        public static short DEFAULT_ROW_HEIGHT = 0xFF;
+        public const short DEFAULT_ROW_HEIGHT = 0xFF;
         //BitField isHeightChanged = BitFieldFactory.GetInstance(0x01);
         //BitField isZeroHeight = BitFieldFactory.GetInstance(0x02);
         //BitField isThickTopBorder = BitFieldFactory.GetInstance(0x04);

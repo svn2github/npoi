@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 using NPOI.Util;
 
 
 namespace NPOI.HSSF.Record
 {
-    public class FtCblsSubRecord : SubRecord
+    public class FtCblsSubRecord : SubRecord, ICloneable
     {
         public const short sid = 0x0C;
         private const int ENCODED_SIZE = 20;

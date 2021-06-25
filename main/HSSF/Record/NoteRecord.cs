@@ -28,20 +28,20 @@ namespace NPOI.HSSF.Record
      *
      * @author Yegor Kozlov
      */
-    public class NoteRecord : StandardRecord
+    public class NoteRecord : StandardRecord, ICloneable
     {
-        public static NoteRecord[] EMPTY_ARRAY = { };
+        public static readonly NoteRecord[] EMPTY_ARRAY = { };
         public const short sid = 0x1C;
 
         /**
          * Flag indicating that the comment Is hidden (default)
          */
-        public static short NOTE_HIDDEN = 0x0;
+        public const short NOTE_HIDDEN = 0x0;
 
         /**
          * Flag indicating that the comment Is visible
          */
-        public static short NOTE_VISIBLE = 0x2;
+        public const short NOTE_VISIBLE = 0x2;
 
         private int field_1_row;
         private int field_2_col;
@@ -91,6 +91,12 @@ namespace NPOI.HSSF.Record
  		    if (in1.Available() == 1) {
 			    field_7_padding = (byte)in1.ReadByte();
 		    }
+            else if (in1.Available() == 2 && length == 0)
+            {
+                // If there's no author, may be double padded
+                field_7_padding = (byte)in1.ReadByte();
+                in1.ReadByte();
+            }
         }
 
         /**

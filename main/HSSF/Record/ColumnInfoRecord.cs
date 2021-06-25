@@ -17,9 +17,7 @@
 
 namespace NPOI.HSSF.Record
 {
-    using System.Collections;
     using System;
-    using System.IO;
     using System.Text;
     using NPOI.Util;
 
@@ -31,7 +29,7 @@ namespace NPOI.HSSF.Record
      * @author Andrew C. Oliver (acoliver at apache dot org)
      * @version 2.0-pre
      */
-    public class ColumnInfoRecord : StandardRecord
+    public class ColumnInfoRecord : StandardRecord, ICloneable
     {
         public const short sid = 0x7d;
         private int _first_col;

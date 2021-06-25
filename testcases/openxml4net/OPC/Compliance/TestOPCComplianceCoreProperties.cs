@@ -21,8 +21,9 @@ namespace TestCases.OpenXml4Net.OPC.Compliance
     using System;
     using NPOI.OpenXml4Net.OPC;
     using NPOI.OpenXml4Net.Exceptions;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using NUnit.Framework;
     using System.IO;
+    using NPOI.Util;
 
 
 
@@ -33,6 +34,7 @@ namespace TestCases.OpenXml4Net.OPC.Compliance
      * at most one core properties relationship for a package. A format consumer
      * shall consider more than one core properties relationship for a package to be
      * an error. If present, the relationship shall target the Core Properties part.
+     * (POI relaxes this on reading, as Office sometimes breaks this)
      * 
      * M4.2: The format designer shall not specify and the format producer shall not
      * create Core Properties that use the Markup Compatibility namespace as defined
@@ -57,11 +59,11 @@ namespace TestCases.OpenXml4Net.OPC.Compliance
      * 
      * @author Julien Chable
      */
-    [TestClass]
+    [TestFixture]
     public class TestOPCComplianceCoreProperties
     {
 
-        [TestMethod]
+        [Test]
         public void TestCorePropertiesPart()
         {
             OPCPackage pkg;
@@ -81,23 +83,41 @@ namespace TestCases.OpenXml4Net.OPC.Compliance
             }
             catch (InvalidFormatException e)
             {
-                // expected during successful test
+                // no longer required for successful test
                 return e.Message;
             }
 
             pkg.Revert();
-            // Normally must thrown an InvalidFormatException exception.
-            throw new AssertFailedException("expected OPC compliance exception was not thrown");
+            throw new AssertionException("expected OPC compliance exception was not thrown");
         }
 
         /**
          * Test M4.1 rule.
          */
-        [TestMethod]
+        [Test]
         public void TestOnlyOneCorePropertiesPart()
         {
-            String msg = ExtractInvalidFormatMessage("OnlyOneCorePropertiesPartFAIL.docx");
-            Assert.AreEqual("OPC Compliance error [M4.1]: there is more than one core properties relationship in the package !", msg);
+            // We have relaxed this check, so we can read the file anyway
+            try
+            {
+                ExtractInvalidFormatMessage("OnlyOneCorePropertiesPartFAIL.docx");
+                Assert.Fail("M4.1 should be being relaxed");
+            }
+            catch (AssertionException e) { }
+
+            // We will use the first core properties, and ignore the others
+            Stream is1 = OpenXml4NetTestDataSamples.OpenSampleStream("MultipleCoreProperties.docx");
+            OPCPackage pkg = OPCPackage.Open(is1);
+
+            // We can see 2 by type
+            Assert.AreEqual(2, pkg.GetPartsByContentType(ContentTypes.CORE_PROPERTIES_PART).Count);
+            // But only the first one by relationship
+            Assert.AreEqual(1, pkg.GetPartsByRelationshipType(PackageRelationshipTypes.CORE_PROPERTIES).Count);
+            // It should be core.xml not the older core1.xml
+            Assert.AreEqual(
+                  "/docProps/core.xml",
+                  pkg.GetPartsByRelationshipType(PackageRelationshipTypes.CORE_PROPERTIES)[0].PartName.ToString()
+            );
         }
 
         private static Uri CreateURI(String text)
@@ -109,7 +129,7 @@ namespace TestCases.OpenXml4Net.OPC.Compliance
         /**
          * Test M4.1 rule.
          */
-        [TestMethod]
+        [Test]
         public void TestOnlyOneCorePropertiesPart_AddRelationship()
         {
             Stream is1 = OpenXml4NetTestDataSamples.OpenComplianceSampleStream("OPCCompliance_CoreProperties_OnlyOneCorePropertiesPart.docx");
@@ -121,7 +141,8 @@ namespace TestCases.OpenXml4Net.OPC.Compliance
             {
                 pkg.AddRelationship(PackagingUriHelper.CreatePartName(partUri), TargetMode.Internal,
                         PackageRelationshipTypes.CORE_PROPERTIES);
-                Assert.Fail("expected OPC compliance exception was not thrown");
+                // no longer fail on compliance error
+                //fail("expected OPC compliance exception was not thrown");
             }
             catch (InvalidFormatException e)
             {
@@ -138,12 +159,12 @@ namespace TestCases.OpenXml4Net.OPC.Compliance
         /**
          * Test M4.1 rule.
          */
-        [TestMethod]
+        [Test]
         public void TestOnlyOneCorePropertiesPart_AddPart()
         {
             String sampleFileName = "OPCCompliance_CoreProperties_OnlyOneCorePropertiesPart.docx";
             OPCPackage pkg = null;
-            pkg = OPCPackage.Open(POIDataSamples.GetOpenXml4NetInstance().GetFile(sampleFileName));
+            pkg = OPCPackage.Open(POIDataSamples.GetOpenXML4JInstance().GetFile(sampleFileName));
 
 
             Uri partUri = CreateURI("/docProps/core2.xml");
@@ -151,11 +172,8 @@ namespace TestCases.OpenXml4Net.OPC.Compliance
             {
                 pkg.CreatePart(PackagingUriHelper.CreatePartName(partUri),
                         ContentTypes.CORE_PROPERTIES_PART);
-                Assert.Fail("expected OPC compliance exception was not thrown");
-            }
-            catch (InvalidFormatException e)
-            {
-                throw;
+                // no longer fail on compliance error
+                //fail("expected OPC compliance exception was not thrown");
             }
             catch (InvalidOperationException e)
             {
@@ -168,7 +186,7 @@ namespace TestCases.OpenXml4Net.OPC.Compliance
         /**
          * Test M4.2 rule.
          */
-        [TestMethod]
+        [Test]
         public void TestDoNotUseCompatibilityMarkup()
         {
             String msg = ExtractInvalidFormatMessage("DoNotUseCompatibilityMarkupFAIL.docx");
@@ -178,7 +196,7 @@ namespace TestCases.OpenXml4Net.OPC.Compliance
         /**
          * Test M4.3 rule.
          */
-        [TestMethod]
+        [Test]
         public void TestDCTermsNamespaceLimitedUse()
         {
             String msg = ExtractInvalidFormatMessage("DCTermsNamespaceLimitedUseFAIL.docx");
@@ -188,7 +206,7 @@ namespace TestCases.OpenXml4Net.OPC.Compliance
         /**
          * Test M4.4 rule.
          */
-        [TestMethod]
+        [Test]
         public void TestUnauthorizedXMLLangAttribute()
         {
             String msg = ExtractInvalidFormatMessage("UnauthorizedXMLLangAttributeFAIL.docx");
@@ -198,7 +216,7 @@ namespace TestCases.OpenXml4Net.OPC.Compliance
         /**
          * Test M4.5 rule.
          */
-        [TestMethod]
+        [Test]
         public void TestLimitedXSITypeAttribute_NotPresent()
         {
             String msg = ExtractInvalidFormatMessage("LimitedXSITypeAttribute_NotPresentFAIL.docx");
@@ -208,11 +226,110 @@ namespace TestCases.OpenXml4Net.OPC.Compliance
         /**
          * Test M4.5 rule.
          */
-        [TestMethod]
+        [Test]
         public void TestLimitedXSITypeAttribute_PresentWithUnauthorizedValue()
         {
             String msg = ExtractInvalidFormatMessage("LimitedXSITypeAttribute_PresentWithUnauthorizedValueFAIL.docx");
-            Assert.AreEqual("The element 'modified' must have the 'xsi:type' attribute with the value 'dcterms:W3CDTF' !", msg);
+            Assert.AreEqual("The element 'modified' must have the 'xsi:type' attribute with the value 'dcterms:W3CDTF', but had 'W3CDTF' !", msg);
         }
+
+        /**
+     * Document with no core properties - testing at the OPC level,
+     *  saving into a new stream
+     */
+        [Test]
+        public void TestNoCoreProperties_saveNew()
+        {
+            String sampleFileName = "OPCCompliance_NoCoreProperties.xlsx";
+            OPCPackage pkg = OPCPackage.Open(POIDataSamples.GetOpenXML4JInstance().GetFileInfo(sampleFileName).FullName);
+
+            // Verify it has empty properties
+            Assert.AreEqual(0, pkg.GetPartsByContentType(ContentTypes.CORE_PROPERTIES_PART).Count);
+            Assert.IsNotNull(pkg.GetPackageProperties());
+            Assert.IsNull(pkg.GetPackageProperties().GetLanguageProperty());
+            //Assert.IsNull(pkg.GetPackageProperties().GetLanguageProperty().Value);
+
+            // Save and re-load
+            MemoryStream baos = new MemoryStream();
+            pkg.Save(baos);
+            MemoryStream bais = new MemoryStream(baos.ToArray());
+            pkg.Revert();
+
+            pkg = OPCPackage.Open(bais);
+
+            // An Empty Properties part has been Added in the save/load
+            Assert.AreEqual(1, pkg.GetPartsByContentType(ContentTypes.CORE_PROPERTIES_PART).Count);
+            Assert.IsNotNull(pkg.GetPackageProperties());
+            Assert.IsNull(pkg.GetPackageProperties().GetLanguageProperty());
+            //Assert.IsNull(pkg.GetPackageProperties().GetLanguageProperty().Value);
+            pkg.Close();
+
+            // Open a new copy of it
+            pkg = OPCPackage.Open(POIDataSamples.GetOpenXML4JInstance().GetFileInfo(sampleFileName).FullName);
+
+            // Save and re-load, without having touched the properties yet
+            baos = new MemoryStream();
+            pkg.Save(baos);
+            pkg.Revert();
+
+            bais = new MemoryStream(baos.ToArray());
+            pkg = OPCPackage.Open(bais);
+
+            // Check that this too Added empty properties without error
+            Assert.AreEqual(1, pkg.GetPartsByContentType(ContentTypes.CORE_PROPERTIES_PART).Count);
+            Assert.IsNotNull(pkg.GetPackageProperties());
+            Assert.IsNull(pkg.GetPackageProperties().GetLanguageProperty());
+            //Assert.IsNull(pkg.GetPackageProperties().GetLanguageProperty().Value);
+
+        }
+
+        /**
+         * Document with no core properties - testing at the OPC level,
+         *  from a temp-file, saving in-place
+         */
+        [Test, RunSerialyAndSweepTmpFiles]
+        public void TestNoCoreProperties_saveInPlace()
+        {
+            String sampleFileName = "OPCCompliance_NoCoreProperties.xlsx";
+
+            // Copy this into a temp file, so we can play with it
+            FileInfo tmp = TempFile.CreateTempFile("poi-test", ".opc");
+            FileStream out1 = new FileStream(tmp.FullName, FileMode.Create, FileAccess.ReadWrite);
+            Stream in1 = POIDataSamples.GetOpenXML4JInstance().OpenResourceAsStream(sampleFileName);
+            IOUtils.Copy(
+                    in1,
+                    out1);
+            out1.Close();
+            in1.Close();
+
+            // Open it from that temp file
+            OPCPackage pkg = OPCPackage.Open(tmp);
+
+            // Empty properties
+            Assert.AreEqual(0, pkg.GetPartsByContentType(ContentTypes.CORE_PROPERTIES_PART).Count);
+            Assert.IsNotNull(pkg.GetPackageProperties());
+            Assert.IsNull(pkg.GetPackageProperties().GetLanguageProperty());
+            //Assert.IsNull(pkg.GetPackageProperties().GetLanguageProperty().Value);
+
+            // Save and close
+            pkg.Close();
+
+
+            // Re-open and check
+            pkg = OPCPackage.Open(tmp);
+
+            // An Empty Properties part has been Added in the save/load
+            Assert.AreEqual(1, pkg.GetPartsByContentType(ContentTypes.CORE_PROPERTIES_PART).Count);
+            Assert.IsNotNull(pkg.GetPackageProperties());
+            Assert.IsNull(pkg.GetPackageProperties().GetLanguageProperty());
+            //Assert.IsNull(pkg.GetPackageProperties().GetLanguageProperty().Value);
+
+            // Finish and tidy
+            pkg.Revert();
+            tmp.Delete();
+
+            Assert.AreEqual(0, Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.tmp").Length, "At Last: There are no temporary files.");
+        }
+
     }
 }

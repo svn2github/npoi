@@ -1,6 +1,5 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Text;
 using NPOI.HSSF.Record;
 using NPOI.HSSF.Record.Chart;
 using NPOI.HSSF.Record.Aggregates;
@@ -42,7 +41,7 @@ namespace NPOI.HSSF.Model
                 throw new Exception("BOF record expected");
             }
             BOFRecord bof = (BOFRecord)rs.GetNext();
-            if (bof.Type != BOFRecord.TYPE_CHART)
+            if (bof.Type != BOFRecordType.Chart)
             {
                 throw new RuntimeException("Bad BOF record type");
             }
@@ -351,7 +350,7 @@ namespace NPOI.HSSF.Model
             records.Add(new BeginRecord());
             records.Add(CreateValueRangeRecord());
             records.Add(CreateTickRecord2());
-            records.Add(CreateAxisLineFormatRecord(AxisLineRecord.AXIS_TYPE_MAJOR_GRID_LINE));
+            records.Add(CreateAxisLineFormatRecord(AxisLineFormatRecord.AXIS_TYPE_MAJOR_GRID_LINE));
             records.Add(CreateLineFormatRecord(false));
             records.Add(new EndRecord());
             records.Add(CreatePlotAreaRecord());
@@ -393,9 +392,9 @@ namespace NPOI.HSSF.Model
             return r;
         }
 
-        private static AxisLineRecord CreateAxisLineFormatRecord(short format)
+        private static AxisLineFormatRecord CreateAxisLineFormatRecord(short format)
         {
-            AxisLineRecord r = new AxisLineRecord();
+            AxisLineFormatRecord r = new AxisLineFormatRecord();
             r.AxisType = (format);
             return r;
         }
@@ -452,10 +451,10 @@ namespace NPOI.HSSF.Model
             r.MinimumDate = 0;
             r.MaximumDate = 0;
             r.MajorInterval = 1;
-            r.MajorUnit = DateUnit.DUDAYS;
+            r.MajorUnit = DateUnit.Days;
             r.MinorInterval = 1;
-            r.MinorUnit = DateUnit.DUDAYS;
-            r.BaseUnit = DateUnit.DUDAYS;
+            r.MinorUnit = DateUnit.Days;
+            r.BaseUnit = DateUnit.Days;
             r.CrossDate = 0;
             r.IsAutoMin = (true);
             r.IsAutoMax = (true);
@@ -616,9 +615,9 @@ namespace NPOI.HSSF.Model
 
             return r;
         }
-        private static FontXRecord CreateFontXRecord(int index)
+        private static FontIndexRecord CreateFontXRecord(int index)
         {
-            FontXRecord r = new FontXRecord();
+            FontIndexRecord r = new FontIndexRecord();
             r.FontIndex = ((short)index);
             return r;
         }
@@ -707,7 +706,7 @@ namespace NPOI.HSSF.Model
                                             "05 00 00 00");
 
             DrawingRecord retval = new DrawingRecord();
-            retval.Data = drawingData;
+            retval.SetData(drawingData);
             return retval;
         }
 
@@ -760,7 +759,7 @@ namespace NPOI.HSSF.Model
         {
             BOFRecord retval = new BOFRecord();
             retval.Version = ((short)600);
-            retval.Type = BOFRecord.TYPE_CHART;
+            retval.Type = BOFRecordType.Chart;
             retval.Build = ((short)0x1CFE);
             retval.BuildYear = ((short)1997);
             retval.HistoryBitMask = (0x40C9);

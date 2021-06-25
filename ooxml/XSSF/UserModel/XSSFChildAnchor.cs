@@ -15,14 +15,11 @@
    limitations under the License.
 ==================================================================== */
 
-using NPOI.OpenXmlFormats.Dml;
+using NPOI.OpenXmlFormats.Dml.Spreadsheet;
 using System;
+using NPOI.OpenXmlFormats.Dml;
 namespace NPOI.XSSF.UserModel
 {
-
-    /**
-     * @author Yegor Kozlov
-     */
     public class XSSFChildAnchor : XSSFAnchor
     {
         private CT_Transform2D t2d;

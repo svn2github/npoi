@@ -28,7 +28,7 @@ namespace NPOI.XWPF.UserModel
         /**
          * A map to lookup POIXMLRelation by its relation type
          */
-        protected static Dictionary<String, XWPFRelation> _table = new Dictionary<String, XWPFRelation>();
+        private static Dictionary<String, XWPFRelation> _table = new Dictionary<String, XWPFRelation>();
 
 
         public static XWPFRelation DOCUMENT = new XWPFRelation(
@@ -55,7 +55,12 @@ namespace NPOI.XWPF.UserModel
             "/word/document.xml",
             null
         );
-
+        public static XWPFRelation GLOSSARY_DOCUMENT = new XWPFRelation(
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document.glossary+xml",
+            "http://schemas.openxmlformats.org/officeDocument/2006/relationships/glossaryDocument",
+            "/word/glossary/document.xml",
+            null
+        );
         public static XWPFRelation NUMBERING = new XWPFRelation(
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml",
             "http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering",
@@ -98,6 +103,13 @@ namespace NPOI.XWPF.UserModel
             "/word/footer#.xml",
                 typeof(XWPFFooter)
         );
+
+        public static XWPFRelation THEME = new XWPFRelation(
+            "application/vnd.openxmlformats-officedocument.theme+xml",
+            "http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme",
+            "/word/theme/theme#.xml",
+            null
+        );
         public static XWPFRelation HYPERLINK = new XWPFRelation(
                 null,
                 "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink",
@@ -122,7 +134,9 @@ namespace NPOI.XWPF.UserModel
                 null,
                 null
         );
-
+        /**
+         * Supported image formats
+         */
         public static XWPFRelation IMAGE_EMF = new XWPFRelation(
               "image/x-emf",
           "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image",
@@ -165,20 +179,57 @@ namespace NPOI.XWPF.UserModel
               "/word/media/image#.gif",
               typeof(XWPFPictureData)
         );
+
+        public static XWPFRelation IMAGE_TIFF = new XWPFRelation(
+            "image/tiff",
+            "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image",
+            "/word/media/image#.tiff",
+            typeof(XWPFPictureData)
+        );
+        public static XWPFRelation IMAGE_EPS = new XWPFRelation(
+                "image/x-eps",
+                "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image",
+                "/word/media/image#.eps",
+                typeof(XWPFPictureData)
+        );
+        public static XWPFRelation IMAGE_BMP = new XWPFRelation(
+                "image/x-ms-bmp",
+                "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image",
+                "/word/media/image#.bmp",
+                typeof(XWPFPictureData)
+        );
+        public static XWPFRelation IMAGE_WPG = new XWPFRelation(
+                "image/x-wpg",
+                "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image",
+                "/word/media/image#.wpg",
+                typeof(XWPFPictureData)
+        );
+        public static XWPFRelation IMAGE_SVG = new XWPFRelation(
+                "image/svg",
+                "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image",
+                "/word/media/image#.svg",
+                typeof(XWPFPictureData)
+        );
+
         public static XWPFRelation IMAGES = new XWPFRelation(
               null,
               "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image",
               null,
-              null
+              typeof(XWPFPictureData)
         );
 
 
         private XWPFRelation(String type, String rel, String defaultName, Type cls)
             : base(type, rel, defaultName, cls)
         {
-            ;
-
-            if (cls != null && !_table.ContainsKey(rel)) _table.Add(rel, this);
+            if (_table.ContainsKey(rel))
+            {
+                _table[rel] = this;
+            }
+            else
+            {
+                _table.Add(rel, this);
+            }
         }
 
         /**

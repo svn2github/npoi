@@ -31,172 +31,233 @@ namespace NPOI.XSSF.UserModel.Charts
 
         protected XSSFChart chart;
 
-        private static double MIN_LOG_BASE = 2.0;
-        private static double MAX_LOG_BASE = 1000.0;
+        private static double Min_LOG_BASE = 2.0;
+        private static double Max_LOG_BASE = 1000.0;
 
         protected XSSFChartAxis(XSSFChart chart)
         {
             this.chart = chart;
         }
-        public abstract long GetId();
+        public abstract long Id { get;}
         public abstract void CrossAxis(IChartAxis axis);
 
-        public AxisPosition GetPosition()
+        public AxisPosition Position
         {
-            return toAxisPosition(GetCTAxPos());
-        }
-
-        public void SetPosition(AxisPosition position)
-        {
-            GetCTAxPos().val = fromAxisPosition(position);
-        }
-
-        public void SetNumberFormat(String format)
-        {
-            GetCTNumFmt().formatCode=format;
-            GetCTNumFmt().sourceLinked = true;
-        }
-
-        public String GetNumberFormat()
-        {
-            return GetCTNumFmt().formatCode;
-        }
-
-        public bool IsSetLogBase()
-        {
-            return GetCTScaling().IsSetLogBase();
-        }
-
-        public void SetLogBase(double logBase)
-        {
-            if (logBase < MIN_LOG_BASE ||
-                MAX_LOG_BASE < logBase)
+            get
             {
-                throw new ArgumentException("Axis log base must be between 2 and 1000 (inclusive), got: " + logBase);
+                return toAxisPosition(GetCTAxPos());
             }
-            CT_Scaling scaling = GetCTScaling();
-            if (scaling.IsSetLogBase())
+            set
             {
-                scaling.logBase.val = logBase;
-            }
-            else
-            {
-                scaling.AddNewLogBase().val = (logBase);
+                GetCTAxPos().val = fromAxisPosition(value);
             }
         }
 
-        public double GetLogBase()
+        public String NumberFormat
         {
-            CT_LogBase logBase = GetCTScaling().logBase;
-            if (logBase != null)
+            get
             {
-                return logBase.val;
+                return GetCTNumFmt().formatCode;
             }
-            return 0.0;
-        }
-
-        public bool IsSetMinimum()
-        {
-            return GetCTScaling().IsSetMin();
-        }
-
-        public void SetMinimum(double min)
-        {
-            CT_Scaling scaling = GetCTScaling();
-            if (scaling.IsSetMin())
+            set
             {
-                scaling.min.val = min;
-            }
-            else
-            {
-                scaling.AddNewMin().val = min;
+                GetCTNumFmt().formatCode = value;
+                GetCTNumFmt().sourceLinked = true;
             }
         }
 
-        public double GetMinimum()
+        public bool IsSetLogBase
         {
-            CT_Scaling scaling = GetCTScaling();
-            if (scaling.IsSetMin())
+            get
             {
-                return scaling.min.val;
+                return GetCTScaling().IsSetLogBase();
             }
-            else
+        }
+
+        public double LogBase
+        {
+            get
             {
+                CT_LogBase logBase = GetCTScaling().logBase;
+                if (logBase != null)
+                {
+                    return logBase.val;
+                }
                 return 0.0;
             }
-        }
-
-        public bool IsSetMaximum()
-        {
-            return GetCTScaling().IsSetMax();
-        }
-
-        public void SetMaximum(double max)
-        {
-            CT_Scaling scaling = GetCTScaling();
-            if (scaling.IsSetMax())
+            set
             {
-                scaling.max.val=max;
-            }
-            else
-            {
-                scaling.AddNewMax().val = max;
-            }
-        }
-
-        public double GetMaximum()
-        {
-            CT_Scaling scaling = GetCTScaling();
-            if (scaling.IsSetMax())
-            {
-                return scaling.max.val;
-            }
-            else
-            {
-                return 0.0;
+                if (value < Min_LOG_BASE ||
+                Max_LOG_BASE < value)
+                {
+                    throw new ArgumentException("Axis log base must be between 2 and 1000 (inclusive), got: " + value);
+                }
+                CT_Scaling scaling = GetCTScaling();
+                if (scaling.IsSetLogBase())
+                {
+                    scaling.logBase.val = value;
+                }
+                else
+                {
+                    scaling.AddNewLogBase().val = (value);
+                }
             }
         }
 
-        public AxisOrientation GetOrientation()
+        public bool IsSetMinimum
         {
-            return toAxisOrientation(GetCTScaling().orientation);
-        }
-
-        public void SetOrientation(AxisOrientation orientation)
-        {
-            CT_Scaling scaling = GetCTScaling();
-            ST_Orientation stOrientation = fromAxisOrientation(orientation);
-            if (scaling.IsSetOrientation())
+            get
             {
-                scaling.orientation.val = stOrientation;
-            }
-            else
-            {
-                GetCTScaling().AddNewOrientation().val= stOrientation;
+                return GetCTScaling().IsSetMin();
             }
         }
 
-        public AxisCrosses GetCrosses()
+        public double Minimum
         {
-            return toAxisCrosses(GetCTCrosses());
+            get
+            {
+                CT_Scaling scaling = GetCTScaling();
+                if (scaling.IsSetMin())
+                {
+                    return scaling.min.val;
+                }
+                else
+                {
+                    return 0.0;
+                }
+            }
+            set
+            {
+                CT_Scaling scaling = GetCTScaling();
+                if (scaling.IsSetMin())
+                {
+                    scaling.min.val = value;
+                }
+                else
+                {
+                    scaling.AddNewMin().val = value;
+                }
+            }
         }
 
-        public void SetCrosses(AxisCrosses crosses)
+        public bool IsSetMaximum
         {
-            GetCTCrosses().val = fromAxisCrosses(crosses);
+            get
+            {
+                return GetCTScaling().IsSetMax();
+            }
+        }
+
+        public double Maximum
+        {
+            get
+            {
+                CT_Scaling scaling = GetCTScaling();
+                if (scaling.IsSetMax())
+                {
+                    return scaling.max.val;
+                }
+                else
+                {
+                    return 0.0;
+                }
+            }
+            set
+            {
+                CT_Scaling scaling = GetCTScaling();
+                if (scaling.IsSetMax())
+                {
+                    scaling.max.val = value;
+                }
+                else
+                {
+                    scaling.AddNewMax().val = value;
+                }
+            }
+        }
+
+        public AxisOrientation Orientation
+        {
+            get
+            {
+                return toAxisOrientation(GetCTScaling().orientation);
+            }
+            set
+            {
+                CT_Scaling scaling = GetCTScaling();
+                ST_Orientation stOrientation = fromAxisOrientation(value);
+                if (scaling.IsSetOrientation())
+                {
+                    scaling.orientation.val = stOrientation;
+                }
+                else
+                {
+                    GetCTScaling().AddNewOrientation().val = stOrientation;
+                }
+            }
+        }
+
+        public AxisCrosses Crosses
+        {
+            get
+            {
+                return toAxisCrosses(GetCTCrosses());
+            }
+            set
+            {
+                GetCTCrosses().val = fromAxisCrosses(value);
+            }
+        }
+        public bool IsVisible
+        {
+            get
+            {
+                return GetDelete().val == 0;
+            }
+            set
+            {
+                GetDelete().val = value ? 0 : 1;
+            }
+        }
+
+        public AxisTickMark MajorTickMark
+        {
+            get
+            {
+                return toAxisTickMark(GetMajorCTTickMark());
+            }
+            set
+            {
+                GetMajorCTTickMark().val = fromAxisTickMark(value);
+            }
+        }
+
+        public AxisTickMark MinorTickMark
+        {
+            get
+            {
+                return toAxisTickMark(GetMinorCTTickMark());
+            }
+            set
+            {
+                GetMinorCTTickMark().val = fromAxisTickMark(value);
+            }
         }
 
         protected abstract CT_AxPos GetCTAxPos();
         protected abstract CT_NumFmt GetCTNumFmt();
         protected abstract CT_Scaling GetCTScaling();
         protected abstract CT_Crosses GetCTCrosses();
+        protected abstract CT_Boolean GetDelete();
+        protected abstract CT_TickMark GetMajorCTTickMark();
+        protected abstract CT_TickMark GetMinorCTTickMark();
 
         private static ST_Orientation fromAxisOrientation(AxisOrientation orientation)
         {
             switch (orientation)
             {
-                case AxisOrientation.MIN_MAX: return ST_Orientation.minMax;
-                case AxisOrientation.MAX_MIN: return ST_Orientation.maxMin;
+                case AxisOrientation.MinToMax: return ST_Orientation.minMax;
+                case AxisOrientation.MaxToMin: return ST_Orientation.maxMin;
                 default:
                     throw new ArgumentException();
             }
@@ -206,8 +267,8 @@ namespace NPOI.XSSF.UserModel.Charts
         {
             switch (ctOrientation.val)
             {
-                case ST_Orientation.minMax: return AxisOrientation.MIN_MAX;
-                case ST_Orientation.maxMin: return AxisOrientation.MAX_MIN;
+                case ST_Orientation.minMax: return AxisOrientation.MinToMax;
+                case ST_Orientation.maxMin: return AxisOrientation.MaxToMin;
                 default:
                     throw new ArgumentException();
             }
@@ -217,9 +278,9 @@ namespace NPOI.XSSF.UserModel.Charts
         {
             switch (crosses)
             {
-                case AxisCrosses.AUTO_ZERO: return ST_Crosses.autoZero;
-                case AxisCrosses.MIN: return ST_Crosses.min;
-                case AxisCrosses.MAX: return ST_Crosses.max;
+                case AxisCrosses.AutoZero: return ST_Crosses.autoZero;
+                case AxisCrosses.Min: return ST_Crosses.min;
+                case AxisCrosses.Max: return ST_Crosses.max;
                 default:
                     throw new ArgumentException();
             }
@@ -229,9 +290,9 @@ namespace NPOI.XSSF.UserModel.Charts
         {
             switch (ctCrosses.val)
             {
-                case ST_Crosses.autoZero: return AxisCrosses.AUTO_ZERO;
-                case ST_Crosses.max: return AxisCrosses.MAX;
-                case ST_Crosses.min: return AxisCrosses.MIN;
+                case ST_Crosses.autoZero: return AxisCrosses.AutoZero;
+                case ST_Crosses.max: return AxisCrosses.Max;
+                case ST_Crosses.min: return AxisCrosses.Min;
                 default:
                     throw new ArgumentException();
             }
@@ -241,10 +302,10 @@ namespace NPOI.XSSF.UserModel.Charts
         {
             switch (position)
             {
-                case AxisPosition.BOTTOM: return ST_AxPos.b;
-                case AxisPosition.LEFT: return ST_AxPos.l;
-                case AxisPosition.RIGHT: return ST_AxPos.r;
-                case AxisPosition.TOP: return ST_AxPos.t;
+                case AxisPosition.Bottom: return ST_AxPos.b;
+                case AxisPosition.Left: return ST_AxPos.l;
+                case AxisPosition.Right: return ST_AxPos.r;
+                case AxisPosition.Top: return ST_AxPos.t;
                 default:
                     throw new ArgumentException();
             }
@@ -254,11 +315,35 @@ namespace NPOI.XSSF.UserModel.Charts
         {
             switch (ctAxPos.val)
             {
-                case ST_AxPos.b: return AxisPosition.BOTTOM;
-                case ST_AxPos.l: return AxisPosition.LEFT;
-                case ST_AxPos.r: return AxisPosition.RIGHT;
-                case ST_AxPos.t: return AxisPosition.TOP;
-                default: return AxisPosition.BOTTOM;
+                case ST_AxPos.b: return AxisPosition.Bottom;
+                case ST_AxPos.l: return AxisPosition.Left;
+                case ST_AxPos.r: return AxisPosition.Right;
+                case ST_AxPos.t: return AxisPosition.Top;
+                default: return AxisPosition.Bottom;
+            }
+        }
+        private static ST_TickMark fromAxisTickMark(AxisTickMark tickMark)
+        {
+            switch (tickMark)
+            {
+                case AxisTickMark.None: return ST_TickMark.none;
+                case AxisTickMark.In: return ST_TickMark.@in;
+                case AxisTickMark.Out: return ST_TickMark.@out;
+                case AxisTickMark.Cross: return ST_TickMark.cross;
+                default:
+                    throw new ArgumentException("Unknown AxisTickMark: " + tickMark);
+            }
+        }
+
+        private static AxisTickMark toAxisTickMark(CT_TickMark ctTickMark)
+        {
+            switch (ctTickMark.val)
+            {
+                case ST_TickMark.none: return AxisTickMark.None;
+                case ST_TickMark.@in: return AxisTickMark.In;
+                case ST_TickMark.@out: return AxisTickMark.Out;
+                case ST_TickMark.cross: return AxisTickMark.Cross;
+                default: return AxisTickMark.Cross;
             }
         }
     }

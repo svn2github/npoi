@@ -27,7 +27,6 @@ namespace NPOI.HSSF.Extractor
     using NPOI.POIFS.FileSystem;
     using NPOI;
     using NPOI.HPSF;
-    using NPOI.SS.Formula.Eval;
     using NPOI.HSSF.EventUserModel;
     using NPOI.HSSF.Model;
     //using NPOI.HSSF.Util;
@@ -51,7 +50,7 @@ namespace NPOI.HSSF.Extractor
         private bool formulasNotResults = false;
 
         public EventBasedExcelExtractor(POIFSFileSystem fs)
-            : base(null)
+            : base((POIDocument)null)
         {
 
             this.fs = fs;
@@ -202,7 +201,7 @@ namespace NPOI.HSSF.Extractor
                         break;
                     case BOFRecord.sid:
                         BOFRecord bof = (BOFRecord)record;
-                        if (bof.Type == BOFRecord.TYPE_WORKSHEET)
+                        if (bof.Type == BOFRecordType.Worksheet)
                         {
                             sheetNum++;
                             rowNum = -1;

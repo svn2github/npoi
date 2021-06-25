@@ -21,7 +21,9 @@ namespace NPOI.SS.UserModel
 
     public interface ICellStyle
     {
-
+        /// <summary>
+        /// the Cell should be auto-sized to shrink to fit if the text is too long
+        /// </summary>
         bool ShrinkToFit { get; set; }
         /**
          * get the index within the Workbook (sequence within the collection of ExtnededFormat objects)
@@ -108,6 +110,13 @@ namespace NPOI.SS.UserModel
 
         /**
          * get the degree of rotation for the text in the cell
+         * 
+         * Note: HSSF uses values from -90 to 90 degrees, whereas XSSF 
+         * uses values from 0 to 180 degrees. The implementations of this method will map between these two value-ranges 
+         * accordingly, however the corresponding getter is returning values in the range mandated by the current type
+         * of Excel file-format that this CellStyle is applied to.
+         *
+         * 
          * @return rotation degrees (between -90 and 90 degrees)
          */
 
@@ -239,7 +248,7 @@ namespace NPOI.SS.UserModel
          * @return fill pattern
          */
 
-        FillPatternType FillPattern { get; set; }
+        FillPattern FillPattern { get; set; }
 
         /**
          * get the background fill color
@@ -271,7 +280,6 @@ namespace NPOI.SS.UserModel
          *  XSSFCellStyle)
          */
         void CloneStyleFrom(ICellStyle source);
-
 
         IFont GetFont(IWorkbook parentWorkbook);
 

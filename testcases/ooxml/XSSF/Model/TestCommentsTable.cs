@@ -16,11 +16,14 @@
 ==================================================================== */
 
 using System;
-using NUnit.Framework;
 using NPOI.OpenXmlFormats.Spreadsheet;
 using NPOI.SS.UserModel;
+using NPOI.SS.Util;
+using NPOI.XSSF;
+using NPOI.XSSF.Model;
 using NPOI.XSSF.UserModel;
-namespace NPOI.XSSF.Model
+using NUnit.Framework;
+namespace TestCases.XSSF.Model
 {
 
 
@@ -32,7 +35,7 @@ namespace NPOI.XSSF.Model
         private static String TEST_A1_TEXT = "test A1 text";
         private static String TEST_AUTHOR = "test author";
         [Test]
-        public void TestFindAuthor()
+        public void FindAuthor()
         {
             CommentsTable sheetComments = new CommentsTable();
             Assert.AreEqual(1, sheetComments.GetNumberOfAuthors());
@@ -46,7 +49,7 @@ namespace NPOI.XSSF.Model
             Assert.AreEqual(2, sheetComments.FindAuthor("another author"));
         }
         [Test]
-        public void TestGetCellComment()
+        public void GetCellComment()
         {
             CommentsTable sheetComments = new CommentsTable();
 
@@ -66,13 +69,13 @@ namespace NPOI.XSSF.Model
             comment1.text = (ctrst1);
 
             // Test Finding the right comment for a cell
-            Assert.AreSame(comment0, sheetComments.GetCTComment("A1"));
-            Assert.AreSame(comment1, sheetComments.GetCTComment("A2"));
-            Assert.IsNull(sheetComments.GetCTComment("A3"));
+            Assert.AreSame(comment0, sheetComments.GetCTComment(new CellAddress("A1")));
+            Assert.AreSame(comment1, sheetComments.GetCTComment(new CellAddress("A2")));
+            Assert.IsNull(sheetComments.GetCTComment(new CellAddress("A3")));
         }
 
         [Test]
-        public void TestExisting()
+        public void Existing()
         {
             IWorkbook workbook = XSSFTestDataSamples.OpenSampleWorkbook("WithVariousData.xlsx");
             ISheet sheet1 = workbook.GetSheetAt(0);
@@ -103,7 +106,7 @@ namespace NPOI.XSSF.Model
             Assert.AreEqual(2, cc7.Column);
         }
         [Test]
-        public void TestWriteRead()
+        public void WriteRead()
         {
             XSSFWorkbook workbook = XSSFTestDataSamples.OpenSampleWorkbook("WithVariousData.xlsx");
             XSSFSheet sheet1 = (XSSFSheet)workbook.GetSheetAt(0);
@@ -152,7 +155,7 @@ namespace NPOI.XSSF.Model
                     sheet1.GetRow(4).GetCell(2).CellComment.String.String);
         }
         [Test]
-        public void TestReadWriteMultipleAuthors()
+        public void ReadWriteMultipleAuthors()
         {
             XSSFWorkbook workbook = XSSFTestDataSamples.OpenSampleWorkbook("WithMoreVariousData.xlsx");
             XSSFSheet sheet1 = (XSSFSheet)workbook.GetSheetAt(0);
@@ -188,38 +191,117 @@ namespace NPOI.XSSF.Model
             // Todo - check text too, once bug fixed
         }
         [Test]
-        public void TestRemoveComment()
+        public void RemoveComment()
         {
-            CommentsTable sheetComments = new CommentsTable();
-            CT_Comment a1 = sheetComments.CreateComment();
-            a1.@ref = ("A1");
-            CT_Comment a2 = sheetComments.CreateComment();
-            a2.@ref = ("A2");
-            CT_Comment a3 = sheetComments.CreateComment();
-            a3.@ref = ("A3");
+            CellAddress addrA1 = new CellAddress("A1");
+            CellAddress addrA2 = new CellAddress("A2");
+            CellAddress addrA3 = new CellAddress("A3");
 
-            Assert.AreSame(a1, sheetComments.GetCTComment("A1"));
-            Assert.AreSame(a2, sheetComments.GetCTComment("A2"));
-            Assert.AreSame(a3, sheetComments.GetCTComment("A3"));
+            CommentsTable sheetComments = new CommentsTable();
+            CT_Comment a1 = sheetComments.NewComment(addrA1);
+            CT_Comment a2 = sheetComments.NewComment(addrA2);
+            CT_Comment a3 = sheetComments.NewComment(addrA3);
+
+            Assert.AreSame(a1, sheetComments.GetCTComment(addrA1));
+            Assert.AreSame(a2, sheetComments.GetCTComment(addrA2));
+            Assert.AreSame(a3, sheetComments.GetCTComment(addrA3));
             Assert.AreEqual(3, sheetComments.GetNumberOfComments());
 
-            Assert.IsTrue(sheetComments.RemoveComment("A1"));
+            Assert.IsTrue(sheetComments.RemoveComment(addrA1));
             Assert.AreEqual(2, sheetComments.GetNumberOfComments());
-            Assert.IsNull(sheetComments.GetCTComment("A1"));
-            Assert.AreSame(a2, sheetComments.GetCTComment("A2"));
-            Assert.AreSame(a3, sheetComments.GetCTComment("A3"));
+            Assert.IsNull(sheetComments.GetCTComment(addrA1));
+            Assert.AreSame(a2, sheetComments.GetCTComment(addrA2));
+            Assert.AreSame(a3, sheetComments.GetCTComment(addrA3));
 
-            Assert.IsTrue(sheetComments.RemoveComment("A2"));
+            Assert.IsTrue(sheetComments.RemoveComment(addrA2));
             Assert.AreEqual(1, sheetComments.GetNumberOfComments());
-            Assert.IsNull(sheetComments.GetCTComment("A1"));
-            Assert.IsNull(sheetComments.GetCTComment("A2"));
-            Assert.AreSame(a3, sheetComments.GetCTComment("A3"));
+            Assert.IsNull(sheetComments.GetCTComment(addrA1));
+            Assert.IsNull(sheetComments.GetCTComment(addrA2));
+            Assert.AreSame(a3, sheetComments.GetCTComment(addrA3));
 
-            Assert.IsTrue(sheetComments.RemoveComment("A3"));
+            Assert.IsTrue(sheetComments.RemoveComment(addrA3));
             Assert.AreEqual(0, sheetComments.GetNumberOfComments());
-            Assert.IsNull(sheetComments.GetCTComment("A1"));
-            Assert.IsNull(sheetComments.GetCTComment("A2"));
-            Assert.IsNull(sheetComments.GetCTComment("A3"));
+            Assert.IsNull(sheetComments.GetCTComment(addrA1));
+            Assert.IsNull(sheetComments.GetCTComment(addrA2));
+            Assert.IsNull(sheetComments.GetCTComment(addrA3));
+        }
+        [Test]
+        public void Bug54920()
+        {
+            IWorkbook workbook = new XSSFWorkbook();
+            ISheet sheet = workbook.CreateSheet("sheet01");
+            // create anchor
+            ICreationHelper helper = sheet.Workbook.GetCreationHelper();
+            IClientAnchor anchor = helper.CreateClientAnchor();
+
+            // place comment in A1
+            // NOTE - only occurs if a comment is placed in A1 first
+            ICell A1 = GetCell(sheet, 0, 0);
+            //Cell A1 = getCell(sheet, 2, 2);
+            IDrawing drawing = sheet.CreateDrawingPatriarch();
+            setComment(sheet, A1, drawing, "for A1", helper, anchor);
+
+            // find comment in A1 before we set the comment in B2
+            IComment commentA1 = A1.CellComment;
+            Assert.IsNotNull(commentA1, "Should still find the previous comment in A1, but had null");
+            Assert.AreEqual("for A1", commentA1.String.String, "should find correct comment in A1, but had null: " + commentA1);
+
+            // place comment in B2, according to Bug 54920 this removes the comment in A1!
+            ICell B2 = GetCell(sheet, 1, 1);
+            setComment(sheet, B2, drawing, "for B2", helper, anchor);
+
+            // find comment in A1
+            IComment commentB2 = B2.CellComment;
+            Assert.AreEqual("for B2", commentB2.String.String, "should find correct comment in B2, but had null: " + commentB2);
+
+            // find comment in A1
+            commentA1 = A1.CellComment;
+            Assert.IsNotNull(commentA1, "Should still find the previous comment in A1, but had null");
+            Assert.AreEqual("for A1", commentA1.String.String, "should find correct comment in A1, but had null: " + commentA1);
+        }
+
+        // Set the comment on a sheet
+        //
+        private static void setComment(ISheet sheet, ICell cell, IDrawing drawing, String commentText, ICreationHelper helper, IClientAnchor anchor)
+        {
+            //System.out.println("Setting col: " + cell.getColumnIndex() + " and row " + cell.getRowIndex());
+            anchor.Col1 = (cell.ColumnIndex);
+            anchor.Col2 = (cell.ColumnIndex);
+            anchor.Row1 = (cell.RowIndex);
+            anchor.Row2 = (cell.RowIndex);
+
+            // get comment, or create if it does not exist
+            // NOTE - only occurs if getCellComment is called first
+            IComment comment = cell.CellComment;
+            //Comment comment = null;
+            if (comment == null)
+            {
+                comment = drawing.CreateCellComment(anchor);
+            }
+            comment.Author = ("Test");
+
+            // attach the comment to the cell
+            comment.String = (helper.CreateRichTextString(commentText));
+            cell.CellComment = (comment);
+        }
+
+        // Get a cell, create as needed
+        //
+        private static ICell GetCell(ISheet sheet, int rowIndex, int colIndex)
+        {
+            IRow row = sheet.GetRow(rowIndex);
+            if (row == null)
+            {
+                row = sheet.CreateRow(rowIndex);
+            }
+
+            ICell cell = row.GetCell(colIndex);
+            if (cell == null)
+            {
+                cell = row.CreateCell(colIndex);
+            }
+
+            return cell;
         }
     }
 

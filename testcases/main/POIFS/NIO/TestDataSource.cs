@@ -43,11 +43,150 @@ namespace TestCases.POIFS.NIO
         [Test]
         public void TestFile()
         {
-            FileStream f =  data.GetFile("Notes.ole2");
+            FileStream f = data.GetFile("Notes.ole2");
 
-            FileBackedDataSource ds = new FileBackedDataSource(f);
+            FileBackedDataSource ds = new FileBackedDataSource(f, false);
 
-            Assert.AreEqual(8192, ds.Size);
+            try
+            {
+                CheckDataSource(ds, false);
+            }
+            finally
+            {
+                ds.Close();
+            }
+
+            // try a second time
+            ds = new FileBackedDataSource(f, false);
+            try
+            {
+                CheckDataSource(ds, false);
+            }
+            finally
+            {
+                ds.Close();
+            }
+        }
+        [Test]
+        public void TestFileWritable()
+        {
+            FileInfo temp = TempFile.CreateTempFile("TestDataSource", ".test");
+            try
+            {
+                WriteDataToFile(temp);
+
+                FileBackedDataSource ds = new FileBackedDataSource(temp, false);
+                try
+                {
+                    CheckDataSource(ds, true);
+                }
+                finally
+                {
+                    ds.Close();
+                }
+
+                // try a second time
+                ds = new FileBackedDataSource(temp, false);
+                try
+                {
+                    CheckDataSource(ds, true);
+                }
+                finally
+                {
+                    ds.Close();
+                }
+
+                WriteDataToFile(temp);
+            }
+            finally
+            {
+                Assert.IsTrue(temp.Exists);
+                temp.Delete();
+                Assert.IsTrue(!File.Exists(temp.FullName), "Could not delete file " + temp);
+            }
+        }
+
+        [Test]
+        public void TestRewritableFile()
+        {
+            FileInfo temp = TempFile.CreateTempFile("TestDataSource", ".test");
+            try
+            {
+                WriteDataToFile(temp);
+
+                FileBackedDataSource ds = new FileBackedDataSource(temp, true);
+                try
+                {
+                    ByteBuffer buf = ds.Read(0, 10);
+                    Assert.IsNotNull(buf);
+                    buf = ds.Read(8, 0x400);
+                    Assert.IsNotNull(buf);
+                }
+                finally
+                {
+                    ds.Close();
+                }
+
+                // try a second time
+                ds = new FileBackedDataSource(temp, true);
+                try
+                {
+                    ByteBuffer buf = ds.Read(0, 10);
+                    Assert.IsNotNull(buf);
+                    buf = ds.Read(8, 0x400);
+                    Assert.IsNotNull(buf);
+                }
+                finally
+                {
+                    ds.Close();
+                }
+
+                WriteDataToFile(temp);
+            }
+            finally
+            {
+                Assert.IsTrue(temp.Exists);
+                temp.Delete();
+                Assert.IsTrue(!File.Exists(temp.FullName));
+            }
+        }
+
+        private void WriteDataToFile(FileInfo temp)
+        {
+            FileStream str = temp.Create();
+            try
+            {
+                Stream in1 = data.OpenResourceAsStream("Notes.ole2");
+                try
+                {
+                    IOUtils.Copy(in1, str);
+                }
+                finally
+                {
+                    in1.Close();
+                }
+            }
+            finally
+            {
+                str.Close();
+            }
+        }
+
+        private void CheckDataSource(FileBackedDataSource ds, bool writeable)
+        {
+            Assert.AreEqual(writeable, ds.IsWriteable);
+            //Assert.IsNotNull(ds.Channel);
+
+            // rewriting changes the size
+            if (writeable)
+            {
+                Assert.IsTrue(ds.Size == 8192 || ds.Size == 8198, "Had: " + ds.Size);
+            }
+            else
+            {
+                Assert.AreEqual(8192, ds.Size);
+            }
+
 
             ByteBuffer bs;
             bs = ds.Read(4, 0);
@@ -70,18 +209,22 @@ namespace TestCases.POIFS.NIO
             Assert.AreEqual((byte)'t', bs[6]);
             Assert.AreEqual(0, bs[7]);
 
+            // Can go to the end, but not past it
             bs = ds.Read(8, 8190);
-            //Assert.AreEqual(0, 
+            Assert.AreEqual(0, bs.Position);// TODO How best to warn of a short read?
 
+            // Can't go off the end
             try
             {
                 bs = ds.Read(4, 8192);
-                Assert.Fail("Shouldn't be able to read off the end of the file");
+                if (!writeable)
+                {
+                    Assert.Fail("Shouldn't be able to read off the end of the file");
+                }
             }
-            catch (System.ArgumentException)
+            catch (IndexOutOfRangeException)
             {
             }
-
         }
 
 
@@ -127,15 +270,15 @@ namespace TestCases.POIFS.NIO
                 //bs.get();
                 //fail("Shouldn't be able to read off the end");
             }
-            catch (System.Exception) { }
+            catch (Exception) { }
 
             // Past the end
             try
             {
-                bs = ds.Read(4, 256);
+                ds.Read(4, 256);
                 Assert.Fail("Shouldn't be able to read off the end");
             }
-            catch (System.IndexOutOfRangeException) { }
+            catch (IndexOutOfRangeException) { }
 
 
             // Overwrite

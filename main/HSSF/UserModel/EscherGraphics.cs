@@ -20,7 +20,6 @@ namespace NPOI.HSSF.UserModel
     using System;
     using NPOI.HSSF.Util;
     using NPOI.Util;
-    using System.Text;
 
     using System.Drawing;
     using NPOI.SS.UserModel;
@@ -311,20 +310,20 @@ namespace NPOI.HSSF.UserModel
                 hssfColor = workbook.GetCustomPalette().FindSimilarColor((byte)foreground.R, (byte)foreground.G, (byte)foreground.B);
             bool bold = font.Bold;
             bool italic = font.Italic;
-            HSSFFont hssfFont = (HSSFFont)workbook.FindFont(bold ? (short)NPOI.SS.UserModel.FontBoldWeight.BOLD : (short)NPOI.SS.UserModel.FontBoldWeight.NORMAL,
-                        hssfColor.GetIndex(),
+            HSSFFont hssfFont = (HSSFFont)workbook.FindFont(bold ? (short)NPOI.SS.UserModel.FontBoldWeight.Bold : (short)NPOI.SS.UserModel.FontBoldWeight.Normal,
+                        hssfColor.Indexed,
                         (short)(font.Size * 20),
                         font.Name,
                         italic,
                         false,
-                        (short)NPOI.SS.UserModel.FontSuperScript.NONE,
-                        (byte)NPOI.SS.UserModel.FontUnderlineType.NONE
+                        (short)NPOI.SS.UserModel.FontSuperScript.None,
+                        (byte)NPOI.SS.UserModel.FontUnderlineType.None
                         );
             if (hssfFont == null)
             {
                 hssfFont = (HSSFFont)workbook.CreateFont();
-                hssfFont.Boldweight = (short)(bold ? NPOI.SS.UserModel.FontBoldWeight.BOLD : 0);
-                hssfFont.Color = (hssfColor.GetIndex());
+                hssfFont.Boldweight = (short)(bold ? NPOI.SS.UserModel.FontBoldWeight.Bold : 0);
+                hssfFont.Color = (hssfColor.Indexed);
                 hssfFont.FontHeight = ((short)(font.Size * 20));
                 hssfFont.FontName = font.Name;
                 hssfFont.IsItalic = (italic);
@@ -358,6 +357,7 @@ namespace NPOI.HSSF.UserModel
             shape.LineStyle = LineStyle.None;
             shape.SetFillColor(foreground.R, foreground.G, foreground.B);
             shape.SetLineStyleColor(foreground.R, foreground.G, foreground.B);
+            shape.IsNoFill = (false);
         }
 
         /**
@@ -447,11 +447,6 @@ namespace NPOI.HSSF.UserModel
             }
         }
 
-        public Rectangle GetClipRect()
-        {
-           return ClipBounds;
-        }
-
         public Color Color
         {
             get
@@ -475,15 +470,14 @@ namespace NPOI.HSSF.UserModel
 
         public void SetClip(int x, int y, int width, int height)
         {
-            throw new NotImplementedException();
-            //SetClip(((new Rectangle(x, y, width, height))));
+            SetClip(((new Rectangle(x, y, width, height))));
         }
 
-        //public void SetClip(Shape shape)
-        //{
-        //    // ignore... not implemented
-        //    throw new NotImplementedException();
-        //}
+        public void SetClip(Rectangle shape)
+        {
+            // ignore... not implemented
+            throw new NotImplementedException();
+        }
 
         public void SetColor(Color color)
         {

@@ -18,7 +18,11 @@
 using TestCases.SS.UserModel;
 using NUnit.Framework;
 using NPOI.SS.UserModel;
-namespace NPOI.XSSF.UserModel
+using NPOI.SS.Util;
+using NPOI.XSSF;
+using NPOI.XSSF.UserModel;
+
+namespace TestCases.XSSF.UserModel
 {
 
     /**
@@ -41,49 +45,51 @@ namespace NPOI.XSSF.UserModel
             // First Test that Setting RR&C for same sheet more than once only Creates a
             // single  Print_Titles built-in record
             XSSFWorkbook wb = new XSSFWorkbook();
-            wb.CreateSheet("First Sheet");
+            XSSFSheet sheet1 = (XSSFSheet)wb.CreateSheet("First Sheet");
+            sheet1.RepeatingRows = (null);
+            sheet1.RepeatingColumns = (null);
 
-            wb.SetRepeatingRowsAndColumns(0, -1, -1, -1, -1);
+
 
             // Set repeating rows and columns twice for the first sheet
             for (int i = 0; i < 2; i++)
             {
-                wb.SetRepeatingRowsAndColumns(0, 0, 0, 0, 3);
+                sheet1.RepeatingRows = (CellRangeAddress.ValueOf("1:4"));
+                sheet1.RepeatingColumns = (CellRangeAddress.ValueOf("A:A"));
                 //sheet.CreateFreezePane(0, 3);
             }
             Assert.AreEqual(1, wb.NumberOfNames);
-            IName nr1 = wb.GetNameAt(0);
+            IName nr1 = wb.GetName(XSSFName.BUILTIN_PRINT_TITLE);
 
-            Assert.AreEqual(XSSFName.BUILTIN_PRINT_TITLE, nr1.NameName);
             Assert.AreEqual("'First Sheet'!$A:$A,'First Sheet'!$1:$4", nr1.RefersToFormula);
 
             //remove the columns part
-            wb.SetRepeatingRowsAndColumns(0, -1, -1, 0, 3);
+            sheet1.RepeatingColumns = (null);
             Assert.AreEqual("'First Sheet'!$1:$4", nr1.RefersToFormula);
 
             //revert
-            wb.SetRepeatingRowsAndColumns(0, 0, 0, 0, 3);
+            sheet1.RepeatingColumns = (CellRangeAddress.ValueOf("A:A"));
 
             //remove the rows part
-            wb.SetRepeatingRowsAndColumns(0, 0, 0, -1, -1);
+            sheet1.RepeatingRows=(null);
             Assert.AreEqual("'First Sheet'!$A:$A", nr1.RefersToFormula);
 
             //revert
-            wb.SetRepeatingRowsAndColumns(0, 0, 0, 0, 3);
+            sheet1.RepeatingRows = (CellRangeAddress.ValueOf("1:4"));
 
             // Save and re-open
             IWorkbook nwb = XSSFTestDataSamples.WriteOutAndReadBack(wb);
 
             Assert.AreEqual(1, nwb.NumberOfNames);
-            nr1 = nwb.GetNameAt(0);
+            nr1 = nwb.GetName(XSSFName.BUILTIN_PRINT_TITLE);
 
-            Assert.AreEqual(XSSFName.BUILTIN_PRINT_TITLE, nr1.NameName);
             Assert.AreEqual("'First Sheet'!$A:$A,'First Sheet'!$1:$4", nr1.RefersToFormula);
 
             // check that Setting RR&C on a second sheet causes a new Print_Titles built-in
             // name to be Created
-            nwb.CreateSheet("SecondSheet");
-            nwb.SetRepeatingRowsAndColumns(1, 1, 2, 0, 0);
+            XSSFSheet sheet2 = (XSSFSheet)nwb.CreateSheet("SecondSheet");
+            sheet2.RepeatingRows = (CellRangeAddress.ValueOf("1:1"));
+            sheet2.RepeatingColumns = (CellRangeAddress.ValueOf("B:C"));
 
             Assert.AreEqual(2, nwb.NumberOfNames);
             IName nr2 = nwb.GetNameAt(1);
@@ -91,8 +97,40 @@ namespace NPOI.XSSF.UserModel
             Assert.AreEqual(XSSFName.BUILTIN_PRINT_TITLE, nr2.NameName);
             Assert.AreEqual("SecondSheet!$B:$C,SecondSheet!$1:$1", nr2.RefersToFormula);
 
-            nwb.SetRepeatingRowsAndColumns(1, -1, -1, -1, -1);
+            sheet2.RepeatingRows = (null);
+            sheet2.RepeatingColumns = (null);
         }
+
+        [Test]
+        public void TestSetNameName()
+        {
+            // Test that renaming named ranges doesn't break our new named range map
+            XSSFWorkbook wb = new XSSFWorkbook();
+            wb.CreateSheet("First Sheet");
+            // Two named ranges called "name1", one scoped to sheet1 and one globally
+            XSSFName nameSheet1 = wb.CreateName() as XSSFName;
+            nameSheet1.NameName = "name1";
+            nameSheet1.RefersToFormula = "'First Sheet'!$A$1";
+            nameSheet1.SheetIndex = 0;
+            XSSFName nameGlobal = wb.CreateName() as XSSFName;
+            nameGlobal.NameName = "name1";
+            nameGlobal.RefersToFormula = "'First Sheet'!$B$1";
+            // Rename sheet-scoped name to "name2", check everything is updated properly
+            // and that the other name is unaffected
+            nameSheet1.NameName = "name2";
+            Assert.AreEqual(1, wb.GetNames("name1").Count);
+            Assert.AreEqual(1, wb.GetNames("name2").Count);
+            Assert.AreEqual(nameGlobal, wb.GetName("name1"));
+            Assert.AreEqual(nameSheet1, wb.GetName("name2"));
+            // Rename the other name to "name" and check everything again
+            nameGlobal.NameName = "name2";
+            Assert.AreEqual(0, wb.GetNames("name1").Count);
+            Assert.AreEqual(2, wb.GetNames("name2").Count);
+            Assert.IsTrue(wb.GetNames("name2").Contains(nameGlobal));
+            Assert.IsTrue(wb.GetNames("name2").Contains(nameSheet1));
+            wb.Close();
+        }
+
     }
 }
 

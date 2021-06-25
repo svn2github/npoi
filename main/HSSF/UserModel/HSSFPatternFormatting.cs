@@ -17,13 +17,11 @@
 
 namespace NPOI.HSSF.UserModel
 {
-
-    using System;
-    using System.Text;
-
     using NPOI.HSSF.Record;
     using NPOI.HSSF.Record.CF;
+    using NPOI.HSSF.Util;
     using NPOI.SS.UserModel;
+    using System;
 
     /// <summary>
     /// High level representation for Conditional Formatting Settings
@@ -31,54 +29,17 @@ namespace NPOI.HSSF.UserModel
     /// </summary>
     public class HSSFPatternFormatting : IPatternFormatting
     {
-        /**  No background */
-        public static short NO_Fill = PatternFormatting.NO_Fill;
-        /**  Solidly Filled */
-        public static short SOLID_FOREGROUND = PatternFormatting.SOLID_FOREGROUND;
-        /**  Small fine dots */
-        public static short FINE_DOTS = PatternFormatting.FINE_DOTS;
-        /**  Wide dots */
-        public static short ALT_BARS = PatternFormatting.ALT_BARS;
-        /**  SParse dots */
-        public static short SPARSE_DOTS = PatternFormatting.SPARSE_DOTS;
-        /**  Thick horizontal bands */
-        public static short THICK_HORZ_BANDS = PatternFormatting.THICK_HORZ_BANDS;
-        /**  Thick vertical bands */
-        public static short THICK_VERT_BANDS = PatternFormatting.THICK_VERT_BANDS;
-        /**  Thick backward facing diagonals */
-        public static short THICK_BACKWARD_DIAG = PatternFormatting.THICK_BACKWARD_DIAG;
-        /**  Thick forward facing diagonals */
-        public static short THICK_FORWARD_DIAG = PatternFormatting.THICK_FORWARD_DIAG;
-        /**  Large spots */
-        public static short BIG_SPOTS = PatternFormatting.BIG_SPOTS;
-        /**  Brick-like layout */
-        public static short BRICKS = PatternFormatting.BRICKS;
-        /**  Thin horizontal bands */
-        public static short THIN_HORZ_BANDS = PatternFormatting.THIN_HORZ_BANDS;
-        /**  Thin vertical bands */
-        public static short THIN_VERT_BANDS = PatternFormatting.THIN_VERT_BANDS;
-        /**  Thin backward diagonal */
-        public static short THIN_BACKWARD_DIAG = PatternFormatting.THIN_BACKWARD_DIAG;
-        /**  Thin forward diagonal */
-        public static short THIN_FORWARD_DIAG = PatternFormatting.THIN_FORWARD_DIAG;
-        /**  Squares */
-        public static short SQUARES = PatternFormatting.SQUARES;
-        /**  Diamonds */
-        public static short DIAMONDS = PatternFormatting.DIAMONDS;
-        /**  Less Dots */
-        public static short LESS_DOTS = PatternFormatting.LESS_DOTS;
-        /**  Least Dots */
-        public static short LEAST_DOTS = PatternFormatting.LEAST_DOTS;
-
-        private CFRuleRecord cfRuleRecord;
+        private CFRuleBase cfRuleRecord;
+        private HSSFWorkbook workbook;
         private PatternFormatting patternFormatting;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="HSSFPatternFormatting"/> class.
         /// </summary>
         /// <param name="cfRuleRecord">The cf rule record.</param>
-        public HSSFPatternFormatting(CFRuleRecord cfRuleRecord)
+        public HSSFPatternFormatting(CFRuleBase cfRuleRecord, HSSFWorkbook workbook)
         {
+            this.workbook = workbook;
             this.cfRuleRecord = cfRuleRecord;
             this.patternFormatting = cfRuleRecord.PatternFormatting;
         }
@@ -95,6 +56,44 @@ namespace NPOI.HSSF.UserModel
             }
         }
 
+        public IColor FillBackgroundColorColor
+        {
+            get
+            {
+                return workbook.GetCustomPalette().GetColor(FillBackgroundColor);
+            }
+            set
+            {
+                HSSFColor hcolor = HSSFColor.ToHSSFColor(value);
+                if (hcolor == null)
+                {
+                    FillBackgroundColor = ((short)0);
+                }
+                else
+                {
+                    FillBackgroundColor = (hcolor.Indexed);
+                }
+            }
+        }
+        public IColor FillForegroundColorColor
+        {
+            get
+            {
+                return workbook.GetCustomPalette().GetColor(FillForegroundColor);
+            }
+            set
+            {
+                HSSFColor hcolor = HSSFColor.ToHSSFColor(value);
+                if (hcolor == null)
+                {
+                    FillForegroundColor = ((short)0);
+                }
+                else
+                {
+                    FillForegroundColor = (hcolor.Indexed);
+                }
+            }
+        }
         /// <summary>
         /// Gets or sets the color of the fill background.
         /// </summary>
@@ -139,19 +138,15 @@ namespace NPOI.HSSF.UserModel
         /// Gets or sets the fill pattern.
         /// </summary>
         /// <value>The fill pattern.</value>
-        public short FillPattern
+        public FillPattern FillPattern
         {
-            get
-            {
+            get {
                 return patternFormatting.FillPattern;
             }
-            set
-            {
-                patternFormatting.FillPattern=(value);
+            set {
+                patternFormatting.FillPattern = value;
                 if (value != 0)
-                {
-                    cfRuleRecord.IsPatternStyleModified=(true);
-                }
+                    cfRuleRecord.IsPatternStyleModified = true;
             }
         }
     }

@@ -20,7 +20,6 @@
  */
 namespace NPOI.SS.Formula.Functions
 {
-    using System;
     using NPOI.SS.Formula.Eval;
 
     /**
@@ -38,7 +37,7 @@ namespace NPOI.SS.Formula.Functions
 				}
 				throw new EvaluationException(ErrorEval.DIV_ZERO);
 			}
-			return MathX.floor(d0, d1);
+			return MathX.Floor(d0, d1);
 		}
 
     }

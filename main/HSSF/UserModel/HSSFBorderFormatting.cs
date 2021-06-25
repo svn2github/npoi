@@ -17,9 +17,9 @@
 
 namespace NPOI.HSSF.UserModel
 {
-    using System;
     using NPOI.HSSF.Record;
     using NPOI.HSSF.Record.CF;
+    using NPOI.HSSF.Util;
     using NPOI.SS.UserModel;
 
     /**
@@ -31,11 +31,13 @@ namespace NPOI.HSSF.UserModel
      */
     public class HSSFBorderFormatting : IBorderFormatting
     {
-        private CFRuleRecord cfRuleRecord;
+        private HSSFWorkbook workbook;
+        private CFRuleBase cfRuleRecord;
         private BorderFormatting borderFormatting;
 
-        public HSSFBorderFormatting(CFRuleRecord cfRuleRecord)
+        public HSSFBorderFormatting(CFRuleBase cfRuleRecord, HSSFWorkbook workbook)
         {
+            this.workbook = workbook;
             this.cfRuleRecord = cfRuleRecord;
             this.borderFormatting = cfRuleRecord.BorderFormatting;
         }
@@ -45,68 +47,75 @@ namespace NPOI.HSSF.UserModel
             return borderFormatting;
         }
 
-        public short BorderBottom
+        public BorderStyle BorderBottom
         {
-            get{return borderFormatting.BorderBottom;}
+            get { return borderFormatting.BorderBottom; }
             set
             {
-                borderFormatting.BorderBottom=(value);
-                if (value != 0)
+                borderFormatting.BorderBottom = value;
+                if (value != BorderStyle.None)
+                    cfRuleRecord.IsBottomBorderModified = true;
+                else
+                    cfRuleRecord.IsBottomBorderModified = (false);
+            }
+        }
+
+        public BorderStyle BorderDiagonal
+        {
+            get { return borderFormatting.BorderDiagonal; }
+            set {
+                borderFormatting.BorderDiagonal = value;
+                if (value != BorderStyle.None) {
+                    cfRuleRecord.IsBottomLeftTopRightBorderModified = true;
+                    cfRuleRecord.IsTopLeftBottomRightBorderModified = true;
+                }
+                else
                 {
-                    cfRuleRecord.IsBottomBorderModified = (true);
+                    cfRuleRecord.IsBottomLeftTopRightBorderModified = (false);
+                    cfRuleRecord.IsTopLeftBottomRightBorderModified = (false);
+                }
+
+            }
+        }
+
+        public BorderStyle BorderLeft
+        {
+            get { return borderFormatting.BorderLeft; }
+            set {
+                borderFormatting.BorderLeft = value;
+                if (value != BorderStyle.None)
+                    cfRuleRecord.IsLeftBorderModified = true;
+                else
+                {
+                    cfRuleRecord.IsLeftBorderModified = (false);
                 }
             }
         }
 
-        public short BorderDiagonal
+        public BorderStyle BorderRight
         {
-            get{return borderFormatting.BorderDiagonal;}
-            set
-            {
-                borderFormatting.BorderDiagonal=(value);
-                if (value != 0)
+            get { return borderFormatting.BorderRight; }
+            set {
+                borderFormatting.BorderRight = value;
+                if (value != BorderStyle.None)
+                    cfRuleRecord.IsRightBorderModified = true;
+                else
                 {
-                    cfRuleRecord.IsBottomLeftTopRightBorderModified = (true);
-                    cfRuleRecord.IsTopLeftBottomRightBorderModified = (true);
+                    cfRuleRecord.IsRightBorderModified = (false);
                 }
             }
         }
 
-        public short BorderLeft
+        public BorderStyle BorderTop
         {
-            get{return borderFormatting.BorderLeft;}
-            set
-            {
-                borderFormatting.BorderLeft=(value);
-                if (value != 0)
+            get { return borderFormatting.BorderTop; }
+            set {
+                borderFormatting.BorderTop = value;
+                if (value != BorderStyle.None)
+                    cfRuleRecord.IsTopBorderModified = true;
+                else
                 {
-                    cfRuleRecord.IsLeftBorderModified = (true);
-                }
-            }
-        }
-
-        public short BorderRight
-        {
-            get{return borderFormatting.BorderRight;}
-            set
-            {
-                borderFormatting.BorderRight=(value);
-                if (value != 0)
-                {
-                    cfRuleRecord.IsRightBorderModified = (true);
-                }
-            }
-        }
-
-        public short BorderTop
-        {
-            get{return borderFormatting.BorderTop;}
-            set
-            {
-                borderFormatting.BorderTop=(value);
-                if (value != 0)
-                {
-                    cfRuleRecord.IsTopBorderModified = (true);
+                    cfRuleRecord.IsTopBorderModified = (false);
                 }
             }
         }
@@ -121,9 +130,31 @@ namespace NPOI.HSSF.UserModel
                 {
                     cfRuleRecord.IsBottomBorderModified = (true);
                 }
+                else
+                {
+                    cfRuleRecord.IsBottomBorderModified = (false);
+                }
             }
         }
-
+        public IColor BottomBorderColorColor
+        {
+            get
+            {
+                return workbook.GetCustomPalette().GetColor(borderFormatting.BottomBorderColor);
+            }
+            set
+            {
+                HSSFColor hcolor = HSSFColor.ToHSSFColor(value);
+                if (hcolor == null)
+                {
+                    BottomBorderColor = ((short)0);
+                }
+                else
+                {
+                    BottomBorderColor = (hcolor.Indexed);
+                }
+            }
+        }
         public short DiagonalBorderColor
         {
             get{return borderFormatting.DiagonalBorderColor;}
@@ -134,6 +165,31 @@ namespace NPOI.HSSF.UserModel
                 {
                     cfRuleRecord.IsBottomLeftTopRightBorderModified = (true);
                     cfRuleRecord.IsTopLeftBottomRightBorderModified = (true);
+                }
+                else
+                {
+                    cfRuleRecord.IsBottomLeftTopRightBorderModified = (false);
+                    cfRuleRecord.IsTopLeftBottomRightBorderModified = (false);
+                }
+            }
+        }
+
+        public IColor DiagonalBorderColorColor
+        {
+            get
+            {
+                return workbook.GetCustomPalette().GetColor(borderFormatting.DiagonalBorderColor);
+            }
+            set
+            {
+                HSSFColor hcolor = HSSFColor.ToHSSFColor(value);
+                if (hcolor == null)
+                {
+                    DiagonalBorderColor = ((short)0);
+                }
+                else
+                {
+                    DiagonalBorderColor = (hcolor.Indexed);
                 }
             }
         }
@@ -148,9 +204,32 @@ namespace NPOI.HSSF.UserModel
                 {
                     cfRuleRecord.IsLeftBorderModified = (true);
                 }
+                else
+                {
+                    cfRuleRecord.IsLeftBorderModified = (false);
+                }
             }
         }
-
+        public IColor LeftBorderColorColor
+        {
+            get
+            {
+                return workbook.GetCustomPalette().GetColor(borderFormatting.LeftBorderColor);
+            }
+            set
+            {
+                HSSFColor hcolor = HSSFColor.ToHSSFColor(value);
+                if (hcolor == null)
+                {
+                    LeftBorderColor = ((short)0);
+                }
+                else
+                {
+                    LeftBorderColor = (hcolor.Indexed);
+                }
+            }
+            
+        }
         public short RightBorderColor
         {
             get{return borderFormatting.RightBorderColor;}
@@ -161,9 +240,31 @@ namespace NPOI.HSSF.UserModel
                 {
                     cfRuleRecord.IsRightBorderModified = (true);
                 }
+                else
+                {
+                    cfRuleRecord.IsRightBorderModified = (false);
+                }
             }
         }
-
+        public IColor RightBorderColorColor
+        {
+            get
+            {
+                return workbook.GetCustomPalette().GetColor(borderFormatting.RightBorderColor);
+            }
+            set
+            {
+                HSSFColor hcolor = HSSFColor.ToHSSFColor(value);
+                if (hcolor == null)
+                {
+                    RightBorderColor = ((short)0);
+                }
+                else
+                {
+                    RightBorderColor = (hcolor.Indexed);
+                }
+            }
+        }
         public short TopBorderColor
         {
             get{return borderFormatting.TopBorderColor;}
@@ -174,9 +275,31 @@ namespace NPOI.HSSF.UserModel
                 {
                     cfRuleRecord.IsTopBorderModified = (true);
                 }
+                else
+                {
+                    cfRuleRecord.IsTopBorderModified = (false);
+                }
             }
         }
-
+        public IColor TopBorderColorColor
+        {
+            get
+            {
+                return workbook.GetCustomPalette().GetColor(borderFormatting.TopBorderColor);
+            }
+            set
+            {
+                HSSFColor hcolor = HSSFColor.ToHSSFColor(value);
+                if (hcolor == null)
+                {
+                    TopBorderColor = ((short)0);
+                }
+                else
+                {
+                    TopBorderColor = (hcolor.Indexed);
+                }
+            }
+        }
         public bool IsBackwardDiagonalOn
         {
             get{return borderFormatting.IsBackwardDiagonalOn;}

@@ -27,10 +27,10 @@
 
 namespace NPOI.HPSF
 {
-    using System;
     using System.IO;
-    using System.Collections;
     using NPOI.HPSF.Wellknown;
+    using System;
+using NPOI.POIFS.FileSystem;
 
     /// <summary>
     /// Factory class To Create instances of {@link SummaryInformation},
@@ -41,6 +41,42 @@ namespace NPOI.HPSF
     /// </summary>
     public class PropertySetFactory
     {
+        /**
+         * <p>Creates the most specific {@link PropertySet} from an entry
+         *  in the specified POIFS Directory. This is preferrably a {@link
+         * DocumentSummaryInformation} or a {@link SummaryInformation}. If
+         * the specified entry does not contain a property Set stream, an 
+         * exception is thrown. If no entry is found with the given name,
+         * an exception is thrown.</p>
+         *
+         * @param dir The directory to find the PropertySet in
+         * @param name The name of the entry Containing the PropertySet
+         * @return The Created {@link PropertySet}.
+         * @if there is no entry with that name
+         * @if the stream does not
+         * contain a property Set.
+         * @if some I/O problem occurs.
+         * @exception EncoderFallbackException if the specified codepage is not
+         * supported.
+         */
+        public static PropertySet Create(DirectoryEntry dir, String name)
+        {
+            Stream inp = null;
+            try
+            {
+                DocumentEntry entry = (DocumentEntry)dir.GetEntry(name);
+                inp = new DocumentInputStream(entry);
+                try
+                {
+                    return Create(inp);
+                }
+                catch (MarkUnsupportedException) { return null; }
+            }
+            finally
+            {
+                if (inp != null) inp.Close();
+            }
+        }
 
         /// <summary>
         /// Creates the most specific {@link PropertySet} from an {@link
@@ -64,11 +100,11 @@ namespace NPOI.HPSF
                 else
                     return ps;
             }
-            catch (UnexpectedPropertySetTypeException)
+            catch (UnexpectedPropertySetTypeException ex)
             {
                 /* This exception will never be throws because we alReady checked
                  * explicitly for this case above. */
-                throw;
+                throw new InvalidOperationException(ex.Message, ex);
             }
         }
 
@@ -116,5 +152,20 @@ namespace NPOI.HPSF
             }
         }
 
+        internal static DocumentSummaryInformation NewDocumentSummaryInformation()
+        {
+            MutablePropertySet ps = new MutablePropertySet();
+            MutableSection s = (MutableSection)ps.FirstSection;
+            s.SetFormatID(SectionIDMap.DOCUMENT_SUMMARY_INFORMATION_ID1);
+            try
+            {
+                return new DocumentSummaryInformation(ps);
+            }
+            catch (UnexpectedPropertySetTypeException ex)
+            {
+                /* This should never happen. */
+                throw new HPSFRuntimeException(ex);
+            }
+        }
     }
 }

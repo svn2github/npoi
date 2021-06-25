@@ -40,13 +40,15 @@ namespace NPOI.XWPF.Extractor
         private XWPFDocument document;
         private bool fetchHyperlinks = false;
 
-        public XWPFWordExtractor(OPCPackage Container):this(new XWPFDocument(Container))
+        public XWPFWordExtractor(OPCPackage Container)
+            : this(new XWPFDocument(Container))
         {
-            
+
         }
-        public XWPFWordExtractor(XWPFDocument document):base(document)
+        public XWPFWordExtractor(XWPFDocument document)
+            : base(document)
         {
-            
+
             this.document = document;
         }
 
@@ -69,112 +71,156 @@ namespace NPOI.XWPF.Extractor
                 XWPFHeaderFooterPolicy hfPolicy = document.GetHeaderFooterPolicy();
 
                 // Start out with all headers
-                extractHeaders(text, hfPolicy);
+                ExtractHeaders(text, hfPolicy);
 
-                // First up, all our paragraph based text
-                IEnumerator<XWPFParagraph> i = document.GetParagraphsEnumerator();
-                while (i.MoveNext())
+                // body elements
+                foreach (IBodyElement e in document.BodyElements)
                 {
-                    XWPFParagraph paragraph = i.Current;
-
-                    try
-                    {
-                        CT_SectPr ctSectPr = null;
-                        if (paragraph.GetCTP().pPr != null)
-                        {
-                            ctSectPr = paragraph.GetCTP().pPr.sectPr;
-                        }
-
-                        XWPFHeaderFooterPolicy headerFooterPolicy = null;
-
-                        if (ctSectPr != null)
-                        {
-                            headerFooterPolicy = new XWPFHeaderFooterPolicy(document, ctSectPr);
-                            extractHeaders(text, headerFooterPolicy);
-                        }
-
-                        // Do the paragraph text
-                        foreach (XWPFRun run in paragraph.GetRuns())
-                        {
-                            text.Append(run.ToString());
-                            if (run is XWPFHyperlinkRun && fetchHyperlinks)
-                            {
-                                XWPFHyperlink link = ((XWPFHyperlinkRun)run).GetHyperlink(document);
-                                if (link != null)
-                                    text.Append(" <" + link.URL + ">");
-                            }
-                        }
-
-                        // Add comments
-                        XWPFCommentsDecorator decorator = new XWPFCommentsDecorator(paragraph, null);
-                        text.Append(decorator.GetCommentText()).Append('\n');
-
-                        // Do endnotes and footnotes
-                        String footnameText = paragraph.GetFootnoteText();
-                        if (footnameText != null && footnameText.Length > 0)
-                        {
-                            text.Append(footnameText + "\n");
-                        }
-
-                        if (ctSectPr != null)
-                        {
-                            extractFooters(text, headerFooterPolicy);
-                        }
-                    }
-                    catch (IOException e)
-                    {
-                        throw new POIXMLException(e);
-                    }
-                    catch (XmlException e)
-                    {
-                        throw new POIXMLException(e);
-                    }
-
-                }
-
-                // Then our table based text
-                IEnumerator<XWPFTable> j = document.GetTablesEnumerator();
-                while (j.MoveNext())
-                {
-                    text.Append(((XWPFTable)j.Current).GetText()).Append('\n');
+                    AppendBodyElementText(text, e);
+                    text.Append('\n');
                 }
 
                 // Finish up with all the footers
-                extractFooters(text, hfPolicy);
+                ExtractFooters(text, hfPolicy);
 
                 return text.ToString();
             }
         }
 
-        private void extractFooters(StringBuilder text, XWPFHeaderFooterPolicy hfPolicy)
+        public void AppendBodyElementText(StringBuilder text, IBodyElement e)
         {
-            if (hfPolicy.GetFirstPageFooter() != null)
+            if (e is XWPFParagraph)
             {
-                text.Append(hfPolicy.GetFirstPageFooter().GetText());
+                AppendParagraphText(text, (XWPFParagraph)e);
             }
-            if (hfPolicy.GetEvenPageFooter() != null)
+            else if (e is XWPFTable)
             {
-                text.Append(hfPolicy.GetEvenPageFooter().GetText());
+                AppendTableText(text, (XWPFTable)e);
             }
-            if (hfPolicy.GetDefaultFooter() != null)
+            else if (e is XWPFSDT)
             {
-                text.Append(hfPolicy.GetDefaultFooter().GetText());
+                text.Append(((XWPFSDT)e).Content.Text);
             }
         }
 
-        private void extractHeaders(StringBuilder text, XWPFHeaderFooterPolicy hfPolicy)
+        public void AppendParagraphText(StringBuilder text, XWPFParagraph paragraph)
         {
+            try
+            {
+                CT_SectPr ctSectPr = null;
+                if (paragraph.GetCTP().pPr != null)
+                {
+                    ctSectPr = paragraph.GetCTP().pPr.sectPr;
+                }
+
+                XWPFHeaderFooterPolicy headerFooterPolicy = null;
+
+                if (ctSectPr != null)
+                {
+                    headerFooterPolicy = new XWPFHeaderFooterPolicy(document, ctSectPr);
+                    ExtractHeaders(text, headerFooterPolicy);
+                }
+
+
+                foreach (IRunElement run in paragraph.Runs)
+                {
+                    text.Append(run.ToString());
+                    if (run is XWPFHyperlinkRun && fetchHyperlinks)
+                    {
+                        XWPFHyperlink link = ((XWPFHyperlinkRun)run).GetHyperlink(document);
+                        if (link != null)
+                            text.Append(" <" + link.URL + ">");
+                    }
+                }
+
+                // Add comments
+                XWPFCommentsDecorator decorator = new XWPFCommentsDecorator(paragraph, null);
+                String commentText = decorator.GetCommentText();
+                if (commentText.Length > 0)
+                {
+                    text.Append(commentText).Append('\n');
+                }
+
+                // Do endnotes and footnotes
+                String footnameText = paragraph.FootnoteText;
+                if (footnameText != null && footnameText.Length > 0)
+                {
+                    text.Append(footnameText + '\n');
+                }
+
+                if (ctSectPr != null)
+                {
+                    ExtractFooters(text, headerFooterPolicy);
+                }
+            }
+            catch (IOException e)
+            {
+                throw new POIXMLException(e);
+            }
+            catch (XmlException e)
+            {
+                throw new POIXMLException(e);
+            }
+
+        }
+
+        private void AppendTableText(StringBuilder text, XWPFTable table)
+        {
+            //this works recursively to pull embedded tables from tables
+            foreach (XWPFTableRow row in table.Rows)
+            {
+                List<ICell> cells = row.GetTableICells();
+                for (int i = 0; i < cells.Count; i++)
+                {
+                    ICell cell = cells[(i)];
+                    if (cell is XWPFTableCell)
+                    {
+                        text.Append(((XWPFTableCell)cell).GetTextRecursively());
+                    }
+                    else if (cell is XWPFSDTCell)
+                    {
+                        text.Append(((XWPFSDTCell)cell).Content.Text);
+                    }
+                    if (i < cells.Count - 1)
+                    {
+                        text.Append("\t");
+                    }
+                }
+                text.Append('\n');
+            }
+        }
+
+        private void ExtractFooters(StringBuilder text, XWPFHeaderFooterPolicy hfPolicy)
+        {
+            if (hfPolicy == null) return;
+            if (hfPolicy.GetFirstPageFooter() != null)
+            {
+                text.Append(hfPolicy.GetFirstPageFooter().Text);
+            }
+            if (hfPolicy.GetEvenPageFooter() != null)
+            {
+                text.Append(hfPolicy.GetEvenPageFooter().Text);
+            }
+            if (hfPolicy.GetDefaultFooter() != null)
+            {
+                text.Append(hfPolicy.GetDefaultFooter().Text);
+            }
+        }
+
+        private void ExtractHeaders(StringBuilder text, XWPFHeaderFooterPolicy hfPolicy)
+        {
+            if (hfPolicy == null) return;
             if (hfPolicy.GetFirstPageHeader() != null)
             {
-                text.Append(hfPolicy.GetFirstPageHeader().GetText());
+                text.Append(hfPolicy.GetFirstPageHeader().Text);
             }
             if (hfPolicy.GetEvenPageHeader() != null)
             {
-                text.Append(hfPolicy.GetEvenPageHeader().GetText());
+                text.Append(hfPolicy.GetEvenPageHeader().Text);
             }
             if (hfPolicy.GetDefaultHeader() != null)
             {
-                text.Append(hfPolicy.GetDefaultHeader().GetText());
+                text.Append(hfPolicy.GetDefaultHeader().Text);
             }
         }
     }

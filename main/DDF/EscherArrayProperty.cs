@@ -20,7 +20,7 @@ namespace NPOI.DDF
 {
     using System;
     using System.Text;
-    using System.Collections;
+    using System.Collections.Generic;
     using NPOI.Util;
 
     /// <summary>
@@ -28,7 +28,7 @@ namespace NPOI.DDF
     /// with all sorts of special cases.  I'm hopeful I've got them all.
     /// @author Glen Stampoultzis (glens at superlinksoftware.com)
     /// </summary>
-    public class EscherArrayProperty : EscherComplexProperty
+    public class EscherArrayProperty : EscherComplexProperty, IEnumerable<byte[]> 
     {
         /**
          * The size of the header that goes at the
@@ -184,7 +184,7 @@ namespace NPOI.DDF
             StringBuilder builder = new StringBuilder();
             builder.Append(tab).Append("<").Append(GetType().Name).Append(" id=\"0x").Append(HexDump.ToHex(Id))
                     .Append("\" name=\"").Append(Name).Append("\" blipId=\"")
-                    .Append(IsBlipId).Append("\">\n");
+                    .Append(IsBlipId.ToString().ToLower()).Append("\">\n");
             for (int i = 0; i < NumberOfElementsInArray; i++)
             {
                 builder.Append("\t").Append(tab).Append("<Element>").Append(HexDump.ToHex(GetElement(i))).Append("</Element>\n");
@@ -210,7 +210,7 @@ namespace NPOI.DDF
             else
             {
                 short numElements = LittleEndian.GetShort(data, offset);
-                short numReserved = LittleEndian.GetShort(data, offset + 2);
+                //short numReserved = LittleEndian.GetShort(data, offset + 2); // numReserved
                 short sizeOfElements = LittleEndian.GetShort(data, offset + 4);
 
                 int arraySize = GetActualSizeOfElements(sizeOfElements) * numElements;
@@ -259,5 +259,55 @@ namespace NPOI.DDF
                 return sizeOfElements;
         }
 
+
+        public IEnumerator<byte[]> GetEnumerator()
+        {
+            return new EscherArrayEnumerator(this);
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return this.GetEnumerator();
+        }
+
+        private class EscherArrayEnumerator : IEnumerator<byte[]>
+        {
+            EscherArrayProperty dataHolder;
+            public EscherArrayEnumerator(EscherArrayProperty eap)
+            {
+                dataHolder = eap;
+            }
+            private int idx = -1;
+            public byte[] Current
+            {
+                get
+                {
+                    if (idx < 0 || idx > dataHolder.NumberOfElementsInArray)
+                        throw new IndexOutOfRangeException();
+                    return dataHolder.GetElement(idx);
+                }
+            }
+
+            public void Dispose()
+            {
+                throw new NotImplementedException();
+            }
+
+            object System.Collections.IEnumerator.Current
+            {
+                get { return this.Current; }
+            }
+
+            public bool MoveNext()
+            {
+                idx++;
+                return (idx < dataHolder.NumberOfElementsInArray);
+            }
+
+            public void Reset()
+            {
+                throw new NotImplementedException();
+            }
+        }
     }
 }

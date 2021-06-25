@@ -17,9 +17,6 @@
 
 namespace NPOI.SS.Formula
 {
-    using System;
-    using System.Collections;
-    using NPOI.HSSF.Record;
     using NPOI.SS.Formula;
     using NPOI.Util;
 
@@ -34,7 +31,7 @@ namespace NPOI.SS.Formula
     public class Formula
     {
 
-        private static Formula EMPTY = new Formula(new byte[0], 0);
+        private static readonly Formula EMPTY = new Formula(new byte[0], 0);
 
         /** immutable */
         private byte[] _byteEncoding;
@@ -42,7 +39,7 @@ namespace NPOI.SS.Formula
 
         private Formula(byte[] byteEncoding, int encodedTokenLen)
         {
-            _byteEncoding = byteEncoding;
+            _byteEncoding = (byte[])byteEncoding.Clone();
             _encodedTokenLen = encodedTokenLen;
             //if (false) { // set to true to eagerly check Ptg decoding 
             //    LittleEndianByteArrayInputStream in1 = new LittleEndianByteArrayInputStream(byteEncoding);

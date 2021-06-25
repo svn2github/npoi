@@ -34,7 +34,7 @@ namespace NPOI.HSSF.Record
      * @author Glen Stampoultzis (glens at apache.org)
      * @author Michael Zalewski (zalewski at optonline.net)
      */
-    public abstract class AbstractEscherHolderRecord : Record
+    public abstract class AbstractEscherHolderRecord : Record, ICloneable
     {
         private static bool DESERIALISE;
         static AbstractEscherHolderRecord()
@@ -82,8 +82,11 @@ namespace NPOI.HSSF.Record
 
         protected void ConvertRawBytesToEscherRecords()
         {
-            byte[] rawData = RawData;
-            ConvertToEscherRecords(0, rawData.Length, rawData);
+            if (!DESERIALISE)
+            {
+                byte[] rawData = RawData;
+                ConvertToEscherRecords(0, rawData.Length, rawData);
+            }
         }
         private void ConvertToEscherRecords(int offset, int size, byte[] data)
         {
@@ -284,7 +287,7 @@ namespace NPOI.HSSF.Record
 
         public EscherRecord GetEscherRecord(int index)
         {
-            return (EscherRecord)escherRecords[index];
+            return escherRecords[index];
         }
 
         /**
@@ -316,8 +319,11 @@ namespace NPOI.HSSF.Record
          */
         public void Decode()
         {
-            byte[] rawData = RawData;
-            ConvertToEscherRecords(0, rawData.Length, rawData);
+            if (null == escherRecords || 0 == escherRecords.Count)
+            {
+                byte[] rawData = RawData;
+                ConvertToEscherRecords(0, rawData.Length, rawData);
+            }
         }
 
     }

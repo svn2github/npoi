@@ -320,6 +320,70 @@ namespace TestCases.POIFS.Storage
                   4096 + 112 * 4096 * 1024,
                   BATBlock.CalculateMaximumSize(POIFSConstants.LARGER_BIG_BLOCK_SIZE_DETAILS, 112)
             );
+
+            // Check for >2gb, which we only support via a File
+            Assert.AreEqual(
+                    512 + 8030L * 512 * 128,
+                    BATBlock.CalculateMaximumSize(POIFSConstants.SMALLER_BIG_BLOCK_SIZE_DETAILS, 8030)
+            );
+            Assert.AreEqual(
+                    4096 + 8030L * 4096 * 1024,
+                    BATBlock.CalculateMaximumSize(POIFSConstants.LARGER_BIG_BLOCK_SIZE_DETAILS, 8030)
+            );
+        }
+
+        [Test]
+        public void TestUsedSectors()
+        {
+            POIFSBigBlockSize b512 = POIFSConstants.SMALLER_BIG_BLOCK_SIZE_DETAILS;
+            POIFSBigBlockSize b4096 = POIFSConstants.LARGER_BIG_BLOCK_SIZE_DETAILS;
+
+            // Try first with 512 block sizes, which can hold 128 entries
+            BATBlock block512 = BATBlock.CreateEmptyBATBlock(b512, false);
+            Assert.AreEqual(true, block512.HasFreeSectors);
+            Assert.AreEqual(0, block512.GetUsedSectors(false));
+            // Allocate a few
+            block512.SetValueAt(0, 42);
+            block512.SetValueAt(10, 42);
+            block512.SetValueAt(20, 42);
+            Assert.AreEqual(true, block512.HasFreeSectors);
+            Assert.AreEqual(3, block512.GetUsedSectors(false));
+
+            // Allocate all
+            for (int i = 0; i < b512.GetBATEntriesPerBlock(); i++) {
+                block512.SetValueAt(i, 82);
+            }
+            // Check
+            Assert.AreEqual(false, block512.HasFreeSectors);
+            Assert.AreEqual(128, block512.GetUsedSectors(false));
+            Assert.AreEqual(127, block512.GetUsedSectors(true));
+
+            // Release one
+            block512.SetValueAt(10, POIFSConstants.UNUSED_BLOCK);
+            Assert.AreEqual(true, block512.HasFreeSectors);
+            Assert.AreEqual(127, block512.GetUsedSectors(false));
+            Assert.AreEqual(126, block512.GetUsedSectors(true));
+
+
+            // Now repeat with 4096 block sizes
+            BATBlock block4096 = BATBlock.CreateEmptyBATBlock(b4096, false);
+            Assert.AreEqual(true, block4096.HasFreeSectors);
+            Assert.AreEqual(0, block4096.GetUsedSectors(false));
+
+            block4096.SetValueAt(0, 42);
+            block4096.SetValueAt(10, 42);
+            block4096.SetValueAt(20, 42);
+            Assert.AreEqual(true, block4096.HasFreeSectors);
+            Assert.AreEqual(3, block4096.GetUsedSectors(false));
+
+            // Allocate all
+            for (int i = 0; i < b4096.GetBATEntriesPerBlock(); i++) {
+                block4096.SetValueAt(i, 82);
+            }
+            // Check
+            Assert.AreEqual(false, block4096.HasFreeSectors);
+            Assert.AreEqual(1024, block4096.GetUsedSectors(false));
+            Assert.AreEqual(1023, block4096.GetUsedSectors(true));
         }
         [Test]
         public void TestGetBATBlockAndIndex()

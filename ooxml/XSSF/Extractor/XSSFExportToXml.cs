@@ -132,7 +132,7 @@ namespace NPOI.XSSF.Extractor
             }
 
 
-            xpaths.Sort();
+            xpaths.Sort(this);
 
             foreach (String xpath in xpaths)
             {
@@ -171,11 +171,11 @@ namespace NPOI.XSSF.Extractor
 
                         XSSFSheet sheet = table.GetXSSFSheet();
 
-                        int startRow = table.GetStartCellReference().Row;
+                        int startRow = table.StartCellReference.Row;
                         // In mappings Created with Microsoft Excel the first row Contains the table header and must be Skipped
                         startRow += 1;
 
-                        int endRow = table.GetEndCellReference().Row;
+                        int endRow = table.EndCellReference.Row;
 
                         for (int i = startRow; i <= endRow; i++)
                         {
@@ -183,8 +183,8 @@ namespace NPOI.XSSF.Extractor
 
                             XmlNode tableRootNode = GetNodeByXPath(table.GetCommonXpath(), doc.FirstChild, doc, true);
 
-                            short startColumnIndex = table.GetStartCellReference().Col;
-                            for (int j = startColumnIndex; j <= table.GetEndCellReference().Col; j++)
+                            short startColumnIndex = table.StartCellReference.Col;
+                            for (int j = startColumnIndex; j <= table.EndCellReference.Col; j++)
                             {
                                 XSSFCell cell = (XSSFCell)row.GetCell(j);
                                 if (cell != null)
@@ -275,11 +275,11 @@ namespace NPOI.XSSF.Extractor
             switch (cell.CellType)
             {
 
-                case CellType.STRING: value = cell.StringCellValue; break;
-                case CellType.BOOLEAN: value += cell.BooleanCellValue; break;
-                case CellType.ERROR: value = cell.ErrorCellString; break;
-                case CellType.FORMULA: value = cell.StringCellValue; break;
-                case CellType.NUMERIC: value += cell.GetRawValue(); break;
+                case CellType.String: value = cell.StringCellValue; break;
+                case CellType.Boolean: value += cell.BooleanCellValue; break;
+                case CellType.Error: value = cell.ErrorCellString; break;
+                case CellType.Formula: value = cell.StringCellValue; break;
+                case CellType.Numeric: value += cell.GetRawValue(); break;
                 default:
                     break;
             }
@@ -407,7 +407,9 @@ namespace NPOI.XSSF.Extractor
         {
 
             int result = 0;
-            XmlNode xmlSchema = map.GetSchema();
+            string xmlSchema = map.GetSchema();
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xmlSchema);
 
 
             String[] leftTokens = leftXpath.Split(new char[]{'/'});
@@ -415,7 +417,7 @@ namespace NPOI.XSSF.Extractor
 
             int minLenght = leftTokens.Length < rightTokens.Length ? leftTokens.Length : rightTokens.Length;
 
-            XmlNode localComplexTypeRootNode = xmlSchema;
+            XmlNode localComplexTypeRootNode = doc.DocumentElement;
 
 
             for (int i = 1; i < minLenght; i++)
@@ -426,9 +428,7 @@ namespace NPOI.XSSF.Extractor
 
                 if (leftElementName.Equals(rightElementName))
                 {
-
-
-                    XmlNode complexType = GetComplexTypeForElement(leftElementName, xmlSchema, localComplexTypeRootNode);
+                    XmlNode complexType = GetComplexTypeForElement(leftElementName,doc.DocumentElement, localComplexTypeRootNode);
                     localComplexTypeRootNode = complexType;
                 }
                 else

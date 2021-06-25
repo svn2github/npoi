@@ -20,14 +20,11 @@
  */
 namespace NPOI.SS.Formula.Functions
 {
-    using System;
-    using NPOI.SS.Formula.Eval;
-
     public class Rounddown : TwoArg
     {
         public override double Evaluate(double d0, double d1)
         {
-            return MathX.roundDown(d0, (int)d1);
+            return MathX.RoundDown(d0, (int)d1);
         }
     }
 }

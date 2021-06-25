@@ -21,7 +21,6 @@ namespace NPOI.SS.Formula.PTG
     using System.Text;
 
     using NPOI.SS.Formula.Function;
-    using NPOI.SS.Formula;
 
 
     /**
@@ -38,9 +37,9 @@ namespace NPOI.SS.Formula.PTG
         /**
          * The name of the IF function (i.e. "IF").  Extracted as a constant for clarity.
          */
-        public static String FUNCTION_NAME_IF = "IF";
+        public const string FUNCTION_NAME_IF = "IF";
         /** All external functions have function index 255 */
-        private static short FUNCTION_INDEX_EXTERNAL = 255;
+        private const short FUNCTION_INDEX_EXTERNAL = 255;
 
         protected byte returnClass;
         protected byte[] paramClass;
@@ -71,9 +70,12 @@ namespace NPOI.SS.Formula.PTG
             return sb.ToString();
         }
 
-        public short GetFunctionIndex()
+        public short FunctionIndex
         {
-            return _functionIndex;
+            get
+            {
+                return _functionIndex;
+            }
         }
         public override int NumberOfOperands
         {

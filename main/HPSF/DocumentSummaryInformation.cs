@@ -28,9 +28,9 @@
 namespace NPOI.HPSF
 {
     using System;
-    using System.IO;
     using System.Collections;
     using NPOI.HPSF.Wellknown;
+    using NPOI.Util;
 
     /// <summary>
     /// Convenience class representing a DocumentSummary Information stream in a
@@ -49,8 +49,7 @@ namespace NPOI.HPSF
          * The document name a document summary information stream
          * usually has in a POIFS filesystem.
          */
-        public static String DEFAULT_STREAM_NAME =
-            "\x0005DocumentSummaryInformation";
+        public const string DEFAULT_STREAM_NAME = "\x0005DocumentSummaryInformation";
 
         public override PropertyIDMap PropertySetIDMap
         {
@@ -82,7 +81,7 @@ namespace NPOI.HPSF
         {
             get
             {
-                return (String)GetProperty(PropertyIDMap.PID_CATEGORY);
+                return GetPropertyStringValue(PropertyIDMap.PID_CATEGORY);
             }
             set
             {
@@ -108,7 +107,7 @@ namespace NPOI.HPSF
         /// <value>The presentation format value</value>
         public String PresentationFormat
         {
-            get { return (String)GetProperty(PropertyIDMap.PID_PRESFORMAT); }
+            get { return GetPropertyStringValue(PropertyIDMap.PID_PRESFORMAT); }
             set
             {
                 MutableSection s = (MutableSection)FirstSection;
@@ -403,7 +402,7 @@ namespace NPOI.HPSF
         /// <value>The manager value</value>
         public String Manager
         {
-            get { return (String)GetProperty(PropertyIDMap.PID_MANAGER); }
+            get { return GetPropertyStringValue(PropertyIDMap.PID_MANAGER); }
             set
             {
                 MutableSection s = (MutableSection)FirstSection;
@@ -428,7 +427,7 @@ namespace NPOI.HPSF
         /// <value>The company value</value>
         public String Company
         {
-            get { return (String)GetProperty(PropertyIDMap.PID_COMPANY); }
+            get { return GetPropertyStringValue(PropertyIDMap.PID_COMPANY); }
             set
             {
                 MutableSection s = (MutableSection)FirstSection;
@@ -470,6 +469,261 @@ namespace NPOI.HPSF
             s.RemoveProperty(PropertyIDMap.PID_LINKSDIRTY);
         }
 
+
+
+        /**
+         * <p>Returns the character count including whitespace, or 0 if the 
+         *  {@link DocumentSummaryInformation} does not contain this char count.</p>
+         * This is the whitespace-including version of {@link SummaryInformation#getCharCount()}
+         *
+         * @return The character count or <code>null</code>
+         */
+        public int CharCountWithSpaces
+        {
+            get
+            {
+                return GetPropertyIntValue(PropertyIDMap.PID_CCHWITHSPACES);
+            }
+            set
+            {
+                /*
+                 * Sets the character count including whitespace
+                 */
+                MutableSection s = (MutableSection)FirstSection;
+                s.SetProperty(PropertyIDMap.PID_CCHWITHSPACES, value);
+            }
+        }
+
+
+
+        /**
+         * Removes the character count
+         */
+        public void RemoveCharCountWithSpaces()
+        {
+            MutableSection s = (MutableSection)FirstSection;
+            s.RemoveProperty(PropertyIDMap.PID_CCHWITHSPACES);
+        }
+
+
+        /**
+         * <p>Get if the User Defined Property Set has been updated outside of the 
+         * Application.</p>
+         * <p>If it has (true), the hyperlinks should be updated on document load.</p>
+         */
+        public bool HyperlinksChanged
+        {
+            get
+            {
+                return GetPropertyBooleanValue(PropertyIDMap.PID_HYPERLINKSCHANGED);
+            }
+            set
+            {
+                /*
+                 * Set the flag for if the User Defined Property Set has been updated outside 
+                 *  of the Application.
+                 */
+                MutableSection s = (MutableSection)FirstSection;
+                s.SetProperty(PropertyIDMap.PID_HYPERLINKSCHANGED, value);
+            }
+        }
+
+        /**
+         * Removes the flag for if the User Defined Property Set has been updated
+         *  outside of the Application.
+         */
+        public void RemoveHyperlinksChanged()
+        {
+            MutableSection s = (MutableSection)FirstSection;
+            s.RemoveProperty(PropertyIDMap.PID_HYPERLINKSCHANGED);
+        }
+
+
+        /**
+         * <p>Gets the version of the Application which wrote the
+         *  Property set, stored with the two high order bytes having the major
+         *  version number, and the two low order bytes the minor version number.</p>
+         * <p>This will be 0 if no version is set.</p>
+         */
+        public int ApplicationVersion
+        {
+            get
+            {
+                return GetPropertyIntValue(PropertyIDMap.PID_VERSION);
+            }
+            set
+            {
+                /*
+                 * Sets the Application version, which must be a 4 byte int with
+                 *  the  two high order bytes having the major version number, and the 
+                 *  two low order bytes the minor version number.
+                 */
+                MutableSection s = (MutableSection)FirstSection;
+                s.SetProperty(PropertyIDMap.PID_VERSION, value);
+            }
+        }
+
+        /**
+         * Removes the Application Version
+         */
+        public void RemoveApplicationVersion()
+        {
+            MutableSection s = (MutableSection)FirstSection;
+            s.RemoveProperty(PropertyIDMap.PID_VERSION);
+        }
+
+
+        /**
+         * <p>Returns the VBA digital signature for the VBA project 
+         *  embedded in the document (or <code>null</code>).</p>
+         */
+        public byte[] VBADigitalSignature
+        {
+            get
+            {
+                Object value = GetProperty(PropertyIDMap.PID_DIGSIG);
+                if (value != null && value is byte[]) {
+                    return (byte[])value;
+                }
+                return null;
+            }
+            set
+            {
+                /*
+                 * <p>Sets the VBA digital signature for the VBA project 
+                 *  embedded in the document.</p>
+                 */
+                MutableSection s = (MutableSection)FirstSection;
+                s.SetProperty(PropertyIDMap.PID_DIGSIG, value);
+            }
+        }
+
+        /**
+         * Removes the VBA Digital Signature
+         */
+        public void RemoveVBADigitalSignature()
+        {
+            MutableSection s = (MutableSection)FirstSection;
+            s.RemoveProperty(PropertyIDMap.PID_DIGSIG);
+        }
+
+
+        /**
+         * <p>Gets the content type of the file (or <code>null</code>).</p>
+         */
+        public String ContentType
+        {
+            get
+            {
+                return GetPropertyStringValue(PropertyIDMap.PID_CONTENTTYPE);
+            }
+            set
+            {
+                /*
+                 * Sets the content type of the file
+                 */
+                MutableSection s = (MutableSection)FirstSection;
+                s.SetProperty(PropertyIDMap.PID_CONTENTTYPE, value);
+            }
+        }
+
+        /**
+         * Removes the content type of the file
+         */
+        public void RemoveContentType()
+        {
+            MutableSection s = (MutableSection)FirstSection;
+            s.RemoveProperty(PropertyIDMap.PID_CONTENTTYPE);
+        }
+
+
+        /**
+         * <p>Gets the content status of the file (or <code>null</code>).</p>
+         */
+        public String ContentStatus
+        {
+            get
+            {
+                return GetPropertyStringValue(PropertyIDMap.PID_CONTENTSTATUS);
+            }
+            set
+            {
+                /*
+                 * Sets the content type of the file
+                 */
+                MutableSection s = (MutableSection)FirstSection;
+                s.SetProperty(PropertyIDMap.PID_CONTENTSTATUS, value);
+            }
+        }
+
+        /**
+         * Removes the content status of the file
+         */
+        public void RemoveContentStatus()
+        {
+            MutableSection s = (MutableSection)FirstSection;
+            s.RemoveProperty(PropertyIDMap.PID_CONTENTSTATUS);
+        }
+
+
+        /**
+         * <p>Gets the document language, which is normally unset and empty
+         *  (or <code>null</code>).</p>
+         */
+        public String Language
+        {
+            get
+            {
+                return GetPropertyStringValue(PropertyIDMap.PID_LANGUAGE);
+            }
+            set
+            {
+                /*
+                 * Set the document language
+                 */
+                MutableSection s = (MutableSection)FirstSection;
+                s.SetProperty(PropertyIDMap.PID_LANGUAGE, value);
+            }   
+        }
+
+        /**
+         * Removes the document language
+         */
+        public void RemoveLanguage()
+        {
+            MutableSection s = (MutableSection)FirstSection;
+            s.RemoveProperty(PropertyIDMap.PID_LANGUAGE);
+        }
+
+
+        /**
+         * <p>Gets the document version as a string, which is normally unset and empty
+         *  (or <code>null</code>).</p>
+         */
+        public String DocumentVersion
+        {
+            get
+            {
+                return GetPropertyStringValue(PropertyIDMap.PID_DOCVERSION);
+            }
+            set
+            {
+                /*
+                 * Sets the document version string
+                 */
+                MutableSection s = (MutableSection)FirstSection;
+                s.SetProperty(PropertyIDMap.PID_DOCVERSION, value);
+            }
+        }
+            
+        /**
+         * Removes the document version string
+         */
+        public void RemoveDocumentVersion()
+        {
+            MutableSection s = (MutableSection)FirstSection;
+            s.RemoveProperty(PropertyIDMap.PID_DOCVERSION);
+        }
 
 
         /// <summary>
@@ -519,7 +773,7 @@ namespace NPOI.HPSF
                 if (cpCodepage < 0)
                     cpCodepage = section.Codepage;
                 if (cpCodepage < 0)
-                    cpCodepage = (int)Constants.CP_UNICODE;
+                    cpCodepage = CodePageUtil.CP_UNICODE;
                 value.Codepage=cpCodepage;
                 section.Codepage=cpCodepage; //add codepage propertyset
                 section.Dictionary=dictionary; //generate dictionary propertyset

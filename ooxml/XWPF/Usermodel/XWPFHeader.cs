@@ -22,23 +22,31 @@ namespace NPOI.XWPF.UserModel
     using System.IO;
     using System.Xml.Serialization;
     using System.Xml;
+    using NPOI.Util;
+    using System.Xml.XPath;
 
     /**
      * Sketch of XWPF header class
      */
     public class XWPFHeader : XWPFHeaderFooter
     {
-        public XWPFHeader()
-            //: base()
+        public XWPFHeader():base()
         {
             headerFooter = new CT_Hdr();
             ReadHdrFtr();
         }
 
-        public XWPFHeader(POIXMLDocumentPart parent, PackagePart part, PackageRelationship rel)
-            : base(parent, part, rel)
+        public XWPFHeader(POIXMLDocumentPart parent, PackagePart part)
+            : base(parent, part)
         {
-            ;
+            
+        }
+
+        [Obsolete("deprecated in POI 3.14, scheduled for removal in POI 3.16")]
+        public XWPFHeader(POIXMLDocumentPart parent, PackagePart part, PackageRelationship rel)
+            : this(parent, part)
+        {
+
         }
 
         public XWPFHeader(XWPFDocument doc, CT_HdrFtr hdrFtr)
@@ -74,11 +82,10 @@ namespace NPOI.XWPF.UserModel
             }
         }
 
-        /**
-         * save and Commit footer
-         */
-
-        protected override void Commit()
+        /// <summary>
+        /// Save and commit footer
+        /// </summary>
+        protected internal override void Commit()
         {
             /*XmlOptions xmlOptions = new XmlOptions(DEFAULT_XML_OPTIONS);
             xmlOptions.SaveSyntheticDocumentElement=(new QName(CTNumbering.type.Name.NamespaceURI, "hdr"));
@@ -94,36 +101,27 @@ namespace NPOI.XWPF.UserModel
             map.Put("http://schemas.microsoft.com/office/word/2006/wordml", "wne");
             xmlOptions.SaveSuggestedPrefixes=(/map);*/
             PackagePart part = GetPackagePart();
-            Stream out1 = part.GetOutputStream();
-            HdrDocument doc = new HdrDocument((CT_Hdr)headerFooter);
-            XmlSerializerNamespaces namespaces = new XmlSerializerNamespaces(new[] {
-                new XmlQualifiedName("ve", "http://schemas.openxmlformats.org/markup-compatibility/2006"),
-                new XmlQualifiedName("r", "http://schemas.openxmlformats.org/officeDocument/2006/relationships"),
-                new XmlQualifiedName("m", "http://schemas.openxmlformats.org/officeDocument/2006/math"),
-                new XmlQualifiedName("v", "urn:schemas-microsoft-com:vml"),
-                new XmlQualifiedName("wp", "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"),
-                new XmlQualifiedName("w10", "urn:schemas-microsoft-com:office:word"),
-                new XmlQualifiedName("wne", "http://schemas.microsoft.com/office/word/2006/wordml"),
-                 new XmlQualifiedName("w", "http://schemas.openxmlformats.org/wordprocessingml/2006/main")
-             });
-            doc.Save(out1, namespaces);
-            out1.Close();
+            using (Stream out1 = part.GetOutputStream())
+            {
+                HdrDocument doc = new HdrDocument((CT_Hdr)headerFooter);
+                doc.Save(out1);
+            }
         }
 
-        /**
-         * Reads the document
-         * @throws IOException 
-         */
 
+        /// <summary>
+        /// Read the document
+        /// </summary>
         internal override void OnDocumentRead()
         {
             base.OnDocumentRead();
             HdrDocument hdrDocument = null;
-            Stream is1;
+            Stream is1 = null;
             try
             {
                 is1 = GetPackagePart().GetInputStream();
-                hdrDocument = HdrDocument.Parse(is1);
+                XmlDocument xmldoc = DocumentHelper.LoadDocument(is1);
+                hdrDocument = HdrDocument.Parse(xmldoc, NamespaceManager);
                 headerFooter = hdrDocument.Hdr;
                 foreach (object o in headerFooter.Items)
                 {
@@ -139,39 +137,32 @@ namespace NPOI.XWPF.UserModel
                         tables.Add(t);
                         bodyElements.Add(t);
                     }
-                }
-                // parse the document with cursor and add
-                // the XmlObject to its lists
-                /*XmlCursor cursor = headerFooter.NewCursor();
-                cursor.SelectPath("./*");
-                while (cursor.ToNextSelection()) {
-                    XmlObject o = cursor.Object;
-                    if (o is CTP) {
-                        XWPFParagraph p = new XWPFParagraph((CTP)o, this);
-                        paragraphs.Add(p);
-                        bodyElements.Add(p);
-                    }
-                    if (o is CTTbl) {
-                        XWPFTable t = new XWPFTable((CTTbl)o, this);
-                        tables.Add(t);
-                        bodyElements.Add(t);
+                    if (o is CT_SdtBlock)
+                    {
+                        XWPFSDT c = new XWPFSDT((CT_SdtBlock)o, this);
+                        bodyElements.Add(c);
                     }
                 }
-                cursor.Dispose();*/
             }
             catch (Exception e)
             {
                 throw new POIXMLException(e);
             }
+            finally
+            {
+                if (is1 != null)
+                    is1.Close();
+            }
         }
-
-        /**
-         * Get the PartType of the body
-         * @see NPOI.XWPF.UserModel.IBody#getPartType()
-         */
-        public override BodyType GetPartType()
+        /// <summary>
+        /// Get the PartType of the body
+        /// </summary>
+        public override BodyType PartType
         {
-            return BodyType.HEADER;
+            get
+            {
+                return BodyType.HEADER;
+            }
         }
-    }//end class
+    }
 }

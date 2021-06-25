@@ -19,10 +19,10 @@ using NPOI.OpenXml4Net.OPC;
 using System;
 using NPOI.SS.Util;
 using NPOI.OpenXmlFormats.Spreadsheet;
+using NPOI.Util;
+
 namespace NPOI.XSSF.UserModel
 {
-
-
     /**
      * XSSF Implementation of a Hyperlink.
      * Note - unlike with HSSF, many kinds of hyperlink
@@ -32,8 +32,8 @@ namespace NPOI.XSSF.UserModel
     {
         private HyperlinkType _type;
         private PackageRelationship _externalRel;
-        private CT_Hyperlink _ctHyperlink;
-        private String _location;
+        private CT_Hyperlink _ctHyperlink; //contains a reference to the cell where the hyperlink is anchored, getRef()
+        private String _location; //what the hyperlink refers to
 
         /**
          * Create a new XSSFHyperlink. This method is protected to be used only by XSSFCreationHelper
@@ -44,6 +44,7 @@ namespace NPOI.XSSF.UserModel
         {
             _type = type;
             _ctHyperlink = new CT_Hyperlink();
+            _externalRel = null;
         }
 
         /**
@@ -57,45 +58,79 @@ namespace NPOI.XSSF.UserModel
             _ctHyperlink = ctHyperlink;
             _externalRel = hyperlinkRel;
 
-            // Figure out the Hyperlink type and distination
+            // Figure out the Hyperlink type and destination
 
-            // If it has a location, it's internal
-            if (ctHyperlink.location != null)
+            if (_externalRel == null)
             {
-                _type = HyperlinkType.DOCUMENT;
-                _location = ctHyperlink.location;
-            }
-            else
-            {
-                // Otherwise it's somehow external, check
-                //  the relation to see how
-                if (_externalRel == null)
+                // If it has a location, it's internal
+                if (ctHyperlink.location != null)
                 {
-                    if (ctHyperlink.id != null)
-                    {
-                        throw new InvalidOperationException("The hyperlink for cell " + 
-                            ctHyperlink.@ref + " references relation " + ctHyperlink.id + ", but that didn't exist!");
-                    }
-                    throw new InvalidOperationException("A sheet hyperlink must either have a location, or a relationship. Found:\n" + ctHyperlink);
+                    _type = HyperlinkType.Document;
+                    _location = ctHyperlink.location;
                 }
-
-                Uri target = _externalRel.TargetUri;
-                _location = target.ToString();
-
-                // Try to figure out the type
-                if (_location.StartsWith("http://") || _location.StartsWith("https://")
-                        || _location.StartsWith("ftp://"))
+                else if (ctHyperlink.id != null)
                 {
-                    _type = HyperlinkType.URL;
-                }
-                else if (_location.StartsWith("mailto:"))
-                {
-                    _type = HyperlinkType.EMAIL;
+                    throw new InvalidOperationException("The hyperlink for cell "
+                            + ctHyperlink.@ref + " references relation "
+                            + ctHyperlink.id + ", but that didn't exist!");
                 }
                 else
                 {
-                    _type = HyperlinkType.FILE;
+                    // hyperlink is internal and is not related to other parts
+                    _type = HyperlinkType.Document;
                 }
+            }
+            else
+            {
+                Uri target = _externalRel.TargetUri;
+                _location = target.ToString();
+                if (ctHyperlink.location != null)
+                {
+                    // URI fragment
+                    _location += "#" + ctHyperlink.location;
+                }
+
+                // Try to figure out the type
+                if (_location.StartsWith("http://") || _location.StartsWith("https://")
+                     || _location.StartsWith("ftp://"))
+                {
+                    _type = HyperlinkType.Url;
+                }
+                else if (_location.StartsWith("mailto:"))
+                {
+                    _type = HyperlinkType.Email;
+                }
+                else
+                {
+                    _type = HyperlinkType.File;
+                }
+            }
+        }
+
+        /**
+         * Create a new XSSFHyperlink. This method is for Internal use only.
+         * XSSFHyperlinks can be created by XSSFCreationHelper.
+         *
+         * @param type - the type of hyperlink to create, see {@link Hyperlink}
+         */
+        //FIXME: change to protected if/when SXSSFHyperlink class is created
+        public XSSFHyperlink(IHyperlink other)
+        {
+            if (other is XSSFHyperlink)
+            {
+                XSSFHyperlink xlink = (XSSFHyperlink)other;
+                _type = xlink.Type;
+                _location = xlink._location;
+                _externalRel = xlink._externalRel;
+                _ctHyperlink = xlink._ctHyperlink.Copy();
+            }
+            else
+            {
+                _type = other.Type;
+                _location = other.Address;
+                _externalRel = null;
+                _ctHyperlink = new CT_Hyperlink();
+                SetCellReference(new CellReference(other.FirstRow, other.FirstColumn));
             }
         }
 
@@ -113,7 +148,7 @@ namespace NPOI.XSSF.UserModel
          */
         public bool NeedsRelationToo()
         {
-            return (_type != HyperlinkType.DOCUMENT);
+            return (_type != HyperlinkType.Document);
         }
 
         /**
@@ -121,7 +156,7 @@ namespace NPOI.XSSF.UserModel
          */
         internal void GenerateRelationIfNeeded(PackagePart sheetPart)
         {
-            if (NeedsRelationToo())
+            if (_externalRel == null && NeedsRelationToo())
             {
                 // Generate the relation
                 PackageRelationship rel =
@@ -141,21 +176,28 @@ namespace NPOI.XSSF.UserModel
         {
             get
             {
-                return (HyperlinkType)_type;
+                return _type;
             }
         }
-
+        [Obsolete("use property CellRef")]
+        public string GetCellRef()
+        {
+            return _ctHyperlink.@ref;
+        }
         /**
          * Get the reference of the cell this applies to,
          * es A55
          */
-        public String GetCellRef()
+        public String CellRef
         {
-            return _ctHyperlink.@ref;
+            get
+            {
+                return _ctHyperlink.@ref;
+            }
         }
 
         /**
-         * Hypelink Address. Depending on the hyperlink type it can be URL, e-mail, path to a file
+         * Hyperlink Address. Depending on the hyperlink type it can be URL, e-mail, path to a file
          *
          * @return the Address of this hyperlink
          */
@@ -165,14 +207,37 @@ namespace NPOI.XSSF.UserModel
             {
                 return _location;
             }
-            set 
+            set
             {
+                Validate(value);
                 _location = value;
                 //we must Set location for internal hyperlinks
-                if (_type == HyperlinkType.DOCUMENT)
+                if (_type == HyperlinkType.Document)
                 {
-                    this.Location= value;
+                    this.Location = value;
                 }
+            }
+        }
+
+        private void Validate(String address)
+        {
+            switch (_type)
+            {
+                // email, path to file and url must be valid URIs
+                case HyperlinkType.Email:
+                case HyperlinkType.File:
+                case HyperlinkType.Url:
+                    Uri uri;
+                    if (!Uri.TryCreate(address, UriKind.RelativeOrAbsolute, out uri))
+                        throw new ArgumentException("Address of hyperlink must be a valid URI:" + address);
+                    break;
+                case HyperlinkType.Document:
+                    // currently not evaluating anything.
+                    break;
+                default:
+                    // this check wouldn't need to be done if _type was checked when object was set
+                    // since _type is final, this check would only need to be done once
+                    throw new InvalidOperationException("Invalid Hyperlink type: " + _type);
             }
         }
 
@@ -187,7 +252,7 @@ namespace NPOI.XSSF.UserModel
             {
                 return _ctHyperlink.display;
             }
-            set 
+            set
             {
                 _ctHyperlink.display = value;
             }
@@ -206,7 +271,7 @@ namespace NPOI.XSSF.UserModel
                 return _ctHyperlink.location;
             }
 
-            set 
+            set
             {
                 _ctHyperlink.location = value;
             }
@@ -216,14 +281,25 @@ namespace NPOI.XSSF.UserModel
         /**
          * Assigns this hyperlink to the given cell reference
          */
-        internal void SetCellReference(String ref1)
+        public void SetCellReference(String ref1)
         {
             _ctHyperlink.@ref = ref1;
         }
 
+        protected void SetCellReference(CellReference ref1)
+        {
+            SetCellReference(ref1.FormatAsString());
+        }
+
+
         private CellReference buildCellReference()
         {
-            return new CellReference(_ctHyperlink.@ref);
+            String ref1 = _ctHyperlink.@ref;
+            if (ref1 == null)
+            {
+                ref1 = "A1";
+            }
+            return new CellReference(ref1);
         }
 
 
@@ -238,19 +314,17 @@ namespace NPOI.XSSF.UserModel
             {
                 return buildCellReference().Col;
             }
-            set 
+            set
             {
-                _ctHyperlink.@ref =
-                    new CellReference(
-                            FirstRow, value
-                    ).FormatAsString();
+                SetCellReference(new CellReference(FirstRow, value));
             }
         }
 
 
         /**
          * Return the column of the last cell that Contains the hyperlink
-         *
+         * For XSSF, a Hyperlink may only reference one cell
+         * 
          * @return the 0-based column of the last cell that Contains the hyperlink
          */
         public int LastColumn
@@ -259,7 +333,7 @@ namespace NPOI.XSSF.UserModel
             {
                 return buildCellReference().Col;
             }
-            set 
+            set
             {
                 this.FirstColumn = value;
             }
@@ -276,18 +350,16 @@ namespace NPOI.XSSF.UserModel
             {
                 return buildCellReference().Row;
             }
-            set 
+            set
             {
-                _ctHyperlink.@ref =
-                    new CellReference(
-                            value, FirstColumn
-                    ).FormatAsString();
+                SetCellReference(new CellReference(value, FirstColumn));
             }
         }
 
 
         /**
          * Return the row of the last cell that Contains the hyperlink
+         * For XSSF, a Hyperlink may only reference one cell
          *
          * @return the 0-based row of the last cell that Contains the hyperlink
          */
@@ -297,7 +369,7 @@ namespace NPOI.XSSF.UserModel
             {
                 return buildCellReference().Row;
             }
-            set 
+            set
             {
                 this.FirstRow = value;
             }
@@ -305,11 +377,26 @@ namespace NPOI.XSSF.UserModel
 
         public string TextMark
         {
-            get 
-            { throw new NotImplementedException();}
+            get
+            { throw new NotImplementedException(); }
             set
             { throw new NotImplementedException(); }
         }
+        /// <summary>
+        /// get or set additional text to help the user understand more about the hyperlink
+        /// </summary>
+        public String Tooltip
+        {
+            get
+            {
+                return _ctHyperlink.tooltip;
+            }
+            set
+            {
+                _ctHyperlink.tooltip = (value);
+            }
+        }
+
     }
 
 }

@@ -23,7 +23,11 @@ using System;
 using NPOI.SS.UserModel;
 using TestCases;
 using System.IO;
-namespace NPOI.XSSF.Model
+using NPOI.XSSF.Model;
+using NPOI.XSSF;
+using NPOI;
+
+namespace TestCases.XSSF.Model
 {
 
     /**
@@ -43,44 +47,44 @@ namespace NPOI.XSSF.Model
             int idx;
 
             // Check defaults
-            Assert.IsNotNull(sst.GetItems());
-            Assert.AreEqual(0, sst.GetItems().Count);
-            Assert.AreEqual(0, sst.GetCount());
-            Assert.AreEqual(0, sst.GetUniqueCount());
+            Assert.IsNotNull(sst.Items);
+            Assert.AreEqual(0, sst.Items.Count);
+            Assert.AreEqual(0, sst.Count);
+            Assert.AreEqual(0, sst.UniqueCount);
 
             st = new CT_Rst();
             st.t = ("Hello, World!");
 
             idx = sst.AddEntry(st);
             Assert.AreEqual(0, idx);
-            Assert.AreEqual(1, sst.GetCount());
-            Assert.AreEqual(1, sst.GetUniqueCount());
+            Assert.AreEqual(1, sst.Count);
+            Assert.AreEqual(1, sst.UniqueCount);
 
             //add the same entry again
             idx = sst.AddEntry(st);
             Assert.AreEqual(0, idx);
-            Assert.AreEqual(2, sst.GetCount());
-            Assert.AreEqual(1, sst.GetUniqueCount());
+            Assert.AreEqual(2, sst.Count);
+            Assert.AreEqual(1, sst.UniqueCount);
 
             //and again
             idx = sst.AddEntry(st);
             Assert.AreEqual(0, idx);
-            Assert.AreEqual(3, sst.GetCount());
-            Assert.AreEqual(1, sst.GetUniqueCount());
+            Assert.AreEqual(3, sst.Count);
+            Assert.AreEqual(1, sst.UniqueCount);
 
             st = new CT_Rst();
             st.t = ("Second string");
 
             idx = sst.AddEntry(st);
             Assert.AreEqual(1, idx);
-            Assert.AreEqual(4, sst.GetCount());
-            Assert.AreEqual(2, sst.GetUniqueCount());
+            Assert.AreEqual(4, sst.Count);
+            Assert.AreEqual(2, sst.UniqueCount);
 
             //add the same entry again
             idx = sst.AddEntry(st);
             Assert.AreEqual(1, idx);
-            Assert.AreEqual(5, sst.GetCount());
-            Assert.AreEqual(2, sst.GetUniqueCount());
+            Assert.AreEqual(5, sst.Count);
+            Assert.AreEqual(2, sst.UniqueCount);
 
             st = new CT_Rst();
             CT_RElt r = st.AddNewR();
@@ -92,16 +96,16 @@ namespace NPOI.XSSF.Model
 
             idx = sst.AddEntry(st);
             Assert.AreEqual(2, idx);
-            Assert.AreEqual(6, sst.GetCount());
-            Assert.AreEqual(3, sst.GetUniqueCount());
+            Assert.AreEqual(6, sst.Count);
+            Assert.AreEqual(3, sst.UniqueCount);
 
             idx = sst.AddEntry(st);
             Assert.AreEqual(2, idx);
-            Assert.AreEqual(7, sst.GetCount());
-            Assert.AreEqual(3, sst.GetUniqueCount());
+            Assert.AreEqual(7, sst.Count);
+            Assert.AreEqual(3, sst.UniqueCount);
 
             //OK. the sst table is Filled, check the contents
-            Assert.AreEqual(3, sst.GetItems().Count);
+            Assert.AreEqual(3, sst.Items.Count);
             Assert.AreEqual("Hello, World!", new XSSFRichTextString(sst.GetEntryAt(0)).ToString());
             Assert.AreEqual("Second string", new XSSFRichTextString(sst.GetEntryAt(1)).ToString());
             Assert.AreEqual("Second string", new XSSFRichTextString(sst.GetEntryAt(2)).ToString());
@@ -113,13 +117,13 @@ namespace NPOI.XSSF.Model
             SharedStringsTable sst1 = wb.GetSharedStringSource();
 
             //Serialize, read back and compare with the original
-            SharedStringsTable sst2 = ((XSSFWorkbook)XSSFTestDataSamples.WriteOutAndReadBack(wb)).GetSharedStringSource();
+            SharedStringsTable sst2 = XSSFTestDataSamples.WriteOutAndReadBack(wb).GetSharedStringSource();
 
-            Assert.AreEqual(sst1.GetCount(), sst2.GetCount());
-            Assert.AreEqual(sst1.GetUniqueCount(), sst2.GetUniqueCount());
+            Assert.AreEqual(sst1.Count, sst2.Count);
+            Assert.AreEqual(sst1.UniqueCount, sst2.UniqueCount);
 
-            List<CT_Rst> items1 = sst1.GetItems();
-            List<CT_Rst> items2 = sst2.GetItems();
+            IList<CT_Rst> items1 = sst1.Items;
+            IList<CT_Rst> items2 = sst2.Items;
             Assert.AreEqual(items1.Count, items2.Count);
             for (int i = 0; i < items1.Count; i++)
             {
@@ -127,6 +131,8 @@ namespace NPOI.XSSF.Model
                 CT_Rst st2 = items2[i];
                 Assert.AreEqual(st1.ToString(), st2.ToString());
             }
+
+            Assert.IsNotNull(XSSFTestDataSamples.WriteOutAndReadBack(wb));
         }
 
         /**
@@ -163,6 +169,8 @@ namespace NPOI.XSSF.Model
                 String val = s.GetRow(i++).GetCell(0).StringCellValue;
                 Assert.AreEqual(str, val);
             }
+
+            Assert.IsNotNull(XSSFTestDataSamples.WriteOutAndReadBack(w));
         }
 
         private List<String> ReadStrings(String filename)

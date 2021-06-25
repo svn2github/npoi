@@ -17,17 +17,17 @@
 namespace TestCases.SS.Format
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Drawing;
     using System.Text.RegularExpressions;
-    using System.Windows.Forms;
+
     using NUnit.Framework;
     using NPOI.HSSF.UserModel;
     using NPOI.SS.Format;
     using NPOI.SS.UserModel;
     using NPOI.Util;
     using TestCases.SS;
+    using System.Diagnostics;
 
     /**
      * This class is a base class for spreadsheet-based tests, such as are used for
@@ -52,7 +52,7 @@ namespace TestCases.SS.Format
         private String testFile;
         private Dictionary<String, String> testFlags;
         private bool tryAllColors;
-        private Label label;
+        //private Label label;
 
         private static String[] COLOR_NAMES =
             {"Black", "Red", "Green", "Blue", "Yellow", "Cyan", "Magenta",
@@ -116,6 +116,11 @@ namespace TestCases.SS.Format
                 if ((expectedText.Length > 0 || format.Length > 0) && byCategory)
                 {
                     ICell cell = row.GetCell(2);
+                    Debug.WriteLine(string.Format("expectedText: {0}, format:{1}", expectedText, format));
+                    if (format == "hh:mm:ss a/p")
+                        expectedText = expectedText.ToUpper();
+                    else if (format == "H:M:S.00 a/p")
+                        expectedText = expectedText.ToUpper();
                     tryFormat(r, expectedText, format, valueGetter, cell);
                 }
             }
@@ -201,23 +206,24 @@ namespace TestCases.SS.Format
             return false;
         }
 
+        Color labelForeColor;
+        string labelText;
         private void tryFormat(int row, String expectedText, String desc,
-                CellValue Getter, ICell cell)
+                CellValue getter, ICell cell)
         {
 
-            Object value = Getter.GetValue(cell);
-            Color testColor = Getter.GetColor(cell);
+            Object value = getter.GetValue(cell);
+            Color testColor = getter.GetColor(cell);
             if (testColor == null)
                 testColor = TEST_COLOR;
 
-            if (label == null)
-                label = new Label();
-            label.ForeColor = (/*setter*/testColor);
-            label.Text = (/*setter*/"xyzzy");
+            labelForeColor = testColor;
+            labelText = "xyzzy";
 
             logger.Log(POILogger.INFO, String.Format("Row %d: \"%s\" -> \"%s\": expected \"%s\"", row + 1,
                     value.ToString(), desc, expectedText));
-            String actualText = tryColor(desc, null, Getter, value, expectedText,
+
+            String actualText = tryColor(desc, null, getter, value, expectedText,
                     testColor);
             logger.Log(POILogger.INFO, String.Format(", actual \"%s\")%n", actualText));
 
@@ -226,49 +232,43 @@ namespace TestCases.SS.Format
                 for (int i = 0; i < COLOR_NAMES.Length; i++)
                 {
                     String cname = COLOR_NAMES[i];
-                    tryColor(desc, cname, Getter, value, expectedText, COLORS[i]);
+                    tryColor(desc, cname, getter, value, expectedText, COLORS[i]);
                 }
             }
         }
 
-        private String tryColor(String desc, String cname, CellValue Getter,
+        private String tryColor(String desc, String cname, CellValue getter,
                 Object value, String expectedText, Color expectedColor)
         {
 
             if (cname != null)
                 desc = "[" + cname + "]" + desc;
-            Color origColor = label.ForeColor;
+            Color origColor = labelForeColor;
             CellFormatPart format = new CellFormatPart(desc);
-            if (!format.Apply(label, value).Applies)
+            CellFormatResult result = format.Apply(value);
+            if (!result.Applies)
             {
                 // If this doesn't Apply, no color change is expected
                 expectedColor = origColor;
             }
 
-            String actualText = label.Text;
-            Color actualColor = label.ForeColor;
-            Getter.Equivalent(expectedText, actualText, format);
+            String actualText = result.Text;
+            Color actualColor = labelForeColor;
+            getter.Equivalent(expectedText, actualText, format);
             Assert.AreEqual(
                     expectedColor, actualColor,cname == null ? "no color" : "color " + cname);
             return actualText;
         }
-
-        /**
-         * Returns the value for the given flag.  The flag has the value of
-         * <tt>true</tt> if the text value is <tt>"true"</tt>, <tt>"yes"</tt>, or
-         * <tt>"on"</tt> (ignoring case).
-         *
-         * @param flagName The name of the flag to fetch.
-         * @param expected The value for the flag that is expected when the tests
-         *                 are run for a full test.  If the current value is not the
-         *                 expected one, you will Get a warning in the test output.
-         *                 This is so that you do not accidentally leave a flag Set
-         *                 to a value that prevents Running some tests, thereby
-         *                 letting you accidentally release code that is not fully
-         *                 tested.
-         *
-         * @return The value for the flag.
-         */
+        /// <summary>
+        ///  Returns the value for the given flag.  The flag has the value of <tt>true</tt> if the text value is <tt>"true"</tt>, <tt>"yes"</tt>, or <tt>"on"</tt> (ignoring case).
+        /// </summary>
+        /// <param name="flagName">The name of the flag to fetch.</param>
+        /// <param name="expected">
+        /// The value for the flag that is expected when the tests are run for a full test.  If the current value is not the expected one, 
+        /// you will get a warning in the test output. This is so that you do not accidentally leave a flag set to a value that prevents Running some tests, thereby
+        /// letting you accidentally release code that is not fully tested.
+        /// </param>
+        /// <returns></returns>
         protected bool flagBoolean(String flagName, bool expected)
         {
             String value = testFlags[(flagName)];

@@ -22,6 +22,7 @@ namespace TestCases.HSSF.UserModel
     using System.IO;
     using TestCases.HSSF;
     using NPOI.SS.UserModel;
+    using NPOI.HSSF.Record;
 
     /**
      * Test <c>HSSFTextbox</c>.
@@ -45,11 +46,11 @@ namespace TestCases.HSSF.UserModel
             HSSFTextbox textbox = patriarch.CreateTextbox(new HSSFClientAnchor(0, 0, 0, 0, 1, 1, 6, 4)) as HSSFTextbox;
             HSSFRichTextString str = new HSSFRichTextString("Hello, World");
             textbox.String = (str);
-            textbox.HorizontalAlignment = (HSSFTextbox.HORIZONTAL_ALIGNMENT_CENTERED);
-            textbox.VerticalAlignment = (HSSFTextbox.VERTICAL_ALIGNMENT_CENTER);
+            textbox.HorizontalAlignment = HorizontalTextAlignment.Center;
+            textbox.VerticalAlignment = VerticalTextAlignment.Center;
 
-            Assert.AreEqual(HSSFTextbox.HORIZONTAL_ALIGNMENT_CENTERED, textbox.HorizontalAlignment);
-            Assert.AreEqual(HSSFTextbox.VERTICAL_ALIGNMENT_CENTER, textbox.VerticalAlignment);
+            Assert.AreEqual(HorizontalTextAlignment.Center, textbox.HorizontalAlignment);
+            Assert.AreEqual(VerticalTextAlignment.Center, textbox.VerticalAlignment);
         }
 
         /**

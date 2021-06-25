@@ -19,7 +19,6 @@ namespace NPOI.HSSF.Record.Aggregates
 {
 
     using System;
-    using System.Text;
     using NPOI.HSSF.Record;
 
 
@@ -125,9 +124,9 @@ namespace NPOI.HSSF.Record.Aggregates
         }
     }
     /**
- * A wrapper for {@link RecordVisitor} which accumulates the sizes of all
- * records visited.
- */
+     * A wrapper for {@link RecordVisitor} which accumulates the sizes of all
+     * records visited.
+     */
     public class PositionTrackingVisitor : RecordVisitor
     {
         private RecordVisitor _rv;

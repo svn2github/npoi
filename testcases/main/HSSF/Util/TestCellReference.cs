@@ -30,6 +30,41 @@ namespace TestCases.HSSF.Util
     public class TestCellReference
     {
         [Test]
+        public void TestColNumConversion()
+        {
+            Assert.AreEqual(0, CellReference.ConvertColStringToIndex("A"));
+            Assert.AreEqual(1, CellReference.ConvertColStringToIndex("B"));
+            Assert.AreEqual(25, CellReference.ConvertColStringToIndex("Z"));
+            Assert.AreEqual(26, CellReference.ConvertColStringToIndex("AA"));
+            Assert.AreEqual(27, CellReference.ConvertColStringToIndex("AB"));
+            Assert.AreEqual(51, CellReference.ConvertColStringToIndex("AZ"));
+            Assert.AreEqual(701, CellReference.ConvertColStringToIndex("ZZ"));
+            Assert.AreEqual(702, CellReference.ConvertColStringToIndex("AAA"));
+            Assert.AreEqual(18277, CellReference.ConvertColStringToIndex("ZZZ"));
+
+            Assert.AreEqual("A", CellReference.ConvertNumToColString(0));
+            Assert.AreEqual("B", CellReference.ConvertNumToColString(1));
+            Assert.AreEqual("Z", CellReference.ConvertNumToColString(25));
+            Assert.AreEqual("AA", CellReference.ConvertNumToColString(26));
+            Assert.AreEqual("ZZ", CellReference.ConvertNumToColString(701));
+            Assert.AreEqual("AAA", CellReference.ConvertNumToColString(702));
+            Assert.AreEqual("ZZZ", CellReference.ConvertNumToColString(18277));
+
+            // Absolute references are allowed for the string ones
+            Assert.AreEqual(0, CellReference.ConvertColStringToIndex("$A"));
+            Assert.AreEqual(25, CellReference.ConvertColStringToIndex("$Z"));
+            Assert.AreEqual(26, CellReference.ConvertColStringToIndex("$AA"));
+
+            // $ sign isn't allowed elsewhere though
+            try
+            {
+                CellReference.ConvertColStringToIndex("A$B$");
+                Assert.Fail("Column reference is invalid and shouldn't be accepted");
+            }
+            catch (ArgumentException) { }
+        }
+
+        [Test]
         public void TestAbsRef1()
         {
             CellReference cf = new CellReference("$B$5");
@@ -106,28 +141,28 @@ namespace TestCases.HSSF.Util
         [Test]
         public void TestClassifyCellReference()
         {
-            ConfirmNameType("a1", NameType.CELL);
-            ConfirmNameType("pfy1", NameType.NAMED_RANGE);
-            ConfirmNameType("pf1", NameType.NAMED_RANGE); // (col) out of cell range
-            ConfirmNameType("fp1", NameType.CELL);
-            ConfirmNameType("pf$1", NameType.BAD_CELL_OR_NAMED_RANGE);
-            ConfirmNameType("_A1", NameType.NAMED_RANGE);
-            ConfirmNameType("A_1", NameType.NAMED_RANGE);
-            ConfirmNameType("A1_", NameType.NAMED_RANGE);
-            ConfirmNameType(".A1", NameType.BAD_CELL_OR_NAMED_RANGE);
-            ConfirmNameType("A.1", NameType.NAMED_RANGE);
-            ConfirmNameType("A1.", NameType.NAMED_RANGE);
+            ConfirmNameType("a1", NameType.Cell);
+            ConfirmNameType("pfy1", NameType.NamedRange);
+            ConfirmNameType("pf1", NameType.NamedRange); // (col) out of cell range
+            ConfirmNameType("fp1", NameType.Cell);
+            ConfirmNameType("pf$1", NameType.BadCellOrNamedRange);
+            ConfirmNameType("_A1", NameType.NamedRange);
+            ConfirmNameType("A_1", NameType.NamedRange);
+            ConfirmNameType("A1_", NameType.NamedRange);
+            ConfirmNameType(".A1", NameType.BadCellOrNamedRange);
+            ConfirmNameType("A.1", NameType.NamedRange);
+            ConfirmNameType("A1.", NameType.NamedRange);
         }
         [Test]
         public void TestClassificationOfRowReferences()
         {
-            ConfirmNameType("10", NameType.ROW);
-            ConfirmNameType("$10", NameType.ROW);
-            ConfirmNameType("65536", NameType.ROW);
+            ConfirmNameType("10", NameType.Row);
+            ConfirmNameType("$10", NameType.Row);
+            ConfirmNameType("65536", NameType.Row);
 
-            ConfirmNameType("65537", NameType.BAD_CELL_OR_NAMED_RANGE);
-            ConfirmNameType("$100000", NameType.BAD_CELL_OR_NAMED_RANGE);
-            ConfirmNameType("$1$1", NameType.BAD_CELL_OR_NAMED_RANGE);
+            ConfirmNameType("65537", NameType.BadCellOrNamedRange);
+            ConfirmNameType("$100000", NameType.BadCellOrNamedRange);
+            ConfirmNameType("$1$1", NameType.BadCellOrNamedRange);
         }
 
         private void ConfirmNameType(String ref1, NameType expectedResult)
@@ -135,6 +170,44 @@ namespace TestCases.HSSF.Util
             NameType actualResult = CellReference.ClassifyCellReference(ref1, SpreadsheetVersion.EXCEL97);
             Assert.AreEqual(expectedResult, actualResult);
         }
+
+        [Test]
+        public void TestConvertColStringToIndex()
+        {
+            Assert.AreEqual(0, CellReference.ConvertColStringToIndex("A"));
+            Assert.AreEqual(1, CellReference.ConvertColStringToIndex("B"));
+            Assert.AreEqual(14, CellReference.ConvertColStringToIndex("O"));
+            Assert.AreEqual(701, CellReference.ConvertColStringToIndex("ZZ"));
+            Assert.AreEqual(18252, CellReference.ConvertColStringToIndex("ZZA"));
+
+            Assert.AreEqual(0, CellReference.ConvertColStringToIndex("$A"));
+            Assert.AreEqual(1, CellReference.ConvertColStringToIndex("$B"));
+
+            try
+            {
+                CellReference.ConvertColStringToIndex("A$");
+                Assert.Fail("Should throw exception here");
+            }
+            catch (ArgumentException e)
+            {
+                Assert.IsTrue(e.Message.Contains("A$"));
+            }
+        }
+
+        [Test]
+        public void TestConvertNumColColString()
+        {
+            Assert.AreEqual("A", CellReference.ConvertNumToColString(0));
+            Assert.AreEqual("AV", CellReference.ConvertNumToColString(47));
+            Assert.AreEqual("AW", CellReference.ConvertNumToColString(48));
+            Assert.AreEqual("BF", CellReference.ConvertNumToColString(57));
+
+            Assert.AreEqual("", CellReference.ConvertNumToColString(-1));
+            Assert.AreEqual("", CellReference.ConvertNumToColString(Int32.MinValue));
+            Assert.AreEqual("", CellReference.ConvertNumToColString(Int32.MaxValue));
+            Assert.AreEqual("FXSHRXW", CellReference.ConvertNumToColString(Int32.MaxValue - 1));
+        }
+
     }
 
 }

@@ -17,16 +17,12 @@
 
 namespace NPOI.SS.Formula
 {
-
-    using System;
     using System.Collections;
     using NPOI.SS.Formula.Eval;
 
 
     /**
      * Stores the cached result of a formula evaluation, along with the Set of sensititive input cells
-     * 
-     * @author Josh Micich
      */
     public class FormulaCellCacheEntry : CellCacheEntry
     {
@@ -65,8 +61,16 @@ namespace NPOI.SS.Formula
         {
             // need To tell all cells that were previously used, but no longer are, 
             // that they are not consumed by this cell any more
-            ChangeConsumingCells(sensitiveInputCells == null ? CellCacheEntry.EMPTY_ARRAY : sensitiveInputCells);
-            _sensitiveInputCells = sensitiveInputCells;
+            if (sensitiveInputCells == null)
+            {
+                _sensitiveInputCells = null;
+                ChangeConsumingCells(CellCacheEntry.EMPTY_ARRAY);
+            }
+            else
+            {
+                _sensitiveInputCells = (CellCacheEntry[])sensitiveInputCells.Clone();
+                ChangeConsumingCells(_sensitiveInputCells);
+            }
         }
 
         public void ClearFormulaEntry()

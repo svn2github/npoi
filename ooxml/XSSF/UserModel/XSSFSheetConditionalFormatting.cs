@@ -32,10 +32,12 @@ namespace NPOI.XSSF.UserModel
 
 
     /**
-     * @author Yegor Kozlov
+     * XSSF Conditional Formattings
      */
     public class XSSFSheetConditionalFormatting : ISheetConditionalFormatting
     {
+        /** Office 2010 Conditional Formatting extensions namespace */
+        protected static string CF_EXT_2009_NS_X14 = "http://schemas.microsoft.com/office/spreadsheetml/2009/9/main";
         private XSSFSheet _sheet;
 
         /* namespace */
@@ -81,15 +83,24 @@ namespace NPOI.XSSF.UserModel
             ST_ConditionalFormattingOperator operator1;
             switch (comparisonOperation)
             {
-                case ComparisonOperator.BETWEEN: operator1 = ST_ConditionalFormattingOperator.between; break;
-                case ComparisonOperator.NOT_BETWEEN: operator1 = ST_ConditionalFormattingOperator.notBetween; break;
-                case ComparisonOperator.LT: operator1 = ST_ConditionalFormattingOperator.lessThan; break;
-                case ComparisonOperator.LE: operator1 = ST_ConditionalFormattingOperator.lessThanOrEqual; break;
-                case ComparisonOperator.GT: operator1 = ST_ConditionalFormattingOperator.greaterThan; break;
-                case ComparisonOperator.GE: operator1 = ST_ConditionalFormattingOperator.greaterThanOrEqual; break;
-                case ComparisonOperator.EQUAL: operator1 = ST_ConditionalFormattingOperator.equal; break;
-                case ComparisonOperator.NOT_EQUAL: operator1 = ST_ConditionalFormattingOperator.notEqual; break;
-                default: throw new ArgumentException("Unknown comparison operator: " + comparisonOperation);
+                case ComparisonOperator.Between: 
+                    operator1 = ST_ConditionalFormattingOperator.between; break;
+                case ComparisonOperator.NotBetween: 
+                    operator1 = ST_ConditionalFormattingOperator.notBetween; break;
+                case ComparisonOperator.LessThan: 
+                    operator1 = ST_ConditionalFormattingOperator.lessThan; break;
+                case ComparisonOperator.LessThanOrEqual: 
+                    operator1 = ST_ConditionalFormattingOperator.lessThanOrEqual; break;
+                case ComparisonOperator.GreaterThan: 
+                    operator1 = ST_ConditionalFormattingOperator.greaterThan; break;
+                case ComparisonOperator.GreaterThanOrEqual: 
+                    operator1 = ST_ConditionalFormattingOperator.greaterThanOrEqual; break;
+                case ComparisonOperator.Equal: 
+                    operator1 = ST_ConditionalFormattingOperator.equal; break;
+                case ComparisonOperator.NotEqual: 
+                    operator1 = ST_ConditionalFormattingOperator.notEqual; break;
+                default: 
+                    throw new ArgumentException("Unknown comparison operator: " + comparisonOperation);
             }
             cfRule.@operator = (operator1);
 
@@ -118,6 +129,71 @@ namespace NPOI.XSSF.UserModel
             return rule;
         }
 
+        /**
+         * A factory method allowing the creation of conditional formatting
+         *  rules using an Icon Set / Multi-State formatting.
+         * The thresholds for it will be created, but will be empty
+         *  and require configuring with 
+         *  {@link XSSFConditionalFormattingRule#getMultiStateFormatting()}
+         *  then
+         *  {@link XSSFIconMultiStateFormatting#getThresholds()}
+         */
+        public IConditionalFormattingRule CreateConditionalFormattingRule(IconSet iconSet)
+        {
+            XSSFConditionalFormattingRule rule = new XSSFConditionalFormattingRule(_sheet);
+
+            // Have it setup, with suitable defaults
+            rule.CreateMultiStateFormatting(iconSet);
+
+            // All done!
+            return rule;
+        }
+        /**
+         * Create a Databar conditional formatting rule.
+         * <p>The thresholds and colour for it will be created, but will be 
+         *  empty and require configuring with 
+         *  {@link XSSFConditionalFormattingRule#getDataBarFormatting()}
+         *  then
+         *  {@link XSSFDataBarFormatting#getMinThreshold()}
+         *  and 
+         *  {@link XSSFDataBarFormatting#getMaxThreshold()}
+         */
+        public XSSFConditionalFormattingRule CreateConditionalFormattingRule(XSSFColor color)
+        {
+            XSSFConditionalFormattingRule rule = new XSSFConditionalFormattingRule(_sheet);
+
+            // Have it setup, with suitable defaults
+            rule.CreateDataBarFormatting(color);
+
+            // All done!
+            return rule;
+        }
+        public IConditionalFormattingRule CreateConditionalFormattingRule(ExtendedColor color)
+        {
+            return CreateConditionalFormattingRule((XSSFColor)color);
+        }
+        /**
+         * Create a Color Scale / Color Gradient conditional formatting rule.
+         * <p>The thresholds and colours for it will be created, but will be 
+         *  empty and require configuring with 
+         *  {@link XSSFConditionalFormattingRule#getColorScaleFormatting()}
+         *  then
+         *  {@link XSSFColorScaleFormatting#getThresholds()}
+         *  and
+         *  {@link XSSFColorScaleFormatting#getColors()}
+         */
+        public IConditionalFormattingRule CreateConditionalFormattingColorScaleRule()
+        {
+            XSSFConditionalFormattingRule rule = new XSSFConditionalFormattingRule(_sheet);
+
+            // Have it setup, with suitable defaults
+            rule.CreateColorScaleFormatting();
+
+            // All done!
+            return rule;
+        }
+
+
         public int AddConditionalFormatting(CellRangeAddress[] regions, IConditionalFormattingRule[] cfRules)
         {
             if (regions == null)
@@ -138,21 +214,18 @@ namespace NPOI.XSSF.UserModel
             {
                 throw new ArgumentException("Number of rules must not exceed 3");
             }
-            XSSFConditionalFormattingRule[] hfRules;
-            if (cfRules is XSSFConditionalFormattingRule[])
-                hfRules = (XSSFConditionalFormattingRule[])cfRules;
-            else
-            {
-                hfRules = new XSSFConditionalFormattingRule[cfRules.Length];
-                Array.Copy(cfRules, 0, hfRules, 0, hfRules.Length);
-            }
 
             CellRangeAddress[] mergeCellRanges = CellRangeUtil.MergeCellRanges(regions);
             CT_ConditionalFormatting cf = _sheet.GetCTWorksheet().AddNewConditionalFormatting();
-            List<String> refs = new List<String>();
-            foreach (CellRangeAddress a in mergeCellRanges) refs.Add(a.FormatAsString());
-            cf.sqref = (refs);
-
+            string refs = string.Empty;
+            foreach (CellRangeAddress a in mergeCellRanges)
+            {
+                if (refs.Length == 0)
+                    refs = a.FormatAsString();
+                else
+                    refs += " " +a.FormatAsString() ;
+            }
+            cf.sqref = refs;
 
             int priority = 1;
             foreach (CT_ConditionalFormatting c in _sheet.GetCTWorksheet().conditionalFormatting)

@@ -14,16 +14,13 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 ==================================================================== */
-namespace NPOI.XWPF.UserModel
+namespace TestCases.XWPF.UserModel
 {
-    using System;
-
-
-
-    using NUnit.Framework;
-
-    using NPOI.XWPF;
     using NPOI.OpenXmlFormats.Wordprocessing;
+    using NPOI.XWPF;
+    using NPOI.XWPF.UserModel;
+    using NUnit.Framework;
+    using System;
 
 
     /**
@@ -37,6 +34,7 @@ namespace NPOI.XWPF.UserModel
         [Test]
         public void TestSetParagraphStyle()
         {
+            //System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
             //new clean instance of paragraph
             XWPFDocument doc = XWPFTestDataSamples.OpenSampleDocument("heading123.docx");
             XWPFParagraph p = doc.CreateParagraph();
@@ -45,8 +43,8 @@ namespace NPOI.XWPF.UserModel
 
             CT_SdtBlock block = doc.Document.body.AddNewSdt();
 
-            Assert.IsNull(p.GetStyle());
-            p.SetStyle(HEADING1);
+            Assert.IsNull(p.Style);
+            p.Style = HEADING1;
             Assert.AreEqual(HEADING1, p.GetCTP().pPr.pStyle.val);
 
             doc.CreateTOC();

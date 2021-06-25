@@ -31,8 +31,8 @@ namespace NPOI.SS.UserModel
      */
     public class CellValue
     {
-        public static CellValue TRUE = new CellValue(CellType.BOOLEAN, 0.0, true, null, 0);
-        public static CellValue FALSE = new CellValue(CellType.BOOLEAN, 0.0, false, null, 0);
+        public static readonly CellValue TRUE = new CellValue(CellType.Boolean, 0.0, true, null, 0);
+        public static readonly CellValue FALSE = new CellValue(CellType.Boolean, 0.0, false, null, 0);
 
         private CellType _cellType;
         private double _numberValue;
@@ -52,7 +52,7 @@ namespace NPOI.SS.UserModel
 
 
         public CellValue(double numberValue)
-            : this(CellType.NUMERIC, numberValue, false, null, 0)
+            : this(CellType.Numeric, numberValue, false, null, 0)
         {
 
         }
@@ -61,13 +61,13 @@ namespace NPOI.SS.UserModel
             return boolValue ? TRUE : FALSE;
         }
         public CellValue(String stringValue)
-            : this(CellType.STRING, 0.0, false, stringValue, 0)
+            : this(CellType.String, 0.0, false, stringValue, 0)
         {
 
         }
         public static CellValue GetError(int errorCode)
         {
-            return new CellValue(CellType.ERROR, 0.0, false, null, errorCode);
+            return new CellValue(CellType.Error, 0.0, false, null, errorCode);
         }
 
 
@@ -136,13 +136,16 @@ namespace NPOI.SS.UserModel
         {
             switch (_cellType)
             {
-                case CellType.NUMERIC:
-                    return _numberValue.ToString(CultureInfo.InvariantCulture);
-                case CellType.STRING:
+                case CellType.Numeric:
+                    string result = _numberValue.ToString(CultureInfo.InvariantCulture);
+                    //if (result.IndexOf(".") < 0)
+                    //    result = result + ".0";
+                    return result;
+                case CellType.String:
                     return '"' + _textValue + '"';
-                case CellType.BOOLEAN:
+                case CellType.Boolean:
                     return _boolValue ? "TRUE" : "FALSE";
-                case CellType.ERROR:
+                case CellType.Error:
                     return ErrorEval.GetText(_errorCode);
             }
             return "<error unexpected cell type " + _cellType + ">";

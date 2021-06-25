@@ -471,6 +471,7 @@ namespace TestCases.HSSF.Record
             {
                 throw new AssertionException("Identified bug in reading workbook link");
             }
+            Assert.AreNotEqual("YEARFR~1.XLS", hr.Address, "Identified bug in reading workbook link");
             Assert.AreEqual("yearfracExamples.xls", hr.Address);
         }
         [Test]
@@ -487,7 +488,7 @@ namespace TestCases.HSSF.Record
             }
             catch (NullReferenceException)
             {
-                throw new AssertionException("Identified bug with option URL and UNC set at same time");
+                Assert.Fail("Identified bug with option URL and UNC set at same time");
             }
         }
         [Test]
@@ -504,7 +505,7 @@ namespace TestCases.HSSF.Record
 
             byte[] buf = new byte[16];
             g.Serialize(new LittleEndianByteArrayOutputStream(buf, 0));
-            String expectedDump = "[DF, 9B, 57, 13, 46, 02, CE, 8A, 01, 23, 45, 67, 89, AB, CD, EF, ]";
+            String expectedDump = "[DF, 9B, 57, 13, 46, 02, CE, 8A, 01, 23, 45, 67, 89, AB, CD, EF]";
             Assert.AreEqual(expectedDump, HexDump.ToHex(buf));
 
             // STD Moniker

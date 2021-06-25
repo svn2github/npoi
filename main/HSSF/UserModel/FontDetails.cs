@@ -19,9 +19,6 @@ namespace NPOI.HSSF.UserModel
 {
     using System;
     using System.Collections;
-    using System.IO;
-    using NPOI.Util;
-    using System.Text;
     using NPOI.Util.Collections;
     using System.Globalization;
 
@@ -84,8 +81,8 @@ namespace NPOI.HSSF.UserModel
         public int GetCharWidth(char c)
         {
             object widthInteger = charWidths[c];
-            if (widthInteger == null && c != 'W')
-                return GetCharWidth('W');
+            if (widthInteger == null)
+                return 'W' == c ? 0 : GetCharWidth('W');
             else
                 return (int)widthInteger;
         }

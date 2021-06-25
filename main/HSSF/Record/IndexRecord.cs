@@ -21,7 +21,6 @@ namespace NPOI.HSSF.Record
 {
     using System;
     using System.Text;
-    using System.Collections.Generic;
     using NPOI.Util;
 
 
@@ -36,11 +35,10 @@ namespace NPOI.HSSF.Record
      * @version 2.0-pre
      */
 
-    public class IndexRecord
-       : StandardRecord
+    public class IndexRecord : StandardRecord, ICloneable
     {
         public const short sid = 0x20B;
-        //public static int DBCELL_CAPACITY = 30;
+        //public const int DBCELL_CAPACITY = 30;
         public int field_1_zero;            // reserved must be 0
         public int field_2_first_row;       // first row on the sheet
         public int field_3_last_row_add1;   // last row

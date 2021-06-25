@@ -45,9 +45,12 @@ namespace NPOI.XSSF.UserModel.Charts
             this.ctValAx = ctValAx;
         }
 
-        public override long GetId()
+        public override long Id
         {
-            return ctValAx.axId.val;
+            get
+            {
+                return ctValAx.axId.val;
+            }
         }
 
         public void SetCrossBetween(AxisCrossBetween crossBetween)
@@ -60,7 +63,25 @@ namespace NPOI.XSSF.UserModel.Charts
             return ToCrossBetween(ctValAx.crossBetween.val);
         }
 
+        protected override CT_Boolean GetDelete()
+        {
+            return ctValAx.delete;
+        }
 
+        protected override CT_TickMark GetMajorCTTickMark()
+        {
+            return ctValAx.majorTickMark;
+        }
+
+        public void SetMajorCTTickMark(CT_TickMark tm)
+        {
+            ctValAx.majorTickMark = tm;
+        }
+
+        protected override CT_TickMark GetMinorCTTickMark()
+        {
+            return ctValAx.minorTickMark;
+        }
         protected override CT_AxPos GetCTAxPos()
         {
             return ctValAx.axPos;
@@ -88,7 +109,7 @@ namespace NPOI.XSSF.UserModel.Charts
 
         public override void CrossAxis(IChartAxis axis)
         {
-            ctValAx.crossAx.val= (uint)axis.GetId();
+            ctValAx.crossAx.val= (uint)axis.Id;
         }
 
         private void CreateAxis(long id, AxisPosition pos)
@@ -101,19 +122,25 @@ namespace NPOI.XSSF.UserModel.Charts
             ctValAx.AddNewCrosses();
             ctValAx.AddNewCrossAx();
             ctValAx.AddNewTickLblPos().val = ST_TickLblPos.nextTo;
+            ctValAx.AddNewDelete();
+            ctValAx.AddNewMajorTickMark();
+            ctValAx.AddNewMinorTickMark();
 
-            SetPosition(pos);
-            SetOrientation(AxisOrientation.MIN_MAX);
-            SetCrossBetween(AxisCrossBetween.MIDPOINT_CATEGORY);
-            SetCrosses(AxisCrosses.AUTO_ZERO);
+            Position=(pos);
+            Orientation=(AxisOrientation.MinToMax);
+            SetCrossBetween(AxisCrossBetween.MidpointCategory);
+            Crosses=(AxisCrosses.AutoZero);
+            IsVisible=(true);
+            MajorTickMark = (AxisTickMark.Cross);
+            MinorTickMark=(AxisTickMark.None);
         }
 
         private static ST_CrossBetween fromCrossBetween(AxisCrossBetween crossBetween)
         {
             switch (crossBetween)
             {
-                case AxisCrossBetween.BETWEEN: return ST_CrossBetween.between;
-                case AxisCrossBetween.MIDPOINT_CATEGORY: return ST_CrossBetween.midCat;
+                case AxisCrossBetween.Between: return ST_CrossBetween.between;
+                case AxisCrossBetween.MidpointCategory: return ST_CrossBetween.midCat;
                 default:
                     throw new ArgumentException();
             }
@@ -123,8 +150,8 @@ namespace NPOI.XSSF.UserModel.Charts
         {
             switch (ctCrossBetween)
             {
-                case ST_CrossBetween.between: return AxisCrossBetween.BETWEEN;
-                case ST_CrossBetween.midCat: return AxisCrossBetween.MIDPOINT_CATEGORY;
+                case ST_CrossBetween.between: return AxisCrossBetween.Between;
+                case ST_CrossBetween.midCat: return AxisCrossBetween.MidpointCategory;
                 default:
                     throw new ArgumentException();
             }

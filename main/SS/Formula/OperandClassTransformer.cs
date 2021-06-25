@@ -67,14 +67,14 @@ namespace NPOI.SS.Formula
             byte rootNodeOperandClass;
             switch (_formulaType)
             {
-                case FormulaType.CELL:
+                case FormulaType.Cell:
                     rootNodeOperandClass = Ptg.CLASS_VALUE;
                     break;
-                case FormulaType.ARRAY:
+                case FormulaType.Array:
                     rootNodeOperandClass = Ptg.CLASS_ARRAY;
                     break;
-                case FormulaType.NAMEDRANGE:
-                case FormulaType.DATAVALIDATION_LIST:
+                case FormulaType.NamedRange:
+                case FormulaType.DataValidationList:
                     rootNodeOperandClass = Ptg.CLASS_REF;
                     break;
                 default:
@@ -117,7 +117,8 @@ namespace NPOI.SS.Formula
             if (token is ValueOperatorPtg || token is ControlPtg
                 || token is MemFuncPtg
 				|| token is MemAreaPtg
-				|| token is UnionPtg)
+				|| token is UnionPtg
+                || token is IntersectionPtg)
             {
                 // Value Operator Ptgs and Control are base Tokens, so Token will be unchanged
                 // but any child nodes are processed according To desiredOperandClass and callerForceArrayFlag

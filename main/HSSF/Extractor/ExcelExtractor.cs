@@ -19,14 +19,13 @@ namespace NPOI.HSSF.Extractor
 {
     using System;
     using System.Text;
-    using System.IO;
 
     using NPOI.HSSF.UserModel;
-    using NPOI.HSSF.Record;
     using NPOI.POIFS.FileSystem;
     using NPOI;
     using NPOI.SS.Formula.Eval;
     using NPOI.SS.UserModel;
+    using NPOI.SS.Extractor;
 
     /// <summary>
     /// A text extractor for Excel files.
@@ -34,7 +33,7 @@ namespace NPOI.HSSF.Extractor
     /// indexing by something like Lucene, but not really
     /// intended for display to the user.
     /// </summary>
-    public class ExcelExtractor : POIOLE2TextExtractor
+    public class ExcelExtractor : POIOLE2TextExtractor, IExcelExtractor
     {
         private HSSFWorkbook wb;
         private HSSFDataFormatter _formatter;
@@ -204,21 +203,21 @@ namespace NPOI.HSSF.Extractor
                             {
                                 switch (cell.CellType)
                                 {
-                                    case CellType.STRING:
+                                    case CellType.String:
                                         text.Append(cell.RichStringCellValue.String);
                                         break;
-                                    case CellType.NUMERIC:
+                                    case CellType.Numeric:
                                         // Note - we don't apply any formatting!
                                         //text.Append(cell.NumericCellValue);
                                         text.Append(_formatter.FormatCellValue(cell));
                                         break;
-                                    case CellType.BOOLEAN:
+                                    case CellType.Boolean:
                                         text.Append(cell.BooleanCellValue);
                                         break;
-                                    case CellType.ERROR:
+                                    case CellType.Error:
                                         text.Append(ErrorEval.GetText(cell.ErrorCellValue));
                                         break;
-                                    case CellType.FORMULA:
+                                    case CellType.Formula:
                                         if (formulasNotResults)
                                         {
                                             text.Append(cell.CellFormula);
@@ -227,14 +226,14 @@ namespace NPOI.HSSF.Extractor
                                         {
                                             switch (cell.CachedFormulaResultType)
                                             {
-                                                case CellType.STRING:
+                                                case CellType.String:
                                                     IRichTextString str = cell.RichStringCellValue;
                                                     if (str != null && str.Length > 0)
                                                     {
                                                         text.Append(str.ToString());
                                                     }
                                                     break;
-                                                case CellType.NUMERIC:
+                                                case CellType.Numeric:
                                                     //text.Append(cell.NumericCellValue);
                                                     HSSFCellStyle style = (HSSFCellStyle)cell.CellStyle;
                                                     if (style == null)
@@ -252,10 +251,10 @@ namespace NPOI.HSSF.Extractor
                                                         );
                                                     }
                                                     break;
-                                                case CellType.BOOLEAN:
+                                                case CellType.Boolean:
                                                     text.Append(cell.BooleanCellValue);
                                                     break;
-                                                case CellType.ERROR:
+                                                case CellType.Error:
                                                     text.Append(ErrorEval.GetText(cell.ErrorCellValue));
                                                     break;
 

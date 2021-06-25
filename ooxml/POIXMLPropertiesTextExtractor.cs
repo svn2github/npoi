@@ -78,9 +78,13 @@ namespace NPOI
          */
         public String GetCorePropertiesText()
         {
+            if (Document == null)
+            {  // event based extractor does not have a document
+                return "";
+            }
             StringBuilder text = new StringBuilder();
             PackagePropertiesPart props =
-                Document.GetProperties().GetCoreProperties().GetUnderlyingProperties();
+                Document.GetProperties().CoreProperties.GetUnderlyingProperties();
 
             AppendIfPresent(text, "Category", props.GetCategoryProperty());
             AppendIfPresent(text, "Category", props.GetCategoryProperty());
@@ -111,9 +115,13 @@ namespace NPOI
          */
         public String GetExtendedPropertiesText()
         {
+            if (Document == null)
+            {  // event based extractor does not have a document
+                return "";
+            }
             StringBuilder text = new StringBuilder();
             CT_ExtendedProperties
-                props = Document.GetProperties().GetExtendedProperties().GetUnderlyingProperties();
+                props = Document.GetProperties().ExtendedProperties.GetUnderlyingProperties();
 
             AppendIfPresent(text, "Application", props.Application);
             AppendIfPresent(text, "AppVersion", props.AppVersion);
@@ -134,24 +142,136 @@ namespace NPOI
             return text.ToString();
         }
         /**
-         * Returns the custom document properties, if
-         *  there are any
-         */
+        * Returns the custom document properties, if
+        *  there are any
+        */
         public String GetCustomPropertiesText()
         {
+            if (Document == null)
+            {  // event based extractor does not have a document
+                return "";
+            }
             StringBuilder text = new StringBuilder();
-            CT_CustomProperties
-                props = Document.GetProperties().GetCustomProperties().GetUnderlyingProperties();
+            CT_CustomProperties props = Document.GetProperties().CustomProperties.GetUnderlyingProperties();
 
             List<CT_Property> properties = props.GetPropertyList();
-            for (int i = 0; i < properties.Count; i++)
+            foreach (CT_Property property in properties)
             {
-                // TODO - finish off
                 String val = "(not implemented!)";
+                //val = property.Item.ToString();
+                if (property.IsSetLpwstr())
+                {
+                    val = property.GetLpwstr();
+                }
+                else if (property.IsSetLpstr())
+                {
+                    val = property.GetLpstr();
+                }
+                else if (property.IsSetDate())
+                {
+                    val = property.GetDate().ToString();
+                }
+                else if (property.IsSetFiletime())
+                {
+                    val = property.GetFiletime().ToString();
+                }
+                else if (property.IsSetBool())
+                {
+                    val = property.GetBool().ToString();
+                }
+
+                // Integers
+                else if (property.IsSetI1())
+                {
+                    val = property.GetI1().ToString();
+                }
+                else if (property.IsSetI2())
+                {
+                    val = property.GetI2().ToString();
+                }
+                else if (property.IsSetI4())
+                {
+                    val = property.GetI4().ToString();
+                }
+                else if (property.IsSetI8())
+                {
+                    val = property.GetI8().ToString();
+                }
+                else if (property.IsSetInt())
+                {
+                    val = property.GetInt().ToString();
+                }
+
+                // Unsigned Integers
+                else if (property.IsSetUi1())
+                {
+                    val = property.GetUi1().ToString();
+                }
+                else if (property.IsSetUi2())
+                {
+                    val = property.GetUi2().ToString();
+                }
+                else if (property.IsSetUi4())
+                {
+                    val = property.GetUi4().ToString();
+                }
+                else if (property.IsSetUi8())
+                {
+                    val = property.GetUi8().ToString();
+                }
+                else if (property.IsSetUint())
+                {
+                    val = property.GetUint().ToString();
+                }
+
+                // Reals
+                else if (property.IsSetR4())
+                {
+                    val = property.GetR4().ToString();
+                }
+                else if (property.IsSetR8())
+                {
+                    val = property.GetR8().ToString();
+                }
+                else if (property.IsSetDecimal())
+                {
+                    Decimal? d = property.GetDecimal();
+                    if (d == null)
+                    {
+                        val = null;
+                    }
+                    else
+                    {
+                        val = d.ToString();
+                    }
+                }
+
+                //else if (property.IsSetArray())
+                //{
+                //    // TODO Fetch the array values and output 
+                //}
+                //else if (property.IsSetVector())
+                //{
+                //    // TODO Fetch the vector values and output
+                //}
+
+                //else if (property.IsSetBlob() || property.IsSetOblob())
+                //{
+                //    // TODO Decode, if possible
+                //}
+                //else if (property.IsSetStream() || property.IsSetOstream() ||
+                //         property.IsSetVstream())
+                //{
+                //    // TODO Decode, if possible
+                //}
+                //else if (property.IsSetStorage() || property.IsSetOstorage())
+                //{
+                //    // TODO Decode, if possible
+                //}
 
                 text.Append(
-                        properties[i].name +
-                        " = " + val + "\n"
+                      property.name +
+                      " = " + val + "\n"
                 );
             }
 

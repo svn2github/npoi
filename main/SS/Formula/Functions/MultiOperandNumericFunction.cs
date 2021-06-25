@@ -18,7 +18,6 @@
 namespace NPOI.SS.Formula.Functions
 {
     using System;
-    using System.Collections.Generic;
     using NPOI.SS.Formula.Eval;
     using NPOI.SS.Formula;
 
@@ -110,13 +109,13 @@ namespace NPOI.SS.Formula.Functions
             }
         }
 
-        private static int DEFAULT_MAX_NUM_OPERANDS = 30;
+        private const int DEFAULT_MAX_NUM_OPERANDS = 30;
 
         /**
          * Maximum number of operands accepted by this function.
          * Subclasses may override to Change default value.
          */
-        protected int MaxNumOperands
+        protected virtual int MaxNumOperands
         {
             get
             {
@@ -134,11 +133,29 @@ namespace NPOI.SS.Formula.Functions
             }
         }
         /**
- * Collects values from a single argument
- */
+     * Collects values from a single argument
+     */
         private void CollectValues(ValueEval operand, DoubleList temp)
         {
-
+            if (operand is ThreeDEval)
+            {
+                ThreeDEval ae = (ThreeDEval)operand;
+                for (int sIx = ae.FirstSheetIndex; sIx <= ae.LastSheetIndex; sIx++)
+                {
+                    int width = ae.Width;
+                    int height = ae.Height;
+                    for (int rrIx = 0; rrIx < height; rrIx++)
+                    {
+                        for (int rcIx = 0; rcIx < width; rcIx++)
+                        {
+                            ValueEval ve = ae.GetValue(sIx, rrIx, rcIx);
+                            if (!IsSubtotalCounted && ae.IsSubTotal(rrIx, rcIx)) continue;
+                            CollectValue(ve, true, temp);
+                        }
+                    }
+                }
+                return;
+            }
             if (operand is TwoDEval)
             {
                 TwoDEval ae = (TwoDEval)operand;
@@ -158,7 +175,10 @@ namespace NPOI.SS.Formula.Functions
             if (operand is RefEval)
             {
                 RefEval re = (RefEval)operand;
-                CollectValue(re.InnerValueEval, true, temp);
+                for (int sIx = re.FirstSheetIndex; sIx <= re.LastSheetIndex; sIx++)
+                {
+                    CollectValue(re.GetInnerValueEval(sIx), true, temp);
+                }
                 return;
             }
             CollectValue((ValueEval)operand, false, temp);
@@ -169,15 +189,20 @@ namespace NPOI.SS.Formula.Functions
             {
                 throw new ArgumentException("ve must not be null");
             }
+            if (ve is BoolEval)
+            {
+                if (!isViaReference || _isReferenceBoolCounted)
+                {
+                    BoolEval boolEval = (BoolEval)ve;
+                    temp.Add(boolEval.NumberValue);
+                }
+                return;
+            }
             if (ve is NumberEval)
             {
                 NumberEval ne = (NumberEval)ve;
                 temp.Add(ne.NumberValue);
                 return;
-            }
-            if (ve is ErrorEval)
-            {
-                throw new EvaluationException((ErrorEval)ve);
             }
             if (ve is StringEval)
             {
@@ -195,14 +220,9 @@ namespace NPOI.SS.Formula.Functions
                 temp.Add(d);
                 return;
             }
-            if (ve is BoolEval)
+            if (ve is ErrorEval)
             {
-                if (!isViaReference || _isReferenceBoolCounted)
-                {
-                    BoolEval boolEval = (BoolEval)ve;
-                    temp.Add(boolEval.NumberValue);
-                }
-                return;
+                throw new EvaluationException((ErrorEval)ve);
             }
             if (ve == BlankEval.instance)
             {

@@ -18,6 +18,8 @@
  */
 using NPOI.OpenXmlFormats.Spreadsheet;
 using NPOI.SS.UserModel;
+using System;
+
 namespace NPOI.XSSF.UserModel
 {
 
@@ -47,7 +49,7 @@ namespace NPOI.XSSF.UserModel
         {
             get
             {
-                if (_font.sizeOfVertAlignArray() == 0) return FontSuperScript.NONE;
+                if (_font.sizeOfVertAlignArray() == 0) return FontSuperScript.None;
 
                 CT_VerticalAlignFontProperty prop = _font.GetVertAlignArray(0);
                 return (FontSuperScript)(prop.val - 1);
@@ -55,7 +57,7 @@ namespace NPOI.XSSF.UserModel
             set 
             {
                 _font.SetVertAlignArray(null);
-                if (value != FontSuperScript.NONE)
+                if (value != FontSuperScript.None)
                 {
                     _font.AddNewVertAlign().val = (ST_VerticalAlignRun)(value + 1);
                 }
@@ -82,22 +84,33 @@ namespace NPOI.XSSF.UserModel
                 _font.SetColorArray(null);
                 if (value != -1)
                 {
-                    _font.AddNewColor().indexed = (uint)(value);
-                    _font.AddNewColor().indexedSpecified = true;
+                    var clr=_font.AddNewColor();
+                    clr.indexed = (uint)(value);
+                    clr.indexedSpecified = true;
                 }
             }
         }
-
-
-        /**
-         *
-         * @return xssf color wrapper or null if color info is missing
-         */
-        public XSSFColor GetXSSFColor()
+        
+        public IColor FontColor
         {
-            if (_font.sizeOfColorArray() == 0) return null;
+            get
+            {
+                if (_font.sizeOfColorArray() == 0) return null;
 
-            return new XSSFColor(_font.GetColorArray(0));
+                return new XSSFColor(_font.GetColorArray(0));
+            }
+            set
+            {
+                XSSFColor xcolor = XSSFColor.ToXSSFColor(value);
+                if (xcolor == null)
+                {
+                    _font.color.Clear();
+                }
+                else
+                {
+                    _font.SetColorArray(0, xcolor.GetCTColor());
+                }
+            }
         }
 
         /**
@@ -139,21 +152,21 @@ namespace NPOI.XSSF.UserModel
         {
             get
             {
-                if (_font.sizeOfUArray() == 0) return FontUnderlineType.NONE;
+                if (_font.sizeOfUArray() == 0) return FontUnderlineType.None;
                 CT_UnderlineProperty u = _font.GetUArray(0);
                 switch (u.val)
                 {
-                    case ST_UnderlineValues.single: return FontUnderlineType.SINGLE;
-                    case ST_UnderlineValues.@double: return FontUnderlineType.DOUBLE;
-                    case ST_UnderlineValues.singleAccounting: return FontUnderlineType.SINGLE_ACCOUNTING;
-                    case ST_UnderlineValues.doubleAccounting: return FontUnderlineType.DOUBLE_ACCOUNTING;
-                    default: return FontUnderlineType.NONE;
+                    case ST_UnderlineValues.single: return FontUnderlineType.Single;
+                    case ST_UnderlineValues.@double: return FontUnderlineType.Double;
+                    case ST_UnderlineValues.singleAccounting: return FontUnderlineType.SingleAccounting;
+                    case ST_UnderlineValues.doubleAccounting: return FontUnderlineType.DoubleAccounting;
+                    default: return FontUnderlineType.None;
                 }
             }
             set 
             {
                 _font.SetUArray(null);
-                if (value != FontUnderlineType.NONE)
+                if (value != FontUnderlineType.None)
                 {
                     FontUnderline fenum = FontUnderline.ValueOf(value);
                     ST_UnderlineValues val = (ST_UnderlineValues)(fenum.Value);
@@ -172,7 +185,7 @@ namespace NPOI.XSSF.UserModel
         {
             get
             {
-                return _font.sizeOfBArray() == 1 && _font.GetBArray(0).val;
+                return _font.SizeOfBArray() == 1 && _font.GetBArray(0).val;
             }
         }
 

@@ -45,14 +45,14 @@ namespace NPOI.XWPF.UserModel
             fonts.eastAsiaTheme = (ST_Theme.minorHAnsi);
             fonts.hAnsiTheme = (ST_Theme.minorHAnsi);
             fonts.cstheme=(ST_Theme.minorBidi);
-            rPr.AddNewB().val=(ST_OnOff.off);
-            rPr.AddNewBCs().val = (ST_OnOff.off);
+            rPr.AddNewB().val=false;
+            rPr.AddNewBCs().val = false;
             rPr.AddNewColor().val=("auto");
             rPr.AddNewSz().val=24;
             rPr.AddNewSzCs().val = 24;
             CT_SdtContentBlock content = block.AddNewSdtContent();
             CT_P p = content.AddNewP();
-            byte[] b = Encoding.Unicode.GetBytes("00EF7E24");
+            byte[] b = Encoding.GetEncoding(1252).GetBytes("00EF7E24");
             p.rsidR = b;
             p.rsidRDefault = b;
             p.AddNewPPr().AddNewPStyle().val=("TOCHeading");
@@ -70,7 +70,7 @@ namespace NPOI.XWPF.UserModel
         {
             CT_SdtContentBlock contentBlock = this.block.sdtContent;
             CT_P p = contentBlock.AddNewP();
-            byte[] b = Encoding.Unicode.GetBytes("00EF7E24");
+            byte[] b = Encoding.GetEncoding(1252).GetBytes("00EF7E24");
             p.rsidR = b;
             p.rsidRDefault = b;
             CT_PPr pPr = p.AddNewPPr();

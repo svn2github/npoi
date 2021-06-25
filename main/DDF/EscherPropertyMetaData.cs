@@ -19,7 +19,6 @@
 namespace NPOI.DDF
 {
     using System;
-    using System.Collections;
 
     /// <summary>
     /// This class stores the type and description of an escher property.
@@ -29,7 +28,7 @@ namespace NPOI.DDF
     {
         // Escher property types.
         public const byte TYPE_UNKNOWN = (byte)0;
-        public const byte TYPE_bool = (byte)1;
+        public const byte TYPE_BOOL = (byte)1;
         public const byte TYPE_RGB = (byte)2;
         public const byte TYPE_SHAPEPATH = (byte)3;
         public const byte TYPE_SIMPLE = (byte)4;

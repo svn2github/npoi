@@ -24,6 +24,7 @@ namespace NPOI.HSSF.Record
     using System.Text;
     using System.Collections;
     using NPOI.Util;
+    using System.Collections.Generic;
 
 
     public class RefSubRecord
@@ -35,7 +36,11 @@ namespace NPOI.HSSF.Record
         private int _firstSheetIndex; // may be -1 (0xFFFF)
         private int _lastSheetIndex;  // may be -1 (0xFFFF)
 
-
+        public void AdjustIndex(int offset)
+        {
+            _firstSheetIndex += offset;
+            _lastSheetIndex += offset;
+        }
         /** a Constructor for making new sub record
          */
         public RefSubRecord(int extBookIndex, int firstSheetIndex, int lastSheetIndex)
@@ -109,14 +114,14 @@ namespace NPOI.HSSF.Record
     public class ExternSheetRecord : StandardRecord
     {
         public const short sid = 0x17;
-        private IList _list;
+        private IList<RefSubRecord> _list;
 
 
 
 
         public ExternSheetRecord()
         {
-            _list = new ArrayList();
+            _list = new List<RefSubRecord>();
         }
 
         /**
@@ -126,7 +131,7 @@ namespace NPOI.HSSF.Record
 
         public ExternSheetRecord(RecordInputStream in1)
         {
-            _list = new ArrayList();
+            _list = new List<RefSubRecord>();
 
             int nItems = in1.ReadShort();
 
@@ -138,14 +143,41 @@ namespace NPOI.HSSF.Record
             }
         }
         /**
- * @return index of newly added ref
- */
+        * Add a zero-based reference to a {@link org.apache.poi.hssf.record.SupBookRecord}.
+        * <p>
+        *  If the type of the SupBook record is same-sheet referencing, Add-In referencing,
+        *  DDE data source referencing, or OLE data source referencing,
+        *  then no scope is specified and this value <em>MUST</em> be -2. Otherwise,
+        *  the scope must be set as follows:
+        *   <ol>
+        *    <li><code>-2</code> Workbook-level reference that applies to the entire workbook.</li>
+        *    <li><code>-1</code> Sheet-level reference. </li>
+        *    <li><code>&gt;=0</code> Sheet-level reference. This specifies the first sheet in the reference.
+        *    <p>
+        *    If the SupBook type is unused or external workbook referencing,
+        *    then this value specifies the zero-based index of an external sheet name,
+        *    see {@link org.apache.poi.hssf.record.SupBookRecord#getSheetNames()}.
+        *    This referenced string specifies the name of the first sheet within the external workbook that is in scope.
+        *    This sheet MUST be a worksheet or macro sheet.
+        *    </p>
+        *    <p>
+        *    If the supporting link type is self-referencing, then this value specifies the zero-based index of a
+        *    {@link org.apache.poi.hssf.record.BoundSheetRecord} record in the workbook stream that specifies
+        *    the first sheet within the scope of this reference. This sheet MUST be a worksheet or a macro sheet.
+        *    </p>
+        *    </li>
+        *  </ol></p>
+        *
+        * @param firstSheetIndex  the scope, must be -2 for add-in references
+        * @param lastSheetIndex   the scope, must be -2 for add-in references
+        * @return index of newly added ref
+        */
         public int AddRef(int extBookIndex, int firstSheetIndex, int lastSheetIndex)
         {
             _list.Add(new RefSubRecord(extBookIndex, firstSheetIndex, lastSheetIndex));
             return _list.Count - 1;
         }
-        public int GetRefIxForSheet(int externalBookIndex, int sheetIndex)
+        public int GetRefIxForSheet(int externalBookIndex, int firstSheetIndex, int lastSheetIndex)
         {
             int nItems = _list.Count;
             for (int i = 0; i < nItems; i++)
@@ -155,7 +187,7 @@ namespace NPOI.HSSF.Record
                 {
                     continue;
                 }
-                if (ref1.FirstSheetIndex == sheetIndex && ref1.LastSheetIndex == sheetIndex)
+                if (ref1.FirstSheetIndex == firstSheetIndex && ref1.LastSheetIndex == lastSheetIndex)
                 {
                     return i;
                 }
@@ -172,7 +204,7 @@ namespace NPOI.HSSF.Record
                 return _list.Count;
             }
         }
-	
+    
         /**  
  * @return number of REF structures
  */
@@ -196,13 +228,38 @@ namespace NPOI.HSSF.Record
         {
             return (RefSubRecord)_list[i];
         }
+
+        public void RemoveSheet(int sheetIdx)
+        {
+            int nItems = _list.Count;
+            for (int i = 0; i < nItems; i++)
+            {
+                RefSubRecord refSubRecord = _list[(i)];
+                if (refSubRecord.FirstSheetIndex == sheetIdx &&
+                        refSubRecord.LastSheetIndex == sheetIdx)
+                {
+                    // removing the entry would mess up the sheet index in Formula of NameRecord
+                    _list[i] = new RefSubRecord(refSubRecord.ExtBookIndex, -1, -1);
+                }
+                else if (refSubRecord.FirstSheetIndex > sheetIdx &&
+                      refSubRecord.LastSheetIndex > sheetIdx)
+                {
+                    _list[i] =(new RefSubRecord(refSubRecord.ExtBookIndex, refSubRecord.FirstSheetIndex - 1, refSubRecord.LastSheetIndex - 1));
+                }
+            }
+        }
+
+        /**
+         * Returns the index of the SupBookRecord for this index
+         */
         public int GetExtbookIndexFromRefIndex(int refIndex)
         {
-            return GetRef(refIndex).ExtBookIndex;
+            RefSubRecord refRec = GetRef(refIndex);
+            return refRec.ExtBookIndex;
         }
         /**
- * @return -1 if not found
- */
+         * @return -1 if not found
+         */
         public int FindRefIndexFromExtBookIndex(int extBookIndex)
         {
             int nItems = _list.Count;
@@ -229,11 +286,28 @@ namespace NPOI.HSSF.Record
             }
             return result;
         }
+        /**
+         * Returns the first sheet that the reference applies to, or
+         *  -1 if the referenced sheet can't be found, or -2 if the
+         *  reference is workbook scoped.
+         */
         public int GetFirstSheetIndexFromRefIndex(int extRefIndex)
         {
             return GetRef(extRefIndex).FirstSheetIndex;
         }
-	
+
+        /**
+         * Returns the last sheet that the reference applies to, or
+         *  -1 if the referenced sheet can't be found, or -2 if the
+         *  reference is workbook scoped.
+         * For a single sheet reference, the first and last should be
+         *  the same.
+         */
+        public int GetLastSheetIndexFromRefIndex(int extRefIndex)
+        {
+            return GetRef(extRefIndex).LastSheetIndex;
+        }
+    
         public override String ToString()
         {
             StringBuilder sb = new StringBuilder();

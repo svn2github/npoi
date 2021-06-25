@@ -22,7 +22,6 @@ namespace NPOI.HSSF.Record
 {
 
     using System;
-    using System.IO;
     using System.Text;
     using NPOI.Util;
 
@@ -40,7 +39,7 @@ namespace NPOI.HSSF.Record
      */
 
     public class CalcModeRecord
-       : StandardRecord
+       : StandardRecord, ICloneable
     {
         public const short sid = 0xD;
 
@@ -48,19 +47,19 @@ namespace NPOI.HSSF.Record
          * manually calculate formulas (0)
          */
 
-        public static short MANUAL = 0;
+        public const short MANUAL = 0;
 
         /**
          * automatically calculate formulas (1)
          */
 
-        public static short AUTOMATIC = 1;
+        public const short AUTOMATIC = 1;
 
         /**
          * automatically calculate formulas except for tables (-1)
          */
 
-        public static short AUTOMATIC_EXCEPT_TABLES = -1;
+        public const short AUTOMATIC_EXCEPT_TABLES = -1;
         private short field_1_calcmode;
 
         public CalcModeRecord()

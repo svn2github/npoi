@@ -22,7 +22,6 @@ namespace NPOI.DDF
 {
     using System;
     using System.IO;
-    using System.Collections;
     using NPOI.Util;
 
     /// <summary>
@@ -45,8 +44,11 @@ namespace NPOI.DDF
         public EscherComplexProperty(short id, byte[] complexData)
             : base(id)
         {
-
-            this._complexData = complexData;
+            if (complexData == null)
+            {
+                throw new ArgumentNullException("complexData can't be null");
+            }
+            this._complexData = (byte[])complexData.Clone();
         }
 
         /// <summary>
@@ -59,8 +61,11 @@ namespace NPOI.DDF
         public EscherComplexProperty(short propertyNumber, bool isBlipId, byte[] complexData)
             : base(propertyNumber, true, isBlipId)
         {
-
-            this._complexData = complexData;
+            if (complexData == null)
+            {
+                throw new ArgumentNullException("complexData can't be null");
+            }
+            this._complexData = (byte[])complexData.Clone();
         }
 
         /// <summary>
@@ -105,7 +110,7 @@ namespace NPOI.DDF
         public override bool Equals(Object o)
         {
             if (this == o) return true;
-            if (!(o is EscherComplexProperty)) return false;
+            if (o == null || !(o is EscherComplexProperty)) return false;
 
             EscherComplexProperty escherComplexProperty = (EscherComplexProperty)o;
 

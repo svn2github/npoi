@@ -26,13 +26,12 @@
  * ==============================================================*/
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Text;
 using System.IO;
 
 using NPOI.Util;
 using NPOI.POIFS.EventFileSystem;
+using NPOI.Util.Collections;
 
 
 namespace NPOI.POIFS.FileSystem
@@ -55,6 +54,15 @@ namespace NPOI.POIFS.FileSystem
         /// objects retrieved by next() are guaranteed to be
         /// implementations of Entry.</value>
         IEnumerator<Entry> Entries { get; }
+
+        /// <summary>
+        /// get the names of all the Entries contained directly in this
+        /// instance (in other words, names of children only; no grandchildren etc).
+        /// </summary>
+        /// <value>the names of all the entries that may be retrieved with
+        /// getEntry(String), which may be empty (if this DirectoryEntry is empty
+        /// </value>
+        List<String> EntryNames { get; }
 
         /// <summary>
         ///is this DirectoryEntry empty?

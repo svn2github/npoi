@@ -17,7 +17,6 @@
 
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using NPOI.POIFS.FileSystem;
@@ -75,7 +74,11 @@ namespace NPOI.POIFS.Properties
                 while (children.Count != 0)
                 {
                     Property property = children.Pop();
-
+                    if (property == null)
+                    {
+                        // unknown / unsupported / corrupted property, skip
+                        continue;
+                    }
                     root.AddChild(property);
 
                     if (property.IsDirectory)

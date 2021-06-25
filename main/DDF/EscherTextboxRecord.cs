@@ -32,12 +32,12 @@ namespace NPOI.DDF
     /// @author Glen Stampoultzis (glens at apache.org)
     /// @author Nick Burch  (nick at torchbox dot com)
     /// </summary>
-    public class EscherTextboxRecord : EscherRecord
+    public class EscherTextboxRecord : EscherRecord, ICloneable
     {
-        public static short RECORD_ID = unchecked((short)0xF00D);
-        public static String RECORD_DESCRIPTION = "msofbtClientTextbox";
+        public const short RECORD_ID = unchecked((short)0xF00D);
+        public const string RECORD_DESCRIPTION = "msofbtClientTextbox";
 
-        private static byte[] NO_BYTES = new byte[0];
+        private static readonly byte[] NO_BYTES = new byte[0];
 
         /** The data for this record not including the the 8 byte header */
         private byte[] _thedata = NO_BYTES;
@@ -141,6 +141,16 @@ namespace NPOI.DDF
         public override String RecordName
         {
             get { return "ClientTextbox"; }
+        }
+
+
+        public override object Clone()
+        {
+            EscherTextboxRecord etr = new EscherTextboxRecord();
+            etr.Options = (this.Options);
+            etr.RecordId = (this.RecordId);
+            etr._thedata = (byte[])this._thedata.Clone();
+            return etr;
         }
 
         /// <summary>

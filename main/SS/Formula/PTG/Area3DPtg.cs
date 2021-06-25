@@ -18,32 +18,25 @@
 namespace NPOI.SS.Formula.PTG
 {
     using System;
-    using System.Collections;
     using System.Text;
-
-    using NPOI.Util;
-    using NPOI.HSSF.Record;
-    using NPOI.SS.Util;
-    
     using NPOI.SS.Formula;
-
-    
-
+    using NPOI.SS.Util;
+    using NPOI.Util;
 
     /**
-     * Title:        Area 3D Ptg - 3D reference (Sheet + Area)
-     * Description:  Defined a area in Extern Sheet. 
-     * REFERENCE:  
-     * @author Libin Roman (Vista Portal LDT. Developer)
-     * @author avik
-     * @author Jason Height (jheight at chariot dot net dot au)
-     * @version 1.0-pre
+     * <p>Title:        Area 3D Ptg - 3D reference (Sheet + Area)</p>
+     * <p>Description:  Defined an area in Extern Sheet. </p>
+     * <p>REFERENCE:  </p>
+     * 
+     * This is HSSF only, as it matches the HSSF file format way of
+     *  referring to the sheet by an extern index. The XSSF equivalent
+     *  is {@link Area3DPxg}
      */
     [Serializable]
     public class Area3DPtg : AreaPtgBase, WorkbookDependentFormula, IExternSheetReferenceToken
     {
         public const byte sid = 0x3b;
-        private static int SIZE = 11; // 10 + 1 for Ptg
+        private const int SIZE = 11; // 10 + 1 for Ptg
         private int field_1_index_extern_sheet;
 
         private BitField rowRelative = BitFieldFactory.GetInstance(0x8000);

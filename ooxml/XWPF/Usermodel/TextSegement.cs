@@ -22,18 +22,18 @@ namespace NPOI.XWPF.UserModel
     /**
      * saves the begin and end position  of a text in a Paragraph
     */
-    public class TextSegement
+    public class TextSegment
     {
         private PositionInParagraph beginPos;
         private PositionInParagraph endPos;
 
-        public TextSegement()
+        public TextSegment()
         {
             this.beginPos = new PositionInParagraph();
             this.endPos = new PositionInParagraph();
         }
 
-        public TextSegement(int beginRun, int endRun, int beginText, int endText, int beginChar, int endChar)
+        public TextSegment(int beginRun, int endRun, int beginText, int endText, int beginChar, int endChar)
         {
             PositionInParagraph beginPos = new PositionInParagraph(beginRun, beginText, beginChar);
             PositionInParagraph endPos = new PositionInParagraph(endRun, endText, endChar);
@@ -41,79 +41,111 @@ namespace NPOI.XWPF.UserModel
             this.endPos = endPos;
         }
 
-        public TextSegement(PositionInParagraph beginPos, PositionInParagraph endPos)
+        public TextSegment(PositionInParagraph beginPos, PositionInParagraph endPos)
         {
             this.beginPos = beginPos;
             this.endPos = endPos;
         }
 
-        public PositionInParagraph GetBeginPos()
+        public PositionInParagraph BeginPos
         {
-            return beginPos;
+            get
+            {
+                return beginPos;
+            }
+            set
+            {
+                beginPos = value;
+            }
         }
 
-        public PositionInParagraph GetEndPos()
+        public PositionInParagraph EndPos
         {
-            return endPos;
+            get
+            {
+                return endPos;
+            }
         }
-
-        public int GetBeginRun()
+        /// <summary>
+        /// The index of the start run
+        /// </summary>
+        public int BeginRun
         {
-            return beginPos.Run;
+            get
+            {
+                return beginPos.Run;
+            }
+            set 
+            {
+                beginPos.Run = value;
+            }
         }
-
-        public void SetBeginRun(int beginRun)
+        /// <summary>
+        /// The index of the start CT_Text
+        /// </summary>
+        public int BeginText
         {
-            beginPos.Run = (beginRun);
+            get
+            {
+                return beginPos.Text;
+            }
+            set 
+            {
+                beginPos.Text = value;
+            }
         }
-
-        public int GetBeginText()
+        /// <summary>
+        /// The index of the start text character
+        /// </summary>
+        public int BeginChar
         {
-            return beginPos.Text;
+            get
+            {
+                return beginPos.Char;
+            }
+            set 
+            {
+                beginPos.Char = value;
+            }
         }
-
-        public void SetBeginText(int beginText)
+        public int EndRun
         {
-            beginPos.Text = (beginText);
+            get
+            {
+                return endPos.Run;
+            }
+            set 
+            {
+                endPos.Run = value;
+            }
         }
-
-        public int GetBeginChar()
+        /// <summary>
+        /// the index of the end CT_Text 
+        /// </summary>
+        public int EndText
         {
-            return beginPos.Char;
+            get
+            {
+                return endPos.Text;
+            }
+            set 
+            {
+                endPos.Text = value;
+            }
         }
-
-        public void SetBeginChar(int beginChar)
+        /// <summary>
+        /// the index of the end text character
+        /// </summary>
+        public int EndChar
         {
-            beginPos.Char = (beginChar);
-        }
-        public int GetEndRun()
-        {
-            return endPos.Run;
-        }
-
-        public void SetEndRun(int endRun)
-        {
-            endPos.Run = (endRun);
-        }
-
-        public int GetEndText()
-        {
-            return endPos.Text;
-        }
-
-        public void SetEndText(int endText)
-        {
-            endPos.Text = (endText);
-        }
-
-        public int GetEndChar()
-        {
-            return endPos.Char;
-        }
-
-        public void SetEndChar(int endChar)
-        {
-            endPos.Char = (endChar);
+            get
+            {
+                return endPos.Char;
+            }
+            set 
+            {
+                endPos.Char = value;
+            }
         }
     }
 

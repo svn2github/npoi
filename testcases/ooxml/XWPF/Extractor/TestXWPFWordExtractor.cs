@@ -15,16 +15,14 @@
    limitations under the License.
 ==================================================================== */
 
-namespace NPOI.XWPF.Extractor
+namespace TestCases.XWPF.Extractor
 {
-    using System;
-
-
-
-    using NPOI.XWPF;
-    using NPOI.XWPF.UserModel;
     using NPOI.XWPF.Extractor;
+    using NPOI.XWPF.UserModel;
     using NUnit.Framework;
+    using System;
+    using System.Diagnostics;
+    using System.Text.RegularExpressions;
 
     /**
      * Tests for HXFWordExtractor
@@ -81,17 +79,17 @@ namespace NPOI.XWPF.Extractor
             Assert.IsTrue(text.Length > 0);
 
             char euro = '\u20ac';
-            //		System.err.Println("'"+text.Substring(text.Length() - 40) + "'");
+            Debug.WriteLine("'" + text.Substring(text.Length - 40) + "'");
 
             //Check contents
             Assert.IsTrue(text.StartsWith(
                     "  \n(V) ILLUSTRATIVE CASES\n\n"
             ));
             Assert.IsTrue(text.Contains(
-                    "As well as gaining " + euro + "90 from child benefit increases, he will also receive the early childhood supplement of " + euro + "250 per quarter for Vincent for the full four quarters of the year.\n\n\n\n \n\n\n"
+                    "As well as gaining " + euro + "90 from child benefit increases, he will also receive the early childhood supplement of " + euro + "250 per quarter for Vincent for the full four quarters of the year.\n\n\n\n"// \n\n\n"
             ));
             Assert.IsTrue(text.EndsWith(
-                    "11.4%\t\t90\t\t\t\t\t250\t\t1,310\t\n\n"
+                    "11.4%\t\t90\t\t\t\t\t250\t\t1,310\t\n\n \n\n\n"
             ));
 
             // Check number of paragraphs
@@ -124,7 +122,7 @@ namespace NPOI.XWPF.Extractor
             );
 
             // One hyperlink is a real one, one is just to the top of page
-            extractor.SetFetchHyperlinks (true);
+            extractor.SetFetchHyperlinks(true);
             Assert.AreEqual(
                     "This is a test document.\nThis bit is in bold and italic\n" +
                     "Back to normal\n" +
@@ -184,8 +182,9 @@ namespace NPOI.XWPF.Extractor
         {
             XWPFDocument doc = XWPFTestDataSamples.OpenSampleDocument("footnotes.docx");
             XWPFWordExtractor extractor = new XWPFWordExtractor(doc);
-
+            String text = extractor.Text;
             Assert.IsTrue(extractor.Text.Contains("snoska"));
+            Assert.IsTrue(text.Contains("Eto ochen prostoy[footnoteRef:1] text so snoskoy"));
         }
 
 
@@ -214,8 +213,9 @@ namespace NPOI.XWPF.Extractor
         {
             XWPFDocument doc = XWPFTestDataSamples.OpenSampleDocument("endnotes.docx");
             XWPFWordExtractor extractor = new XWPFWordExtractor(doc);
-
-            Assert.IsTrue(extractor.Text.Contains("XXX"));
+            string text = extractor.Text;
+            Assert.IsTrue(text.Contains("XXX"));
+            Assert.IsTrue(text.Contains("tilaka [endnoteRef:2]or 'tika'"));
         }
 
         [Test]
@@ -319,5 +319,113 @@ namespace NPOI.XWPF.Extractor
             String text = extractor.Text;
             Assert.IsTrue(text.Length > 0);
         }
+
+        /**
+         * Test for basic extraction of SDT content
+         * @throws IOException
+         */
+        [Test]
+        public void TestSimpleControlContent()
+        {
+            XWPFDocument doc = XWPFTestDataSamples.OpenSampleDocument("Bug54849.docx");
+            String[] targs = new String[]{
+                "header_rich_text",
+                "rich_text",
+                "rich_text_pre_table\nrich_text_cell1\t\t\t\n\t\t\t\n\t\t\t\n\nrich_text_post_table",
+                "plain_text_no_newlines",
+                "plain_text_with_newlines1\nplain_text_with_newlines2\n",
+                "watermelon\n",
+                "dirt\n",
+                "4/16/2013\n",
+                "rich_text_in_cell",
+                "abc",
+                "rich_text_in_paragraph_in_cell",
+                "footer_rich_text",
+                "footnote_sdt",
+                "endnote_sdt"
+        };
+            XWPFWordExtractor ex = new XWPFWordExtractor(doc);
+            String s = ex.Text.ToLower();
+            int hits = 0;
+
+            foreach (String targ in targs)
+            {
+                bool hitted = false;
+                if (s.Contains(targ))
+                {
+                    hitted = true;
+                    hits++;
+                }
+                Assert.AreEqual(true, hitted, "controlled content loading-" + targ);
+            }
+            Assert.AreEqual(targs.Length, hits, "controlled content loading hit count");
+
+            ex.Close();
+
+            doc = XWPFTestDataSamples.OpenSampleDocument("Bug54771a.docx");
+            targs = new String[]{
+                "bb",
+                "test subtitle\n",
+                "test user\n",
+        };
+            ex = new XWPFWordExtractor(doc);
+            s = ex.Text.ToLower();
+
+            //At one point in development there were three copies of the text.
+            //This ensures that there is only one copy.
+            MatchCollection mc;
+            int hit;
+            foreach (String targ in targs)
+            {
+                mc = Regex.Matches(s, targ);
+                hit = 0;
+                foreach (Match m in mc)
+                {
+                    if (m.Success)
+                        hit++;
+                }
+                Assert.AreEqual(1, hit, "controlled content loading-" + targ);
+            }
+            //"test\n" appears twice: once as the "title" and once in the text.
+            //This also happens when you save this document as text from MSWord.
+            mc = Regex.Matches(s, "test\n");
+            hit = 0;
+            foreach (Match m in mc)
+            {
+                if (m.Success)
+                    hit++;
+            }
+            Assert.AreEqual(2, hit, "test<N>");
+            ex.Close();
+
+        }
+
+        /** No Header or Footer in document */
+        [Test]
+        public void TestBug55733()
+        {
+            XWPFDocument doc = XWPFTestDataSamples.OpenSampleDocument("55733.docx");
+            XWPFWordExtractor extractor = new XWPFWordExtractor(doc);
+
+            // Check it gives text without error
+            string text = extractor.Text;
+            extractor.Close();
+        }
+
+        [Test]
+        public void TestCheckboxes()
+        {
+            XWPFDocument doc = XWPFTestDataSamples.OpenSampleDocument("checkboxes.docx");
+            Console.WriteLine(doc);
+            XWPFWordExtractor extractor = new XWPFWordExtractor(doc);
+
+            Assert.AreEqual("This is a small test for checkboxes \nunchecked: |_| \n" +
+                         "Or checked: |X|\n\n\n\n\n" +
+                         "Test a checkbox within a textbox: |_| -> |X|\n\n\n" +
+                         "In Table:\n|_|\t|X|\n\n\n" +
+                         "In Sequence:\n|X||_||X|\n", extractor.Text);
+            extractor.Close();
+        }
+
     }
 }

@@ -29,9 +29,7 @@ namespace NPOI
          * Creates a new text extractor for the given document
          */
         public POIXMLTextExtractor(POIXMLDocument document)
-            : base((POIDocument)null)
         {
-
 
             _document = document;
         }
@@ -39,23 +37,23 @@ namespace NPOI
         /**
          * Returns the core document properties
          */
-        public NPOI.POIXMLProperties.CoreProperties GetCoreProperties()
+        public CoreProperties GetCoreProperties()
         {
-            return _document.GetProperties().GetCoreProperties();
+            return _document.GetProperties().CoreProperties;
         }
         /**
          * Returns the extended document properties
          */
-        public NPOI.POIXMLProperties.ExtendedProperties GetExtendedProperties()
+        public ExtendedProperties GetExtendedProperties()
         {
-            return _document.GetProperties().GetExtendedProperties();
+            return _document.GetProperties().ExtendedProperties;
         }
         /**
          * Returns the custom document properties
          */
-        public NPOI.POIXMLProperties.CustomProperties GetCustomProperties()
+        public CustomProperties GetCustomProperties()
         {
-            return _document.GetProperties().GetCustomProperties();
+            return _document.GetProperties().CustomProperties;
         }
 
         /**
@@ -89,6 +87,20 @@ namespace NPOI
             {
                 return new POIXMLPropertiesTextExtractor(_document);
             }
+        }
+
+        public override void Close()
+        {
+            // e.g. XSSFEventBaseExcelExtractor passes a null-document
+            if (_document != null)
+            {
+                OPCPackage pkg = _document.Package;
+                if (pkg != null)
+                {
+                    pkg.Revert();
+                }
+            }
+            base.Close();
         }
     }
 

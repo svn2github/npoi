@@ -23,6 +23,7 @@ namespace TestCases.HSSF.Record
     using NUnit.Framework;
     using NPOI.HSSF.Util;
     using NPOI.HSSF.Record;
+    using System.Collections.Generic;
 
 
     /**
@@ -42,16 +43,15 @@ namespace TestCases.HSSF.Record
             PaletteRecord palette = new PaletteRecord();
 
             //make sure all the HSSFColor constants match
-            Hashtable colors = HSSFColor.GetIndexHash();
-            IEnumerator indexes = colors.Keys.GetEnumerator();
-            while (indexes.MoveNext())
+            Dictionary<int, HSSFColor> colors = HSSFColor.GetIndexHash();
+            foreach (KeyValuePair<int, HSSFColor> entry in colors)
             {
-                int index = (int)indexes.Current;
-                HSSFColor c = (HSSFColor)colors[index];
-                short[] rgbTriplet = c.GetTriplet();
+                int index = entry.Key;
+                HSSFColor c = entry.Value;
+                byte[] rgbTriplet = c.GetTriplet();
                 byte[] paletteTriplet = palette.GetColor((short)index);
                 String msg = "Expected HSSFColor constant to match PaletteRecord at index 0x"
-                    + NPOI.Util.StringUtil.ToHexString(c.GetIndex());
+                    + NPOI.Util.StringUtil.ToHexString(c.Indexed);
                 Assert.AreEqual(rgbTriplet[0], paletteTriplet[0] & 0xff,msg);
                 Assert.AreEqual(rgbTriplet[1], paletteTriplet[1] & 0xff,msg);
                 Assert.AreEqual(rgbTriplet[2], paletteTriplet[2] & 0xff,msg);

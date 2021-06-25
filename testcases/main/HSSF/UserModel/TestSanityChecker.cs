@@ -19,7 +19,6 @@ namespace TestCases.HSSF.UserModel
 {
     using System;
     using System.Collections;
-    using NPOI.HSSF.UserModel;
     using NUnit.Framework;
     using System.Threading;
     using NPOI.HSSF.Record;
@@ -47,7 +46,7 @@ namespace TestCases.HSSF.UserModel
             records.Add(INTERFACEHDR);
             records.Add(CreateBoundSheetRec());
             records.Add(EOFRecord.instance);
-            TestSanityChecker.check = new SanityChecker.CheckRecord[]{
+            SanityChecker.CheckRecord[] check = new SanityChecker.CheckRecord[]{
 				new SanityChecker.CheckRecord(typeof(BOFRecord), '1'),
 				new SanityChecker.CheckRecord(typeof(InterfaceHdrRecord), '0'),
 				new SanityChecker.CheckRecord(typeof(BoundSheetRecord), 'M'),
@@ -135,12 +134,15 @@ namespace TestCases.HSSF.UserModel
 
         private static void ConfirmBadRecordOrder(SanityChecker.CheckRecord[] Check, Record[] recs)
         {
-
+            TestSanityChecker.check = Check;
             TestSanityChecker.recs = recs;
 
-            ThreadStart ts = new ThreadStart(Run);
-            Thread thread = new Thread(ts);
-            thread.Start();
+            // ThreadStart ts = new ThreadStart(Run);
+            // Thread thread = new Thread(ts);
+            // thread.Start();
+            // thread.Join();
+            Run();
+            
         }
     }
 }

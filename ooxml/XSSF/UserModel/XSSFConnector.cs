@@ -17,6 +17,7 @@
 
 using NPOI.OpenXmlFormats.Dml;
 using NPOI.OpenXmlFormats.Dml.Spreadsheet;
+using System.Xml;
 
 namespace NPOI.XSSF.UserModel
 {
@@ -45,23 +46,21 @@ namespace NPOI.XSSF.UserModel
             this.drawing = drawing;
             this.ctShape = ctShape;
         }
-
         /**
          * Initialize default structure of a new auto-shape
          *
          */
         public static CT_Connector Prototype()
         {
-            if (prototype == null)
-            {
+
                 CT_Connector shape = new CT_Connector();
                 CT_ConnectorNonVisual nv = shape.AddNewNvCxnSpPr();
-                CT_NonVisualDrawingProps nvp = nv.AddNewCNvPr();
+                NPOI.OpenXmlFormats.Dml.Spreadsheet.CT_NonVisualDrawingProps nvp = nv.AddNewCNvPr();
                 nvp.id = (1);
                 nvp.name = ("Shape 1");
                 nv.AddNewCNvCxnSpPr();
 
-                CT_ShapeProperties sp = shape.AddNewSpPr();
+                NPOI.OpenXmlFormats.Dml.Spreadsheet.CT_ShapeProperties sp = shape.AddNewSpPr();
                 CT_Transform2D t2d = sp.AddNewXfrm();
                 CT_PositiveSize2D p1 = t2d.AddNewExt();
                 p1.cx = (0);
@@ -74,7 +73,7 @@ namespace NPOI.XSSF.UserModel
                 geom.prst = (ST_ShapeType.line);
                 geom.AddNewAvLst();
 
-                CT_ShapeStyle style = shape.AddNewStyle();
+                NPOI.OpenXmlFormats.Dml.Spreadsheet.CT_ShapeStyle style = shape.AddNewStyle();
                 CT_SchemeColor scheme = style.AddNewLnRef().AddNewSchemeClr();
                 scheme.val = (ST_SchemeColorVal.accent1);
                 style.lnRef.idx = (1);
@@ -92,7 +91,7 @@ namespace NPOI.XSSF.UserModel
                 fontRef.AddNewSchemeClr().val = (ST_SchemeColorVal.tx1);
 
                 prototype = shape;
-            }
+
             return prototype;
         }
 
@@ -108,23 +107,18 @@ namespace NPOI.XSSF.UserModel
          * @return the shape type
          * @see NPOI.ss.usermodel.ShapeTypes
          */
-        public int GetShapeType()
+        public ST_ShapeType ShapeType
         {
-            return (int)ctShape.spPr.prstGeom.prst;
+            get
+            {
+                return ctShape.spPr.prstGeom.prst;
+            }
+            set 
+            {
+                ctShape.spPr.prstGeom.prst = value;
+            }
         }
-
-        /**
-         * Sets the shape types.
-         *
-         * @param type the shape type, one of the constants defined in {@link NPOI.ss.usermodel.ShapeTypes}.
-         * @see NPOI.ss.usermodel.ShapeTypes
-         */
-        public void SetShapeType(int type)
-        {
-            ctShape.spPr.prstGeom.prst = (ST_ShapeType)(type);
-        }
-
-        protected override CT_ShapeProperties GetShapeProperties()
+        protected internal override NPOI.OpenXmlFormats.Dml.Spreadsheet.CT_ShapeProperties GetShapeProperties()
         {
             return ctShape.spPr;
         }

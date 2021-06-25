@@ -30,7 +30,8 @@ namespace NPOI.SS.UserModel.Charts
         /// </summary>
         /// <returns></returns>
         IScatterChartData<Tx, Ty> CreateScatterChartData<Tx, Ty>();
-
+        ILineChartData<Tx, Ty> CreateLineChartData<Tx, Ty>();
+        IBarChartData<Tx, Ty> CreateBarChartData<Tx, Ty>();
     }
 
 }

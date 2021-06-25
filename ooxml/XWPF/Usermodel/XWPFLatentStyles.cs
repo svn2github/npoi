@@ -28,7 +28,7 @@ namespace NPOI.XWPF.UserModel
         {
         }
 
-        protected XWPFLatentStyles(CT_LatentStyles latentStyles)
+        public XWPFLatentStyles(CT_LatentStyles latentStyles)
             : this(latentStyles, null)
         {
             ;
@@ -40,17 +40,25 @@ namespace NPOI.XWPF.UserModel
             this.styles = styles;
         }
 
-        /**
-         * Checks wheter specific LatentStyleID is a latentStyle
-        */
-        protected bool IsLatentStyle(String latentStyleID)
+        public int NumberOfStyles
         {
-            /*foreach ( CTLsdException lsd in latentStyles.LsdExceptionList) {
-                if(lsd.Name.Equals(latentStyleID));
+            get
+            {
+                return latentStyles.SizeOfLsdExceptionArray();
+            }
+        }
+
+        /**
+         * checks whether specific LatentStyleID is a latentStyle
+        */
+        public bool IsLatentStyle(String latentStyleID)
+        {
+            foreach (CT_LsdException lsd in latentStyles.lsdException)
+            {
+                if (lsd.name.Equals(latentStyleID))
                     return true;
             }
-            return false;*/
-            throw new NotImplementedException();
+            return false;
         }
     }
 

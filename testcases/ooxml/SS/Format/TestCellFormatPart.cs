@@ -14,16 +14,16 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 ==================================================================== */
-namespace NPOI.SS.Format
+namespace TestCases.SS.Format
 {
-    using System;
-    using System.Text;
-    using System.Text.RegularExpressions;
-    using NUnit.Framework;
+    using NPOI.SS.Format;
     using NPOI.SS.UserModel;
     using NPOI.XSSF;
-    using TestCases.SS.Format;
+    using NUnit.Framework;
+    using System;
     using System.Globalization;
+    using System.Text;
+    using System.Text.RegularExpressions;
 
 
 
@@ -45,9 +45,9 @@ namespace NPOI.SS.Format
             public override object GetValue(ICell cell)
             {
                 CellType type = CellFormat.UltimateType(cell);
-                if (type == CellType.BOOLEAN)
+                if (type == CellType.Boolean)
                     return cell.BooleanCellValue ? "TRUE" : "FALSE";
-                else if (type == CellType.NUMERIC)
+                else if (type == CellType.Numeric)
                     return cell.NumericCellValue;
                 else
                     return cell.StringCellValue;
@@ -115,7 +115,7 @@ namespace NPOI.SS.Format
         {
             public override object GetValue(ICell cell)
             {
-                if (CellFormat.UltimateType(cell) == CellType.BOOLEAN)
+                if (CellFormat.UltimateType(cell) == CellType.Boolean)
                     return cell.BooleanCellValue ? "TRUE" : "FALSE";
                 else
                     return cell.StringCellValue;

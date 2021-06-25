@@ -25,10 +25,6 @@
  * 
  * ==============================================================*/
 
-
-using System;
-using System.Collections;
-using System.Text;
 using System.Collections.Generic;
 
 namespace NPOI.POIFS.Storage
@@ -45,7 +41,7 @@ namespace NPOI.POIFS.Storage
         /// <param name="blocks">a list of SmallDocumentBlock instances</param>
         public SmallDocumentBlockList(List<SmallDocumentBlock> blocks)
         {
-            SetBlocks((ListManagedBlock[])blocks.ToArray());
+            SetBlocks(blocks.ToArray());
         }
     }
 }

@@ -1,34 +1,41 @@
 ================
 * Introduction *
 ================
-This project is the .NET port of POI project at http://poi.apache.org/. POI is an open source java project 
-which can help you read/write xls, doc, ppt files. It has a wide application. 
+This project is the .NET port of POI project. With NPOI, you can read/write Excel and Word files easily. It has a wide application. 
 For example, you can use it a to generate a Excel report without Microsoft Office suite installed on your 
 server and more efficient than call Microsoft Excel ActiveX at background; you can also use it to extract 
 text from Office documents to help you implement full-text indexing feature (most of time this feature is 
 used to create search engines).
 
+=========================
+* Nissl Introduction *
+=========================
+NPOI was used to be maintained by Neuzilla ( Tony's first startup company).  After Neuzilla is closed in 2018, Nissl Lab maintains NPOI. 
+Nissl Lab is a NGO org created by Nissl LLC. The trademake NPOI is hold by Nissl in order to avoid abuse. 
+
 ==================
-*  NPOI Website *
+*  NPOI Source Code *
 ==================
-http://npoi.googlecode.com (Latest source code available)
-http://npoi.codeplex.com (No latest source code available)
-http://tonyqus.sinaapp.com (Official Tutorial in Chinese)
+https://github.com/nissl-lab/npoi/ 
+
+
+==================
+* LICENSE COMPLIANCE *
+==================
+You are NOT allowed to remove NPOI logo or Nissl/Neuzilla brand (even text). This is a must of Apache license. This shows basic respects to the previous contributors of NPOI. 
+You must state that you are using NPOI no matter you are creating a commercial product or an open source project. 
 
 ======================
 * System Requirement *
 ======================
-VS2010 with .NET 2.0 or .NET 4.0
-VS2005 or VS2008 with .NET 2.0 Runtime (SP1) 
-vs2003 with .NET 1.1 
+VS2015 and above
 medium trust environment in ASP.NET
 
 =================
-*  NPOI on SNS  *
+*  Nissl in social network *
 =================
-QQÈº: 124527967, 116053476, 78142590
-Twitter: http://twitter.com/tonyqus 
-ÐÂÀËÎ¢²©: http://t.sina.com.cn/npoi 
+Linkedin: https://www.linkedin.com/company/nissl
+Github: https://github.com/nissl-lab
 
 ================
 * Team Members *
@@ -42,7 +49,7 @@ Time Zone: GMT+8
 --------------------------------------------------------------------------------
 NPOI 1.2.1
 --------------------------------------------------------------------------------
-H¨¹seyin T¨¹fekcilerli - developer
+Huseyin Turfekcilerli - developer
 --------------------
 From: Istanbul, Turkey
 Participated since Nov, 2008
@@ -85,11 +92,11 @@ Main contribution: NPOIFS/POIFS
 
 NPOI 2.0
 --------------------------------------------------------------------------------
-Tony Qu - developer
+Tony Qu - chief developer
 -------------------------------
 From: Shanghai, China
 Time Zone: GMT+8
-Main Contribution: OpenXml4Net, OpenXmlFormats, NPOI.XSSF implementation
+Main Contribution: OpenXml4Net, OpenXmlFormats, NPOI.XSSF, NPOI.XWPF implementation
 
 Antony - developer
 ------------------------------
@@ -103,7 +110,28 @@ From: Germany
 Time Zone: GMT+1
 Main Contribution: OpenXmlFormats, Excel 2007 comment read
 
-==================
-* How to join us *
-==================
-If you are interested in this project and want to join me, please write mail to tonyqus (at) gmail.com
+Jeff Stedfast - developer
+------------------------------
+From: Cambridge, MA, USA
+Time Zone: GMT
+Main contribution: Mono version of NPOI, enumeration changes and compilation optimization
+
+Paul Kratt - developer
+------------------------------
+From: Greater Milwaukee Area, Wisconsin, USA
+Time Zone: GMT
+Main contribution: CopyTo, CopySheet functions in HSSFSheet
+
+NPOI 2.1
+--------------------------------------------------------------------------------
+Tony Qu - main contributor
+Antony - fix some poi bugs
+
+Phil Rykoff - developer
+------------------------------
+Main contribution: XSSF bug fixing and feature implement
+
+NPOI 2.2 ~ 2.5.2
+--------------------------------------------------------------------------------
+Antony
+Tony Qu

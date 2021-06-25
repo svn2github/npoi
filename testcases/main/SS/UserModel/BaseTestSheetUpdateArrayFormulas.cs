@@ -32,14 +32,13 @@ namespace TestCases.SS.UserModel
      * @author Yegor Kozlov
      * @author Josh Micich
      */
-    [TestFixture]
-    public class BaseTestSheetUpdateArrayFormulas
+    public abstract class BaseTestSheetUpdateArrayFormulas
     {
         protected ITestDataProvider _testDataProvider;
-        public BaseTestSheetUpdateArrayFormulas()
-        {
-            _testDataProvider = TestCases.HSSF.HSSFITestDataProvider.Instance;
-        }
+        //public BaseTestSheetUpdateArrayFormulas()
+        //{
+        //    _testDataProvider = TestCases.HSSF.HSSFITestDataProvider.Instance;
+        //}
         protected BaseTestSheetUpdateArrayFormulas(ITestDataProvider TestDataProvider)
         {
             _testDataProvider = TestDataProvider;
@@ -62,6 +61,8 @@ namespace TestCases.SS.UserModel
             Assert.IsNotNull(row2);
             Assert.AreEqual(formula, row2.GetCell(0).CellFormula);
             Assert.AreEqual(formula, row2.GetCell(1).CellFormula);
+
+            workbook.Close();
         }
         /**
          *  Set Single-cell array formula
@@ -100,6 +101,7 @@ namespace TestCases.SS.UserModel
             Assert.AreEqual(range.FormatAsString(), cell.ArrayFormulaRange.FormatAsString());
             //check the formula
             Assert.AreEqual("SUM(C11:C12*D11:D12)", cell.CellFormula);
+            workbook.Close();
         }
 
         /**
@@ -129,11 +131,12 @@ namespace TestCases.SS.UserModel
             foreach (ICell acell in cells)
             {
                 Assert.IsTrue(acell.IsPartOfArrayFormulaGroup);
-                Assert.AreEqual(CellType.FORMULA, acell.CellType);
+                Assert.AreEqual(CellType.Formula, acell.CellType);
                 Assert.AreEqual("SUM(A1:A3*B1:B3)", acell.CellFormula);
                 //retrieve the range and check it is the same
                 Assert.AreEqual(range.FormatAsString(), acell.ArrayFormulaRange.FormatAsString());
             }
+            workbook.Close();
         }
 
         /**
@@ -156,6 +159,7 @@ namespace TestCases.SS.UserModel
             {
                 //expected exception
             }
+            workbook.Close();
         }
 
         /**
@@ -189,6 +193,8 @@ namespace TestCases.SS.UserModel
             {
                 Assert.AreEqual("Cell A1 is not part of an array formula.", e.Message);
             }
+
+            workbook.Close();
         }
 
         /**
@@ -213,7 +219,7 @@ namespace TestCases.SS.UserModel
             foreach (ICell acell in cr)
             {
                 Assert.IsFalse(acell.IsPartOfArrayFormulaGroup);
-                Assert.AreEqual(CellType.BLANK, acell.CellType);
+                Assert.AreEqual(CellType.Blank, acell.CellType);
             }
 
             // cells C4:C6 are not included in array formula,
@@ -231,6 +237,8 @@ namespace TestCases.SS.UserModel
                     Assert.AreEqual("Cell " + ref1 + " is not part of an array formula.", e.Message);
                 }
             }
+
+            workbook.Close();
         }
 
         /**
@@ -241,20 +249,22 @@ namespace TestCases.SS.UserModel
         {
             ICell[] cells;
 
-            IWorkbook workbook = _testDataProvider.CreateWorkbook();
-            ISheet sheet1 = workbook.CreateSheet();
+            IWorkbook workbook1 = _testDataProvider.CreateWorkbook();
+            ISheet sheet1 = workbook1.CreateSheet();
             cells = sheet1.SetArrayFormula("SUM(A1:A3*B1:B3)", CellRangeAddress.ValueOf("C4:C6")).FlattenedCells;
             Assert.AreEqual(3, cells.Length);
 
             cells = sheet1.SetArrayFormula("MAX(A1:A3*B1:B3)", CellRangeAddress.ValueOf("A4:A6")).FlattenedCells;
             Assert.AreEqual(3, cells.Length);
 
-            ISheet sheet2 = workbook.CreateSheet();
+            ISheet sheet2 = workbook1.CreateSheet();
             cells = sheet2.SetArrayFormula("MIN(A1:A3*B1:B3)", CellRangeAddress.ValueOf("D2:D4")).FlattenedCells;
             Assert.AreEqual(3, cells.Length);
 
-            workbook = _testDataProvider.WriteOutAndReadBack(workbook);
-            sheet1 = workbook.GetSheetAt(0);
+            IWorkbook workbook2 = _testDataProvider.WriteOutAndReadBack(workbook1);
+            workbook1.Close();
+
+            sheet1 = workbook2.GetSheetAt(0);
             for (int rownum = 3; rownum <= 5; rownum++)
             {
                 ICell cell1 = sheet1.GetRow(rownum).GetCell(2);
@@ -264,12 +274,13 @@ namespace TestCases.SS.UserModel
                 Assert.IsTrue(cell2.IsPartOfArrayFormulaGroup);
             }
 
-            sheet2 = workbook.GetSheetAt(1);
+            sheet2 = workbook2.GetSheetAt(1);
             for (int rownum = 1; rownum <= 3; rownum++)
             {
                 ICell cell1 = sheet2.GetRow(rownum).GetCell(3);
                 Assert.IsTrue(cell1.IsPartOfArrayFormulaGroup);
             }
+            workbook2.Close();
         }
 
         /**
@@ -285,22 +296,23 @@ namespace TestCases.SS.UserModel
             ICellRange<ICell> srange =
                     sheet.SetArrayFormula("SUM(A4:A6,B4:B6)", CellRangeAddress.ValueOf("B5"));
             ICell scell = srange.TopLeftCell;
-            Assert.AreEqual(CellType.FORMULA, scell.CellType);
-            Assert.AreEqual(0.0, scell.NumericCellValue);
+            Assert.AreEqual(CellType.Formula, scell.CellType);
+            Assert.AreEqual(0.0, scell.NumericCellValue, 0);
             scell.SetCellValue(1.1);
-            Assert.AreEqual(1.1, scell.NumericCellValue);
+            Assert.AreEqual(1.1, scell.NumericCellValue, 0);
 
             //multi-cell array formula
             ICellRange<ICell> mrange =
                     sheet.SetArrayFormula("A1:A3*B1:B3", CellRangeAddress.ValueOf("C1:C3"));
             foreach (ICell mcell in mrange)
             {
-                Assert.AreEqual(CellType.FORMULA, mcell.CellType);
-                Assert.AreEqual(0.0, mcell.NumericCellValue);
+                Assert.AreEqual(CellType.Formula, mcell.CellType);
+                Assert.AreEqual(0.0, mcell.NumericCellValue, 0);
                 double fmlaResult = 1.2;
                 mcell.SetCellValue(fmlaResult);
-                Assert.AreEqual(fmlaResult, mcell.NumericCellValue);
+                Assert.AreEqual(fmlaResult, mcell.NumericCellValue, 0);
             }
+            workbook.Close();
         }
         [Test]
         public void TestModifyArrayCells_setCellType()
@@ -313,10 +325,10 @@ namespace TestCases.SS.UserModel
             ICellRange<ICell> srange =
                     sheet.SetArrayFormula("SUM(A4:A6,B4:B6)", CellRangeAddress.ValueOf("B5"));
             ICell scell = srange.TopLeftCell;
-            Assert.AreEqual(CellType.FORMULA, scell.CellType);
-            Assert.AreEqual(0.0, scell.NumericCellValue);
-            scell.SetCellType(CellType.STRING);
-            Assert.AreEqual(CellType.STRING, scell.CellType);
+            Assert.AreEqual(CellType.Formula, scell.CellType);
+            Assert.AreEqual(0.0, scell.NumericCellValue, 0);
+            scell.SetCellType(CellType.String);
+            Assert.AreEqual(CellType.String, scell.CellType);
             scell.SetCellValue("string cell");
             Assert.AreEqual("string cell", scell.StringCellValue);
 
@@ -327,8 +339,8 @@ namespace TestCases.SS.UserModel
             {
                 try
                 {
-                    Assert.AreEqual(CellType.FORMULA, mcell.CellType);
-                    mcell.SetCellType(CellType.NUMERIC);
+                    Assert.AreEqual(CellType.Formula, mcell.CellType);
+                    mcell.SetCellType(CellType.Numeric);
                     Assert.Fail("expected exception");
                 }
                 catch (InvalidOperationException e)
@@ -339,9 +351,10 @@ namespace TestCases.SS.UserModel
                 }
                 // a failed invocation of Cell.SetCellType leaves the cell
                 // in the state that it was in prior to the invocation
-                Assert.AreEqual(CellType.FORMULA, mcell.CellType);
+                Assert.AreEqual(CellType.Formula, mcell.CellType);
                 Assert.IsTrue(mcell.IsPartOfArrayFormulaGroup);
             }
+            workbook.Close();
         }
         [Test]
         public void TestModifyArrayCells_setCellFormula()
@@ -353,17 +366,17 @@ namespace TestCases.SS.UserModel
                     sheet.SetArrayFormula("SUM(A4:A6,B4:B6)", CellRangeAddress.ValueOf("B5"));
             ICell scell = srange.TopLeftCell;
             Assert.AreEqual("SUM(A4:A6,B4:B6)", scell.CellFormula);
-            Assert.AreEqual(CellType.FORMULA, scell.CellType);
+            Assert.AreEqual(CellType.Formula, scell.CellType);
             Assert.IsTrue(scell.IsPartOfArrayFormulaGroup);
             scell.CellFormula = (/*setter*/"SUM(A4,A6)");
             //we are now a normal formula cell
             Assert.AreEqual("SUM(A4,A6)", scell.CellFormula);
             Assert.IsFalse(scell.IsPartOfArrayFormulaGroup);
-            Assert.AreEqual(CellType.FORMULA, scell.CellType);
+            Assert.AreEqual(CellType.Formula, scell.CellType);
             //check that Setting formula result works
-            Assert.AreEqual(0.0, scell.NumericCellValue);
+            Assert.AreEqual(0.0, scell.NumericCellValue, 0);
             scell.SetCellValue(33.0);
-            Assert.AreEqual(33.0, scell.NumericCellValue);
+            Assert.AreEqual(33.0, scell.NumericCellValue, 0);
 
             //multi-cell array formula
             ICellRange<ICell> mrange =
@@ -388,6 +401,8 @@ namespace TestCases.SS.UserModel
                 Assert.AreEqual("A1:A3*B1:B3", mcell.CellFormula);
                 Assert.IsTrue(mcell.IsPartOfArrayFormulaGroup);
             }
+
+            workbook.Close();
         }
         [Test]
         public void TestModifyArrayCells_RemoveCell()
@@ -408,7 +423,7 @@ namespace TestCases.SS.UserModel
 
             //re-create the Removed cell
             scell = srow.CreateCell(cra.FirstColumn);
-            Assert.AreEqual(CellType.BLANK, scell.CellType);
+            Assert.AreEqual(CellType.Blank, scell.CellType);
             Assert.IsFalse(scell.IsPartOfArrayFormulaGroup);
 
             //we cannot remove cells included in a multi-cell array formula
@@ -433,8 +448,10 @@ namespace TestCases.SS.UserModel
                 // in the state that it was in prior to the invocation
                 Assert.AreSame(mcell, mrow.GetCell(columnIndex));
                 Assert.IsTrue(mcell.IsPartOfArrayFormulaGroup);
-                Assert.AreEqual(CellType.FORMULA, mcell.CellType);
+                Assert.AreEqual(CellType.Formula, mcell.CellType);
             }
+
+            workbook.Close();
         }
         [Test]
         public void TestModifyArrayCells_RemoveRow()
@@ -447,7 +464,7 @@ namespace TestCases.SS.UserModel
             ICellRange<ICell> srange =
                     sheet.SetArrayFormula("SUM(A4:A6,B4:B6)", cra);
             ICell scell = srange.TopLeftCell;
-            Assert.AreEqual(CellType.FORMULA, scell.CellType);
+            Assert.AreEqual(CellType.Formula, scell.CellType);
 
             IRow srow = scell.Row;
             Assert.AreSame(srow, sheet.GetRow(cra.FirstRow));
@@ -456,7 +473,7 @@ namespace TestCases.SS.UserModel
 
             //re-create the Removed row and cell
             scell = sheet.CreateRow(cra.FirstRow).CreateCell(cra.FirstColumn);
-            Assert.AreEqual(CellType.BLANK, scell.CellType);
+            Assert.AreEqual(CellType.Blank, scell.CellType);
             Assert.IsFalse(scell.IsPartOfArrayFormulaGroup);
 
             //we cannot remove rows with cells included in a multi-cell array formula
@@ -473,7 +490,7 @@ namespace TestCases.SS.UserModel
                 }
                 catch (InvalidOperationException)
                 {
-                    String msg = "Row[rownum=" + mrow.RowNum + "] Contains cell(s) included in a multi-cell array formula. You cannot change part of an array.";
+                    // String msg = "Row[rownum=" + mrow.RowNum + "] Contains cell(s) included in a multi-cell array formula. You cannot change part of an array.";
                     //Assert.AreEqual(msg, e.Message);
                 }
                 // a failed invocation of Row.RemoveCell leaves the row
@@ -481,11 +498,13 @@ namespace TestCases.SS.UserModel
                 Assert.AreSame(mrow, sheet.GetRow(mrow.RowNum));
                 Assert.AreSame(mcell, mrow.GetCell(columnIndex));
                 Assert.IsTrue(mcell.IsPartOfArrayFormulaGroup);
-                Assert.AreEqual(CellType.FORMULA, mcell.CellType);
+                Assert.AreEqual(CellType.Formula, mcell.CellType);
             }
+
+            workbook.Close();
         }
         [Test]
-        public void TestModifyArrayCells_mergeCells()
+        public void TestModifyArrayCells_mergeCellsSingle()
         {
             IWorkbook workbook = _testDataProvider.CreateWorkbook();
             ISheet sheet = workbook.CreateSheet();
@@ -497,27 +516,66 @@ namespace TestCases.SS.UserModel
             ICell scell = srange.TopLeftCell;
             sheet.AddMergedRegion(CellRangeAddress.ValueOf("B5:C6"));
             //we are still an array formula
-            Assert.AreEqual(CellType.FORMULA, scell.CellType);
+            Assert.AreEqual(CellType.Formula, scell.CellType);
             Assert.IsTrue(scell.IsPartOfArrayFormulaGroup);
             Assert.AreEqual(1, sheet.NumMergedRegions);
+            workbook.Close();
+        }
 
-            //we cannot merge cells included in an array formula
-            ICellRange<ICell> mrange =
-                    sheet.SetArrayFormula("A1:A3*B1:B3", CellRangeAddress.ValueOf("C1:C3"));
-            CellRangeAddress cra = CellRangeAddress.ValueOf("C1:C3");
-            try
-            {
-                sheet.AddMergedRegion(cra);
-                Assert.Fail("expected exception");
-            }
-            catch (InvalidOperationException e)
-            {
-                String msg = "The range " + cra.FormatAsString() + " intersects with a multi-cell array formula. You cannot merge cells of an array.";
-                Assert.AreEqual(msg, e.Message);
+        [Test]
+        public void testModifyArrayCells_mergeCellsMulti()
+        {
+            IWorkbook workbook = _testDataProvider.CreateWorkbook();
+            ISheet sheet = workbook.CreateSheet();
+            int expectedNumMergedRegions = 0;
+            Assert.AreEqual(expectedNumMergedRegions, sheet.NumMergedRegions);
+            // we cannot merge cells included in an array formula
+            sheet.SetArrayFormula("A1:A4*B1:B4", CellRangeAddress.ValueOf("C2:F5"));
+            foreach (String ref1 in Arrays.AsList(
+                    "C2:F5", // identity
+                    "D3:E4", "B1:G6", // contains
+                    "B1:C2", "F1:G2", "F5:G6", "B5:C6", // 1x1 corner intersection
+                    "B1:C6", "B1:G2", "F1:G6", "B5:G6", // 1-row/1-column intersection
+                    "B1:D3", "E1:G3", "E4:G6", "B4:D6", // 2x2 corner intersection
+                    "B1:D6", "B1:G3", "E1:G6", "B4:G6"  // 2-row/2-column intersection
+            )) {
+                CellRangeAddress cra = CellRangeAddress.ValueOf(ref1);
+                try
+                {
+                    sheet.AddMergedRegion(cra);
+                    Assert.Fail("expected exception with ref " + ref1);
+                }
+                catch (InvalidOperationException e)
+                {
+                    String msg = "The range " + cra.FormatAsString() + " intersects with a multi-cell array formula. You cannot merge cells of an array.";
+                    Assert.AreEqual(msg, e.Message);
+                }
             }
             //the number of merged regions remains the same
-            Assert.AreEqual(1, sheet.NumMergedRegions);
+            Assert.AreEqual(expectedNumMergedRegions, sheet.NumMergedRegions);
+
+            // we can merge non-intersecting cells
+            foreach (String ref1 in Arrays.AsList(
+                    "C1:F1", //above
+                    "G2:G5", //right
+                    "C6:F6",  //bottom
+                    "B2:B5", "H7:J9")) {
+                CellRangeAddress cra = CellRangeAddress.ValueOf(ref1);
+                try
+                {
+                    sheet.AddMergedRegion(cra);
+                    expectedNumMergedRegions++;
+                    Assert.AreEqual(expectedNumMergedRegions, sheet.NumMergedRegions);
+                }
+                catch (InvalidOperationException e)
+                {
+                    Assert.Fail("did not expect exception with ref: " + ref1 +"\n" + e.Message);
+                }
+            }
+
+            workbook.Close();
         }
+
         [Test]
         public void TestModifyArrayCells_ShiftRows()
         {
@@ -557,10 +615,47 @@ namespace TestCases.SS.UserModel
                 Assert.AreEqual(cra.FormatAsString(), mcell.ArrayFormulaRange.formatAsString());
                 Assert.AreEqual("A2:A4*B2:B4", mcell.CellFormula);
                 Assert.IsTrue(mcell.IsPartOfArrayFormulaGroup);
-                Assert.AreEqual(CellType.FORMULA, mcell.CellType);
+                Assert.AreEqual(CellType.Formula, mcell.CellType);
             }
 
             */
+
+            workbook.Close();
+        }
+
+        [Ignore("also ignored in poi")]
+        [Test]
+        public void ShouldNotBeAbleToCreateArrayFormulaOnPreexistingMergedRegion()
+        {
+            /*
+             *  m  = merged region
+             *  f  = array formula
+             *  fm = cell belongs to a merged region and an array formula (illegal, that's what this tests for)
+             *  
+             *   A  B  C
+             * 1    f  f
+             * 2    fm fm
+             * 3    f  f
+             */
+            IWorkbook workbook = _testDataProvider.CreateWorkbook();
+            ISheet sheet = workbook.CreateSheet();
+
+            CellRangeAddress mergedRegion = CellRangeAddress.ValueOf("B2:C2");
+            sheet.AddMergedRegion(mergedRegion);
+            CellRangeAddress arrayFormula = CellRangeAddress.ValueOf("C1:C3");
+            Assume.That(mergedRegion.Intersects(arrayFormula));
+            Assume.That(arrayFormula.Intersects(mergedRegion));
+            try
+            {
+                sheet.SetArrayFormula("SUM(A1:A3)",  arrayFormula);
+                Assert.Fail("expected exception: should not be able to create an array formula that intersects with a merged region");
+            }
+            catch (InvalidOperationException e)
+            {
+                // expected
+            }
+
+            workbook.Close();
         }
     }
 

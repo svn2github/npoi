@@ -28,7 +28,7 @@ namespace NPOI.HSSF.Record
      * REFERENCE:  PG 314 Microsoft Excel 97 Developer's Kit (ISBN: 1-57231-498-2)<p/>
      * @author Andrew C. Oliver (acoliver at apache dot org)
      */
-    public class FileSharingRecord : StandardRecord
+    public class FileSharingRecord : StandardRecord, ICloneable
     {
 
         public const short sid = 0x5b;
@@ -57,34 +57,18 @@ namespace NPOI.HSSF.Record
                 // TODO - Current examples(3) from junits only have zero Length username. 
                 field_3_username_unicode_options = (byte)in1.ReadByte();
                 field_3_username_value = in1.ReadCompressedUnicode(nameLen);
+                
+                if (field_3_username_value == null)
+                {
+                   // In some cases the user name can be null after reading from
+                   // the input stream so we make sure this has a value
+                   field_3_username_value = "";
+                }
             }
             else
             {
                 field_3_username_value = "";
             }
-        }
-
-
-        //this Is the world's lamest "security".  thanks to Wouter van Vugt for making me
-        //not have to try real hard.  -ACO
-        public static short HashPassword(String password)
-        {
-            byte[] passwordChars = Encoding.UTF8.GetBytes(password);
-            int hash = 0;
-            if (passwordChars.Length > 0)
-            {
-                int charIndex = passwordChars.Length;
-                while (charIndex-- > 0)
-                {
-                    hash = ((hash >> 14) & 0x01) | ((hash << 1) & 0x7fff);
-                    hash ^= passwordChars[charIndex];
-                }
-                // also hash with charcount
-                hash = ((hash >> 14) & 0x01) | ((hash << 1) & 0x7fff);
-                hash ^= passwordChars.Length;
-                hash ^= (0x8000 | ('N' << 8) | 'K');
-            }
-            return (short)hash;
         }
 
 

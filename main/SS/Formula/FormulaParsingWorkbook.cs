@@ -21,6 +21,8 @@ namespace NPOI.SS.Formula
     using System;
     using NPOI.SS.Formula;
     using NPOI.SS.Formula.PTG;
+    using NPOI.SS.UserModel;
+    using NPOI.SS.Util;
 
     /**
      * Abstracts a workbook for the purpose of formula parsing.<br/>
@@ -40,11 +42,40 @@ namespace NPOI.SS.Formula
         IEvaluationName GetName(String name, int sheetIndex);
 
         /// <summary>
-        /// Gets the name XPTG.
+        /// Return the underlying workbook
+        /// </summary>
+        /// <returns></returns>
+        IName CreateName();
+
+        /// <summary>
+        /// XSSF Only - gets a table that exists in the worksheet
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        ITable GetTable(String name);
+        /// <summary>
+        /// Return an external name (named range, function, user-defined function) Ptg
         /// </summary>
         /// <param name="name">The name.</param>
+        /// <param name="sheet"></param>
         /// <returns></returns>
-        NameXPtg GetNameXPtg(String name);
+        Ptg GetNameXPtg(String name, SheetIdentifier sheet);
+
+        /// <summary>
+        /// Produce the appropriate Ptg for a 3d cell reference
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <param name="sheet"></param>
+        /// <returns></returns>
+        Ptg Get3DReferencePtg(CellReference cell, SheetIdentifier sheet);
+
+        /// <summary>
+        /// Produce the appropriate Ptg for a 3d area reference
+        /// </summary>
+        /// <param name="area"></param>
+        /// <param name="sheet"></param>
+        /// <returns></returns>
+        Ptg Get3DReferencePtg(AreaReference area, SheetIdentifier sheet);
 
         /// <summary>
         /// Gets the externSheet index for a sheet from this workbook

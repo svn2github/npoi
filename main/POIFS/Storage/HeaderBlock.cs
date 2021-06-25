@@ -31,6 +31,7 @@ using System.IO;
 using NPOI.POIFS.Common;
 using NPOI.POIFS.FileSystem;
 using NPOI.Util;
+using NPOI.HSSF;
 
 
 
@@ -43,7 +44,35 @@ namespace NPOI.POIFS.Storage
     /// </summary>
     public class HeaderBlock : HeaderBlockConstants
     {
-        private static POILogger logger = POILogFactory.GetLogger(typeof(HeaderBlock));
+        private static byte[] MAGIC_BIFF2 = {
+        0x09, 0x00, // sid=0x0009
+        0x04, 0x00, // size=0x0004
+        0x00, 0x00, // unused
+        0x70, 0x00  // 0x70 = multiple values
+    };
+
+        private static byte[] MAGIC_BIFF3 = {
+        0x09, 0x02, // sid=0x0209
+        0x06, 0x00, // size=0x0006
+        0x00, 0x00, // unused
+        0x70, 0x00  // 0x70 = multiple values
+    };
+
+        private static byte[] MAGIC_BIFF4a = {
+        0x09, 0x04, // sid=0x0409
+        0x06, 0x00, // size=0x0006
+        0x00, 0x00, // unused
+        0x70, 0x00  // 0x70 = multiple values
+    };
+
+        private static byte[] MAGIC_BIFF4b = {
+        0x09, 0x04, // sid=0x0409
+        0x06, 0x00, // size=0x0006
+        0x00, 0x00, // unused
+        0x00, 0x01
+    };
+
+        private static byte _default_value = (byte)0xFF;
          /**
          * What big block Size the file uses. Most files
          *  use 512 bytes, but a few use 4096
@@ -60,17 +89,16 @@ namespace NPOI.POIFS.Storage
         // start of the small block allocation table (int index of small
         // block allocation table's first big block)
         private int _sbat_start;
-        	/**
-	 * Number of small block allocation table blocks (int)
-	 * (Number of MiniFAT Sectors in Microsoft parlance)
-	 */
-     	private int _sbat_count;
+            /**
+         * Number of small block allocation table blocks (int)
+         * (Number of MiniFAT Sectors in Microsoft parlance)
+         */
+        private int _sbat_count;
         // big block index for extension to the big block allocation table
         private int _xbat_start;
         private int _xbat_count;
         private byte[]       _data;
 
-        private static byte _default_value = (byte)0xFF;
         /// <summary>
         /// create a new HeaderBlockReader from an Stream
         /// </summary>
@@ -119,23 +147,46 @@ namespace NPOI.POIFS.Storage
 
             if (signature != _signature)
             {
-                byte[] OOXML_FILE_HEADER = POIFSConstants.OOXML_FILE_HEADER;
-                if (_data[0] == OOXML_FILE_HEADER[0]
-                    && _data[1] == OOXML_FILE_HEADER[1]
-                    && _data[2] == OOXML_FILE_HEADER[2]
-                    && _data[3] == OOXML_FILE_HEADER[3])
+                if (cmp(POIFSConstants.OOXML_FILE_HEADER, data))
                 {
-                    throw new OfficeXmlFileException("The supplied data appears to be in the Office 2007+ XML. You are calling the part of POI that deals with OLE2 Office Documents. You need to call a different part of POI to process this data (eg XSSF instead of HSSF)");
-                }
-                if ((signature & unchecked((long)0xFF8FFFFFFFFFFFFFL)) == 0x0010000200040009L)
-                {
-                    throw new ArgumentException("The supplied data appears to be in BIFF2 format.  "
-                        + "POI only supports BIFF8 format");
+                    throw new OfficeXmlFileException("The supplied data appears to be in the Office 2007+ XML. "
+                        + "You are calling the part of POI that deals with OLE2 Office Documents. "
+                        + "You need to call a different part of POI to process this data (eg XSSF instead of HSSF)");
                 }
 
-                throw new IOException("Invalid header signature; read "
-                                    + LongToHex(signature) + ", expected "
-                                    + LongToHex(_signature));
+                if (cmp(POIFSConstants.RAW_XML_FILE_HEADER, data))
+                {
+                    throw new NotOLE2FileException("The supplied data appears to be a raw XML file. "
+                        + "Formats such as Office 2003 XML are not supported");
+                }
+
+                // BIFF2 raw stream
+                if (cmp(MAGIC_BIFF2, data))
+                {
+                    throw new OldExcelFormatException("The supplied data appears to be in BIFF2 format. "
+                        + "HSSF only supports the BIFF8 format, try OldExcelExtractor");
+                }
+
+                // BIFF3 raw stream
+                if (cmp(MAGIC_BIFF3, data))
+                {
+                    throw new OldExcelFormatException("The supplied data appears to be in BIFF3 format. "
+                        + "HSSF only supports the BIFF8 format, try OldExcelExtractor");
+                }
+
+                // BIFF4 raw stream
+                if (cmp(MAGIC_BIFF4a, data) || cmp(MAGIC_BIFF4b, data))
+                {
+                    throw new OldExcelFormatException("The supplied data appears to be in BIFF4 format. "
+                        + "HSSF only supports the BIFF8 format, try OldExcelExtractor");
+                }
+
+
+                // Give a generic error if the OLE2 signature isn't found
+                throw new NotOLE2FileException("Invalid header signature; read "
+                                    + HexDump.LongToHex(signature) + ", expected "
+                                    + HexDump.LongToHex(_signature) + " - Your file appears "
+                                    + "not to be a valid OLE2 document");
             }
 
             if (_data[30] == 12)
@@ -210,10 +261,7 @@ namespace NPOI.POIFS.Storage
             }
             return data;
         }
-        private static String LongToHex(long value)
-        {
-            return new String(HexDump.LongToHex(value));
-        }
+
         /// <summary>
         /// Alerts the short read.
         /// </summary>
@@ -222,8 +270,8 @@ namespace NPOI.POIFS.Storage
         private static IOException AlertShortRead(int read, int expectedReadSize)
         {
             if (read < 0)
-    		    //Cant have -1 bytes Read in the error message!
-    		    read = 0;
+                //Cant have -1 bytes Read in the error message!
+                read = 0;
             String type = " byte" + ((read == 1) ? (""): ("s"));
 
             return new IOException("Unable to Read entire header; "
@@ -347,7 +395,7 @@ namespace NPOI.POIFS.Storage
         /// @return 
         public POIFSBigBlockSize BigBlockSize
         {
-    	    get{return bigBlockSize;}
+            get{return bigBlockSize;}
         }
 
         //public void Write(Stream stream)
@@ -398,6 +446,21 @@ namespace NPOI.POIFS.Storage
             {
                 throw ex;
             }
+        }
+
+
+        private static bool cmp(byte[] magic, byte[] data)
+        {
+            int i = 0;
+            foreach (byte m in magic)
+            {
+                byte d = data[i++];
+                if (!(d == m || (m == 0x70 && (d == 0x10 || d == 0x20 || d == 0x40))))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 }

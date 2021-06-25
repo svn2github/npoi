@@ -29,8 +29,6 @@ namespace NPOI.HSSF.Record
 
     using System;
     using System.Text;
-    using System.IO;
-    using System.Collections;
     using NPOI.SS.Util;
 
     /**
@@ -41,7 +39,7 @@ namespace NPOI.HSSF.Record
      * @version 2.0-pre
      */
 
-    public class NumberRecord :CellRecord
+    public class NumberRecord : CellRecord, ICloneable
     {
         public const short sid = 0x203;
         private double field_4_value;
@@ -57,7 +55,7 @@ namespace NPOI.HSSF.Record
          * @param in the RecordInputstream to Read the record from
          */
 
-        public NumberRecord(RecordInputStream in1):base(in1)
+        public NumberRecord(RecordInputStream in1) : base(in1)
         {
             field_4_value = in1.ReadDouble();
         }

@@ -18,12 +18,11 @@
 namespace NPOI.HSSF.UserModel
 {
     using System;
-    using System.IO;
     using System.Collections;
 
     using NPOI.HSSF.Record;
     using NPOI.HSSF.Model;
-    using NPOI.Util;
+    using System.Collections.Generic;
 
     /// <summary>
     /// Rich text Unicode string.  These strings can have fonts applied to
@@ -151,10 +150,10 @@ namespace NPOI.HSSF.UserModel
             ArrayList deletedFR = new ArrayList();
             if (formatting != null)
             {
-                IEnumerator formats = formatting.GetEnumerator();
+                IEnumerator<UnicodeString.FormatRun> formats = formatting.GetEnumerator();
                 while (formats.MoveNext())
                 {
-                    UnicodeString.FormatRun r = (UnicodeString.FormatRun)formats.Current;
+                    UnicodeString.FormatRun r = formats.Current;
                     if ((r.CharacterPos >= startIndex) && (r.CharacterPos < endIndex))
                     {
                         deletedFR.Add(r);
@@ -321,7 +320,7 @@ namespace NPOI.HSSF.UserModel
         {
             if (o is HSSFRichTextString)
             {
-                return _string.Equals(((HSSFRichTextString)o).String);
+                return _string.Equals(((HSSFRichTextString)o)._string);
             }
             return false;
         }

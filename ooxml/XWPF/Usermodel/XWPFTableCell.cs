@@ -21,7 +21,11 @@ namespace NPOI.XWPF.UserModel
     using System.Collections.Generic;
     using System.Text;
     using System.Xml;
-    public class XWPFTableCell : IBody
+    /**
+     * Represents a Cell within a {@link XWPFTable}. The
+     *  Cell is the thing that holds the actual content (paragraphs etc)
+     */
+    public class XWPFTableCell : IBody, ICell
     {
         private CT_Tc ctTc;
         protected List<XWPFParagraph> paragraphs = null;
@@ -29,6 +33,30 @@ namespace NPOI.XWPF.UserModel
         protected List<IBodyElement> bodyElements = null;
         protected IBody part;
         private XWPFTableRow tableRow = null;
+
+        // Create a map from this XWPF-level enum to the STVerticalJc.Enum values
+        public enum XWPFVertAlign { TOP, CENTER, BOTH, BOTTOM };
+        private static Dictionary<XWPFVertAlign, ST_VerticalJc> alignMap;
+        // Create a map from the STVerticalJc.Enum values to the XWPF-level enums
+        private static Dictionary<ST_VerticalJc, XWPFVertAlign> stVertAlignTypeMap;
+
+        static XWPFTableCell()
+        {
+            // populate enum maps
+            alignMap = new Dictionary<XWPFVertAlign, ST_VerticalJc>();
+            alignMap.Add(XWPFVertAlign.TOP, ST_VerticalJc.top);
+            alignMap.Add(XWPFVertAlign.CENTER, ST_VerticalJc.center);
+            alignMap.Add(XWPFVertAlign.BOTH, ST_VerticalJc.both);
+            alignMap.Add(XWPFVertAlign.BOTTOM, ST_VerticalJc.bottom);
+
+            stVertAlignTypeMap = new Dictionary<ST_VerticalJc, XWPFVertAlign>();
+            stVertAlignTypeMap.Add(ST_VerticalJc.top, XWPFVertAlign.TOP);
+            stVertAlignTypeMap.Add(ST_VerticalJc.center, XWPFVertAlign.CENTER);
+            stVertAlignTypeMap.Add(ST_VerticalJc.both, XWPFVertAlign.BOTH);
+            stVertAlignTypeMap.Add(ST_VerticalJc.bottom, XWPFVertAlign.BOTTOM);
+
+        }
+
         /**
          * If a table cell does not include at least one block-level element, then this document shall be considered corrupt
          */
@@ -57,24 +85,17 @@ namespace NPOI.XWPF.UserModel
                     tables.Add(t);
                     bodyElements.Add(t);
                 }
-            }
-        /*
-            XmlCursor cursor = ctTc.NewCursor();
-            cursor.SelectPath("./*");
-            while (cursor.ToNextSelection()) {
-                XmlObject o = cursor.Object;
-                if (o is CTP) {
-                    XWPFParagraph p = new XWPFParagraph((CTP)o, this);
-                    paragraphs.Add(p);
-                    bodyElements.Add(p);
+                if (o is CT_SdtBlock)
+                {
+                    XWPFSDT c = new XWPFSDT((CT_SdtBlock)o, this);
+                    bodyElements.Add(c);
                 }
-                if (o is CTTbl) {
-                    XWPFTable t = new XWPFTable((CTTbl)o, this);
-                    tables.Add(t);
-                    bodyElements.Add(t);
+                if (o is CT_SdtRun)
+                {
+                    XWPFSDT c = new XWPFSDT((CT_SdtRun)o, this);
+                    bodyElements.Add(c);
                 }
             }
-            cursor.Dispose();*/
         }
 
 
@@ -163,11 +184,85 @@ namespace NPOI.XWPF.UserModel
             return null;
         }
 
+        /// <summary>
+        /// Add bottom border to cell
+        /// </summary>
+        /// <param name="type">Border Style</param>
+        /// <param name="size">Border Width</param>
+        /// <param name="space">Border Spacing Measurement</param>
+        /// <param name="rgbColor">Border Color</param>
+        public void SetBorderBottom(XWPFTable.XWPFBorderType type, int size, int space, String rgbColor)
+        {
+            CT_TcPr ctTcPr = GetCTTc().IsSetTcPr() ? GetCTTc().tcPr : GetCTTc().AddNewTcPr();
+            CT_TcBorders borders = ctTcPr.tcBorders == null ? ctTcPr.AddNewTcBorders() : ctTcPr.tcBorders;
+            borders.bottom = CreateBorder(type, size, space, rgbColor);
+        }
+
+        /// <summary>
+        /// Add top border to cell
+        /// </summary>
+        /// <param name="type">Border Style</param>
+        /// <param name="size">Border Width</param>
+        /// <param name="space">Border Spacing Measurement</param>
+        /// <param name="rgbColor">Border Color</param>
+        public void SetBorderTop(XWPFTable.XWPFBorderType type, int size, int space, String rgbColor)
+        {
+            CT_TcPr ctTcPr = GetCTTc().IsSetTcPr() ? GetCTTc().tcPr : GetCTTc().AddNewTcPr();
+            CT_TcBorders borders = ctTcPr.tcBorders == null ? ctTcPr.AddNewTcBorders() : ctTcPr.tcBorders;
+            borders.top = CreateBorder(type, size, space, rgbColor);
+        }
+
+        /// <summary>
+        /// Add left border to cell
+        /// </summary>
+        /// <param name="type">Border Style</param>
+        /// <param name="size">Border Width</param>
+        /// <param name="space">Border Spacing Measurement</param>
+        /// <param name="rgbColor">Border Color</param>
+        public void SetBorderLeft(XWPFTable.XWPFBorderType type, int size, int space, String rgbColor)
+        {
+            CT_TcPr ctTcPr = GetCTTc().IsSetTcPr() ? GetCTTc().tcPr : GetCTTc().AddNewTcPr();
+            CT_TcBorders borders = ctTcPr.tcBorders == null ? ctTcPr.AddNewTcBorders() : ctTcPr.tcBorders;
+            borders.left = CreateBorder(type, size, space, rgbColor);
+        }
+
+        /// <summary>
+        /// Add right border to cell
+        /// </summary>
+        /// <param name="type">Border Style</param>
+        /// <param name="size">Border Width</param>
+        /// <param name="space"></param>
+        /// <param name="rgbColor">Border Color</param>
+        public void SetBorderRight(XWPFTable.XWPFBorderType type, int size, int space, String rgbColor)
+        {
+            CT_TcPr ctTcPr = GetCTTc().IsSetTcPr() ? GetCTTc().tcPr : GetCTTc().AddNewTcPr();
+            CT_TcBorders borders = ctTcPr.tcBorders == null ? ctTcPr.AddNewTcBorders() : ctTcPr.tcBorders;
+            borders.right = CreateBorder(type, size, space, rgbColor);
+        }
+
+        /// <summary>
+        /// Creates border with parameters
+        /// </summary>
+        /// <param name="type">Border Style</param>
+        /// <param name="size">Border Width</param>
+        /// <param name="space">Border Spacing Measurement</param>
+        /// <param name="rgbColor">Border Color</param>
+        /// <returns>CT_Border object</returns>
+        private static CT_Border CreateBorder(XWPFTable.XWPFBorderType type, int size, int space, string rgbColor)
+        {
+            CT_Border border = new CT_Border();
+            border.val = XWPFTable.xwpfBorderTypeMap[type];
+            border.sz = (ulong)size;
+            border.space = (ulong)space;
+            border.color = (rgbColor);
+            return border;
+        }
+
         public void SetText(String text)
         {
             CT_P ctP = (ctTc.SizeOfPArray() == 0) ? ctTc.AddNewP() : ctTc.GetPArray(0);
             XWPFParagraph par = new XWPFParagraph(ctP, this);
-            par.CreateRun().SetText(text);
+            par.CreateRun().AppendText(text);
         }
 
         public XWPFTableRow GetTableRow()
@@ -176,15 +271,86 @@ namespace NPOI.XWPF.UserModel
         }
 
         /**
+     * Set cell color. This sets some associated values; for finer control
+     * you may want to access these elements individually.
+     * @param rgbStr - the desired cell color, in the hex form "RRGGBB".
+     */
+        public void SetColor(String rgbStr)
+        {
+            CT_TcPr tcpr = ctTc.IsSetTcPr() ? ctTc.tcPr : ctTc.AddNewTcPr();
+            CT_Shd ctshd = tcpr.IsSetShd() ? tcpr.shd : tcpr.AddNewShd();
+            ctshd.color = ("auto");
+            ctshd.val = (ST_Shd.clear);
+            ctshd.fill = (rgbStr);
+        }
+
+        /**
+         * Get cell color. Note that this method only returns the "fill" value.
+         * @return RGB string of cell color
+         */
+        public String GetColor()
+        {
+            String color = null;
+            CT_TcPr tcpr = ctTc.tcPr;
+            if (tcpr != null)
+            {
+                CT_Shd ctshd = tcpr.shd;
+                if (ctshd != null)
+                {
+                    color = ctshd.fill;
+                }
+            }
+            return color;
+        }
+
+        /**
+         * Set the vertical alignment of the cell.
+         * @param vAlign - the desired alignment enum value
+         */
+        public void SetVerticalAlignment(XWPFVertAlign vAlign)
+        {
+            CT_TcPr tcpr = ctTc.IsSetTcPr() ? ctTc.tcPr : ctTc.AddNewTcPr();
+            CT_VerticalJc va = tcpr.AddNewVAlign();
+            va.val = (alignMap[(vAlign)]);
+        }
+
+        /**
+         * Get the vertical alignment of the cell.
+         * @return the cell alignment enum value or null if no vertical alignment is set
+         */
+        public XWPFVertAlign? GetVerticalAlignment()
+        {
+            XWPFVertAlign? vAlign = null;
+            CT_TcPr tcpr = ctTc.tcPr;
+            if (tcpr != null)
+            {
+                CT_VerticalJc va = tcpr.vAlign;
+                if (va != null)
+                {
+                    vAlign = stVertAlignTypeMap[va.val.Value];
+                }
+                else
+                {
+                    vAlign = XWPFVertAlign.TOP;
+                }
+                if (va != null && va.val != null)
+                {
+                    vAlign = stVertAlignTypeMap[va.val.Value];
+                }
+            }
+            return vAlign;
+        }
+
+        /**
          * add a new paragraph at position of the cursor
          * @param cursor
          * @return the inserted paragraph
          */
-        public XWPFParagraph insertNewParagraph(/*XmlCursor*/ XmlDocument cursor)
+        public XWPFParagraph InsertNewParagraph(/*XmlCursor*/ XmlDocument cursor)
         {
             /*if(!isCursorInTableCell(cursor))
                 return null;
-    		
+            
             String uri = CTP.type.Name.NamespaceURI;
             String localPart = "p";
             cursor.BeginElement(localPart,uri);
@@ -216,7 +382,7 @@ namespace NPOI.XWPF.UserModel
             throw new NotImplementedException();
         }
 
-        public XWPFTable insertNewTbl(/*XmlCursor*/ XmlDocument cursor)
+        public XWPFTable InsertNewTbl(/*XmlCursor*/ XmlDocument cursor)
         {
             /*if(isCursorInTableCell(cursor)){
                 String uri = CTTbl.type.Name.NamespaceURI;
@@ -274,7 +440,7 @@ namespace NPOI.XWPF.UserModel
          */
         public XWPFParagraph GetParagraphArray(int pos)
         {
-            if (pos > 0 && pos < paragraphs.Count)
+            if (pos >= 0 && pos < paragraphs.Count)
             {
                 return paragraphs[(pos)];
             }
@@ -286,18 +452,24 @@ namespace NPOI.XWPF.UserModel
          * 
          * @see NPOI.XWPF.UserModel.IBody#getPart()
          */
-        public POIXMLDocumentPart GetPart()
+        public POIXMLDocumentPart Part
         {
-            return tableRow.GetTable().GetPart();
+            get
+            {
+                return tableRow.GetTable().Part;
+            }
         }
 
 
         /** 
          * @see NPOI.XWPF.UserModel.IBody#getPartType()
          */
-        public BodyType GetPartType()
+        public BodyType PartType
         {
-            return BodyType.TABLECELL;
+            get
+            {
+                return BodyType.TABLECELL;
+            }
         }
 
 
@@ -308,7 +480,7 @@ namespace NPOI.XWPF.UserModel
         public XWPFTable GetTable(CT_Tbl ctTable)
         {
             for(int i=0; i<tables.Count; i++){
-                if(GetTables()[(i)].GetCTTbl() == ctTable) return GetTables()[(i)]; 
+                if(this.Tables[(i)].GetCTTbl() == ctTable) return Tables[(i)]; 
             }
             return null;
         }
@@ -319,9 +491,9 @@ namespace NPOI.XWPF.UserModel
          */
         public XWPFTable GetTableArray(int pos)
         {
-            if (pos > 0 && pos < tables.Count)
+            if (pos >=0 && pos < tables.Count)
             {
-                return tables[(pos)];
+                return tables[pos];
             }
             return null;
         }
@@ -330,9 +502,12 @@ namespace NPOI.XWPF.UserModel
         /** 
          * @see NPOI.XWPF.UserModel.IBody#getTables()
          */
-        public IList<XWPFTable> GetTables()
+        public IList<XWPFTable> Tables
         {
-            return tables.AsReadOnly();
+            get
+            {
+                return tables.AsReadOnly();
+            }
         }
 
 
@@ -340,7 +515,7 @@ namespace NPOI.XWPF.UserModel
          * inserts an existing XWPFTable to the arrays bodyElements and tables
          * @see NPOI.XWPF.UserModel.IBody#insertTable(int, NPOI.XWPF.UserModel.XWPFTable)
          */
-        public void insertTable(int pos, XWPFTable table)
+        public void InsertTable(int pos, XWPFTable table)
         {
             bodyElements.Insert(pos, table);
             int i;
@@ -358,41 +533,92 @@ namespace NPOI.XWPF.UserModel
             StringBuilder text = new StringBuilder();
             foreach (XWPFParagraph p in paragraphs)
             {
-                text.Append(p.GetText());
+                text.Append(p.Text);
             }
             return text.ToString();
         }
 
+        /**
+     * extracts all text recursively through embedded tables and embedded SDTs
+     */
+        public String GetTextRecursively()
+        {
 
+            StringBuilder text = new StringBuilder();
+            for (int i = 0; i < bodyElements.Count; i++)
+            {
+                bool isLast = (i == bodyElements.Count - 1) ? true : false;
+                AppendBodyElementText(text, bodyElements[i], isLast);
+            }
+
+            return text.ToString();
+        }
+
+        private void AppendBodyElementText(StringBuilder text, IBodyElement e, bool isLast)
+        {
+            if (e is XWPFParagraph)
+            {
+                text.Append(((XWPFParagraph)e).Text);
+                if (isLast == false)
+                {
+                    text.Append('\t');
+                }
+            }
+            else if (e is XWPFTable)
+            {
+                XWPFTable eTable = (XWPFTable)e;
+                foreach (XWPFTableRow row in eTable.Rows)
+                {
+                    foreach (XWPFTableCell cell in row.GetTableCells())
+                    {
+                        IList<IBodyElement> localBodyElements = cell.BodyElements;
+                        for (int i = 0; i < localBodyElements.Count; i++)
+                        {
+                            bool localIsLast = (i == localBodyElements.Count - 1) ? true : false;
+                            AppendBodyElementText(text, localBodyElements[i], localIsLast);
+                        }
+                    }
+                }
+
+                if (isLast == false)
+                {
+                    text.Append('\n');
+                }
+            }
+            else if (e is XWPFSDT)
+            {
+                text.Append(((XWPFSDT)e).Content.Text);
+                if (isLast == false)
+                {
+                    text.Append('\t');
+                }
+            }
+        }
         /**
          * Get the TableCell which belongs to the TableCell
          */
         public XWPFTableCell GetTableCell(CT_Tc cell)
         {
-            /*XmlCursor cursor = cell.NewCursor();
-            cursor.ToParent();
-            XmlObject o = cursor.Object;
-            if(!(o is CTRow)){
+            if (!(cell.Parent is CT_Row))
+                return null;
+            CT_Row row = (CT_Row)cell.Parent;
+
+            if (!(row.Parent is CT_Tbl))
+            {
                 return null;
             }
-            CTRow row = (CTRow)o;
-            cursor.ToParent();
-            o = cursor.Object;
-            cursor.Dispose();
-            if(! (o is CTTbl)){
-                return null;
-            }
-            CTTbl tbl = (CTTbl) o;
+            CT_Tbl tbl = (CT_Tbl)row.Parent;
             XWPFTable table = GetTable(tbl);
-            if(table == null){
+            if (table == null)
+            {
                 return null;
             }
-            XWPFTableRow tableRow = table.GetRow(row);
-            if(row == null){
+            XWPFTableRow tr = table.GetRow(row);
+            if (tr == null)
+            {
                 return null;
             }
-            return tableRow.GetTableCell(cell);*/
-            throw new NotImplementedException();
+            return tr.GetTableCell(cell);
         }
 
         public XWPFDocument GetXWPFDocument()

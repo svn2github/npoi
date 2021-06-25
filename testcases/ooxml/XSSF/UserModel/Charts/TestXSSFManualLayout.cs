@@ -15,11 +15,12 @@
    limitations under the License.
 ==================================================================== */
 
-using System;
 using NUnit.Framework;
 using NPOI.SS.UserModel;
 using NPOI.SS.UserModel.Charts;
-namespace NPOI.XSSF.UserModel.Charts
+using NPOI.XSSF.UserModel;
+
+namespace TestCases.XSSF.UserModel.Charts
 {
 
     [TestFixture]
@@ -35,8 +36,8 @@ namespace NPOI.XSSF.UserModel.Charts
         {
             double newRatio = 1.1;
             double newCoordinate = 0.3;
-            LayoutMode nonDefaultMode = LayoutMode.FACTOR;
-            LayoutTarget nonDefaultTarget = LayoutTarget.OUTER;
+            LayoutMode nonDefaultMode = LayoutMode.Factor;
+            LayoutTarget nonDefaultTarget = LayoutTarget.Outer;
 
             IManualLayout layout = GetEmptyLayout();
 

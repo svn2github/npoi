@@ -22,49 +22,53 @@ namespace NPOI.SS.Format
     using NPOI.SS.UserModel;
     using System.Text.RegularExpressions;
     using System.Collections.Generic;
-    using System.Windows.Forms;
     using System.Drawing;
 
     /**
      * Format a value according to the standard Excel behavior.  This "standard" is
      * not explicitly documented by Microsoft, so the behavior is determined by
      * experimentation; see the tests.
-     * 
-     * An Excel format has up to four parts, Separated by semicolons.  Each part
+     * <p/>
+     * An Excel format has up to four parts, separated by semicolons.  Each part
      * specifies what to do with particular kinds of values, depending on the number
-     * of parts given: 
-     * 
-     * - One part (example: <c>[Green]#.##</c>) 
-     * If the value is a number, display according to this one part (example: green text,
+     * of parts given: <dl> <dt>One part (example: <tt>[Green]#.##</tt>) <dd>If the
+     * value is a number, display according to this one part (example: green text,
      * with up to two decimal points). If the value is text, display it as is.
-     * 
-     * - Two parts (example: <c>[Green]#.##;[Red]#.##</c>) 
-     * If the value is a positive number or zero, display according to the first part (example: green
+     * <dt>Two parts (example: <tt>[Green]#.##;[Red]#.##</tt>) <dd>If the value is a
+     * positive number or zero, display according to the first part (example: green
      * text, with up to two decimal points); if it is a negative number, display
      * according to the second part (example: red text, with up to two decimal
-     * points). If the value is text, display it as is. 
-     * 
-     * - Three parts (example: <c>[Green]#.##;[Black]#.##;[Red]#.##</c>) 
-     * If the value is a positive number, display according to the first part (example: green text, with up to
+     * points). If the value is text, display it as is. <dt>Three parts (example:
+     * <tt>[Green]#.##;[Black]#.##;[Red]#.##</tt>) <dd>If the value is a positive
+     * number, display according to the first part (example: green text, with up to
      * two decimal points); if it is zero, display according to the second part
      * (example: black text, with up to two decimal points); if it is a negative
      * number, display according to the third part (example: red text, with up to
-     * two decimal points). If the value is text, display it as is.
-     * 
-     * - Four parts (example: <c>[Green]#.##;[Black]#.##;[Red]#.##;[@]</c>)
-     * If the value is a positive number, display according to the first part (example: green text,
+     * two decimal points). If the value is text, display it as is. <dt>Four parts
+     * (example: <tt>[Green]#.##;[Black]#.##;[Red]#.##;[@]</tt>) <dd>If the value is
+     * a positive number, display according to the first part (example: green text,
      * with up to two decimal points); if it is zero, display according to the
      * second part (example: black text, with up to two decimal points); if it is a
      * negative number, display according to the third part (example: red text, with
      * up to two decimal points). If the value is text, display according to the
      * fourth part (example: text in the cell's usual color, with the text value
-     * surround by brackets).
-     * 
-     * In Addition to these, there is a general format that is used when no format
+     * surround by brackets). </dd></dt></dd></dt></dd></dt></dd></dt></dl>
+     * <p/>
+     * A given format part may specify a given Locale, by including something
+     *  like <tt>[$$-409]</tt> or <tt>[$&pound;-809]</tt> or <tt>[$-40C]</tt>. These
+     *  are (currently) largely ignored. You can use {@link DateFormatConverter}
+     *  to look these up into Java Locales if desired.
+     * <p/>
+     * In addition to these, there is a general format that is used when no format
      * is specified.  This formatting is presented by the {@link #GENERAL_FORMAT}
      * object.
-     *
-     * @author Ken Arnold, Industrious Media LLC
+     * 
+     * TODO Merge this with {@link DataFormatter} so we only have one set of
+     *  code for formatting numbers.
+     * TODO Re-use parts of this logic with {@link ConditionalFormatting} /
+     *  {@link ConditionalFormattingRule} for reporting stylings which do/don't apply
+     * TODO Support the full set of modifiers, including alternate calendars and
+     *  native character numbers, as documented at https://help.libreoffice.org/Common/Number_Format_Codes
      */
     public class CellFormat
     {
@@ -75,9 +79,9 @@ namespace NPOI.SS.Format
         private CellFormatPart textFmt;
         private int formatPartCount;
 
-        private static Regex ONE_PART = new Regex(CellFormatPart.FORMAT_PAT.ToString() + "(;|$)", RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
+        private static readonly Regex ONE_PART = new Regex(CellFormatPart.FORMAT_PAT.ToString() + "(;|$)", RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
 
-        private static CellFormatPart DEFAULT_TEXT_FORMAT =
+        private static readonly CellFormatPart DEFAULT_TEXT_FORMAT =
                 new CellFormatPart("@");
 
         /*
@@ -85,16 +89,16 @@ namespace NPOI.SS.Format
          * format and have an invalid date or time value, are displayed as 255
          * pound signs ("#").
          */
-        private static String INVALID_VALUE_FOR_FORMAT =
+        private const string INVALID_VALUE_FOR_FORMAT =
                 "###################################################" +
                 "###################################################" +
                 "###################################################" +
                 "###################################################" +
                 "###################################################";
 
-        private static String QUOTE = "\"";
+        private const string QUOTE = "\"";
 
-        private static CellFormat GENERAL_FORMAT = new GeneralCellFormat();
+        private static readonly CellFormat GENERAL_FORMAT = new GeneralCellFormat();
         /**
          * Format a value as it would be were no format specified.  This is also
          * used when the format specified is <tt>General</tt>.
@@ -245,7 +249,7 @@ namespace NPOI.SS.Format
                 }
                 else
                 {
-                    throw new ArgumentException("value not a valid Excel date");
+                    throw new ArgumentException("value " + numericValue + " of date " + value + " is not a valid Excel date");
                 }
             }
             else
@@ -278,11 +282,11 @@ namespace NPOI.SS.Format
         {
             switch (UltimateType(c))
             {
-                case CellType.BLANK:
+                case CellType.Blank:
                     return Apply("");
-                case CellType.BOOLEAN:
+                case CellType.Boolean:
                     return Apply(c.BooleanCellValue);
-                case CellType.NUMERIC:
+                case CellType.Numeric:
                     Double value = c.NumericCellValue;
                     if (GetApplicableFormatPart(value).CellFormatType == CellFormatType.DATE)
                     {
@@ -299,92 +303,13 @@ namespace NPOI.SS.Format
                     {
                         return Apply(value);
                     }
-                case CellType.STRING:
+                case CellType.String:
                     return Apply(c.StringCellValue);
                 default:
                     return Apply("?");
             }
         }
 
-        /**
-         * Uses the result of Applying this format to the value, Setting the text
-         * and color of a label before returning the result.
-         *
-         * @param label The label to apply to.
-         * @param value The value to Process.
-         *
-         * @return The result, in a {@link CellFormatResult}.
-         */
-        public CellFormatResult Apply(Label label, Object value)
-        {
-            CellFormatResult result = Apply(value);
-            label.Text = (/*setter*/result.Text);
-            if (result.TextColor != Color.Empty)
-            {
-                label.ForeColor = (/*setter*/result.TextColor);
-            }
-            return result;
-        }
-        /**
-     * Uses the result of applying this format to the given date, setting the text
-     * and color of a label before returning the result.
-     *
-     * @param label        The label to apply to.
-     * @param date         The date.
-     * @param numericValue The numeric value for the date.
-     *
-     * @return The result, in a {@link CellFormatResult}.
-     */
-        private CellFormatResult Apply(Label label, DateTime date, double numericValue)
-        {
-            CellFormatResult result = Apply(date, numericValue);
-            label.Text = (result.Text);
-            if (result.TextColor != Color.Empty)
-            {
-                label.ForeColor = (result.TextColor);
-            }
-            return result;
-        }
-        /**
-         * Fetches the appropriate value from the cell, and uses the result, Setting
-         * the text and color of a label before returning the result.
-         *
-         * @param label The label to apply to.
-         * @param c     The cell.
-         *
-         * @return The result, in a {@link CellFormatResult}.
-         */
-        public CellFormatResult Apply(Label label, ICell c)
-        {
-            switch (UltimateType(c))
-            {
-                case CellType.BLANK:
-                    return Apply(label, "");
-                case CellType.BOOLEAN:
-                    return Apply(label, c.BooleanCellValue);
-                case CellType.NUMERIC:
-                    Double value = c.NumericCellValue;
-                    if (GetApplicableFormatPart(value).CellFormatType == CellFormatType.DATE)
-                    {
-                        if (DateUtil.IsValidExcelDate(value))
-                        {
-                            return Apply(label, c.DateCellValue, value);
-                        }
-                        else
-                        {
-                            return Apply(label, INVALID_VALUE_FOR_FORMAT);
-                        }
-                    }
-                    else
-                    {
-                        return Apply(label, value);
-                    }
-                case CellType.STRING:
-                    return Apply(label, c.StringCellValue);
-                default:
-                    return Apply(label, "?");
-            }
-        }
         /**
          * Returns the {@link CellFormatPart} that applies to the value.  Result
          * depends on how many parts the cell format has, the cell value and any
@@ -469,7 +394,7 @@ namespace NPOI.SS.Format
         public static CellType UltimateType(ICell cell)
         {
             CellType type = cell.CellType;
-            if (type == CellType.FORMULA)
+            if (type == CellType.Formula)
                 return cell.CachedFormulaResultType;
             else
                 return type;

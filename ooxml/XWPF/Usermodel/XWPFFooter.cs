@@ -70,16 +70,21 @@ namespace NPOI.XWPF.UserModel
             }
         }
 
-        public XWPFFooter(POIXMLDocumentPart parent, PackagePart part, PackageRelationship rel)
-            : base(parent, part, rel)
+        public XWPFFooter(POIXMLDocumentPart parent, PackagePart part)
+            : base(parent, part)
         {
         }
-
+        [Obsolete("deprecated in POI 3.14, scheduled for removal in POI 3.16")]
+        public XWPFFooter(POIXMLDocumentPart parent, PackagePart part, PackageRelationship rel)
+            : this(parent, part)
+        {
+            
+        }
         /**
          * save and Commit footer
          */
 
-        protected override void Commit()
+        protected internal override void Commit()
         {
             /*XmlOptions xmlOptions = new XmlOptions(DEFAULT_XML_OPTIONS);
             xmlOptions.SaveSyntheticDocumentElement=(new QName(CTNumbering.type.Name.NamespaceURI, "ftr"));
@@ -95,20 +100,11 @@ namespace NPOI.XWPF.UserModel
             map.Put("http://schemas.microsoft.com/office/word/2006/wordml", "wne");
             xmlOptions.SaveSuggestedPrefixes=(map);*/
             PackagePart part = GetPackagePart();
-            Stream out1 = part.GetOutputStream();
-            FtrDocument doc = new FtrDocument((CT_Ftr)headerFooter);
-            XmlSerializerNamespaces namespaces = new XmlSerializerNamespaces(new[] {
-                new XmlQualifiedName("ve", "http://schemas.openxmlformats.org/markup-compatibility/2006"),
-                new XmlQualifiedName("r", "http://schemas.openxmlformats.org/officeDocument/2006/relationships"),
-                new XmlQualifiedName("m", "http://schemas.openxmlformats.org/officeDocument/2006/math"),
-                new XmlQualifiedName("v", "urn:schemas-microsoft-com:vml"),
-                new XmlQualifiedName("wp", "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"),
-                new XmlQualifiedName("w10", "urn:schemas-microsoft-com:office:word"),
-                new XmlQualifiedName("wne", "http://schemas.microsoft.com/office/word/2006/wordml"),
-                 new XmlQualifiedName("w", "http://schemas.openxmlformats.org/wordprocessingml/2006/main")
-             });
-            doc.Save(out1, namespaces);
-            out1.Close();
+            using (Stream out1 = part.GetOutputStream())
+            {
+                FtrDocument doc = new FtrDocument((CT_Ftr)headerFooter);
+                doc.Save(out1);
+            }
         }
 
 
@@ -116,10 +112,9 @@ namespace NPOI.XWPF.UserModel
         {
             base.OnDocumentRead();
             FtrDocument ftrDocument = null;
-            Stream is1;
             try {
-                is1 = GetPackagePart().GetInputStream();
-                ftrDocument = FtrDocument.Parse(is1);
+                XmlDocument xmldoc = ConvertStreamToXml(GetPackagePart().GetInputStream());
+                ftrDocument = FtrDocument.Parse(xmldoc, NamespaceManager);
                 headerFooter = ftrDocument.Ftr;
                 // parse the document with cursor and add
                 // the XmlObject to its lists
@@ -137,23 +132,12 @@ namespace NPOI.XWPF.UserModel
                         tables.Add(t);
                         bodyElements.Add(t);
                     }
-                }
-                /*XmlCursor cursor = headerFooter.NewCursor();
-                cursor.SelectPath("./*");
-                while (cursor.ToNextSelection()) {
-                    XmlObject o = cursor.Object;
-                    if (o is CTP) {
-                        XWPFParagraph p = new XWPFParagraph((CTP)o, this);
-                        paragraphs.Add(p);
-                        bodyElements.Add(p);
-                    }
-                    if (o is CTTbl) {
-                        XWPFTable t = new XWPFTable((CTTbl)o, this);
-                        tables.Add(t);
-                        bodyElements.Add(t);
+                    if (o is CT_SdtBlock)
+                    {
+                        XWPFSDT c = new XWPFSDT((CT_SdtBlock)o, this);
+                        bodyElements.Add(c);
                     }
                 }
-                cursor.Dispose();*/
             } catch (Exception e) {
                 throw new POIXMLException(e);
             }
@@ -163,9 +147,12 @@ namespace NPOI.XWPF.UserModel
          * Get the PartType of the body
          * @see NPOI.XWPF.UserModel.IBody#getPartType()
          */
-        public override BodyType GetPartType()
+        public override BodyType PartType
         {
-            return BodyType.FOOTER;
+            get
+            {
+                return BodyType.FOOTER;
+            }
         }
     }
 

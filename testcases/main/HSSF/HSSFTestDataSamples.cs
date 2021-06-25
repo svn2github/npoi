@@ -32,7 +32,10 @@ namespace TestCases.HSSF
 
         private static POIDataSamples _inst = POIDataSamples.GetSpreadSheetInstance();
 
-
+        public static FileInfo GetSampleFile(string sampleFileName)
+        {
+            return _inst.GetFileInfo(sampleFileName);
+        }
         public static Stream OpenSampleFileStream(String sampleFileName)
         {
             return _inst.OpenResourceAsStream(sampleFileName);
@@ -58,7 +61,8 @@ namespace TestCases.HSSF
             using (MemoryStream baos = new MemoryStream(4096))
             {
                 original.Write(baos);
-                return new HSSFWorkbook(baos);
+                MemoryStream bais = new MemoryStream(baos.ToArray());
+                return new HSSFWorkbook(bais);
             }
         }
 

@@ -26,8 +26,6 @@
  * 
  * ==============================================================*/
 
-using System;
-using System.Collections.Generic;
 using System.Text;
 
 namespace NPOI.Util
@@ -134,6 +132,13 @@ namespace NPOI.Util
             {
                 throw;
             }
+        }
+
+        public ulong Value { get; set; }
+
+        public void Update(byte[] data)
+        {
+            Value = ByteCRC(ref data);
         }
     }
 

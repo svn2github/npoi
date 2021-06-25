@@ -22,35 +22,82 @@ namespace NPOI.XWPF.UserModel
     using System.Collections.Generic;
 
     /**
-     * Sketch of XWPFTable class. Only table's text is being hold.
-     * <p/>
-     * Specifies the contents of a table present in the document. A table is a Set
-     * of paragraphs (and other block-level content) arranged in rows and columns.
-     *
-     * @author Yury Batrakov (batrakov at gmail.com)
+     * <p>Sketch of XWPFTable class. Only table's text is being hold.</p>
+     * <p>Specifies the contents of a table present in the document. A table is a set
+     * of paragraphs (and other block-level content) arranged in rows and columns.</p>
      */
-    public class XWPFTable : IBodyElement
+    public class XWPFTable : IBodyElement, ISDTContents
     {
 
         protected StringBuilder text = new StringBuilder();
         private CT_Tbl ctTbl;
         protected List<XWPFTableRow> tableRows;
-        protected List<String> styleIDs;
-        protected IBody part;
+        //protected List<String> styleIDs;
 
+        // Create a map from this XWPF-level enum to the STBorder.Enum values
+        public enum XWPFBorderType { NIL, NONE, SINGLE, THICK, DOUBLE, DOTTED, DASHED, DOT_DASH };
+        internal static Dictionary<XWPFBorderType, ST_Border> xwpfBorderTypeMap;
+        // Create a map from the STBorder.Enum values to the XWPF-level enums
+        internal static Dictionary<ST_Border, XWPFBorderType> stBorderTypeMap;
+
+        protected IBody part;
+        static XWPFTable()
+        {
+            // populate enum maps
+            xwpfBorderTypeMap = new Dictionary<XWPFBorderType, ST_Border>();
+            xwpfBorderTypeMap.Add(XWPFBorderType.NIL, ST_Border.nil);
+            xwpfBorderTypeMap.Add(XWPFBorderType.NONE, ST_Border.none);
+            xwpfBorderTypeMap.Add(XWPFBorderType.SINGLE, ST_Border.single);
+            xwpfBorderTypeMap.Add(XWPFBorderType.THICK, ST_Border.thick);
+            xwpfBorderTypeMap.Add(XWPFBorderType.DOUBLE, ST_Border.@double);
+            xwpfBorderTypeMap.Add(XWPFBorderType.DOTTED, ST_Border.dotted);
+            xwpfBorderTypeMap.Add(XWPFBorderType.DASHED, ST_Border.dashed);
+            xwpfBorderTypeMap.Add(XWPFBorderType.DOT_DASH, ST_Border.dotDash);
+
+            stBorderTypeMap = new Dictionary<ST_Border, XWPFBorderType>();
+            stBorderTypeMap.Add(ST_Border.nil, XWPFBorderType.NIL);
+            stBorderTypeMap.Add(ST_Border.none, XWPFBorderType.NONE);
+            stBorderTypeMap.Add(ST_Border.single, XWPFBorderType.SINGLE);
+            stBorderTypeMap.Add(ST_Border.thick, XWPFBorderType.THICK);
+            stBorderTypeMap.Add(ST_Border.@double, XWPFBorderType.DOUBLE);
+            stBorderTypeMap.Add(ST_Border.dotted, XWPFBorderType.DOTTED);
+            stBorderTypeMap.Add(ST_Border.dashed, XWPFBorderType.DASHED);
+            stBorderTypeMap.Add(ST_Border.dotDash, XWPFBorderType.DOT_DASH);
+        }
         public XWPFTable(CT_Tbl table, IBody part, int row, int col)
             : this(table, part)
         {
 
+            CT_TblGrid ctTblGrid = table.AddNewTblGrid();
+            for (int j = 0; j < col; j++)
+            {
+                CT_TblGridCol ctGridCol= ctTblGrid.AddNewGridCol();
+                ctGridCol.w = 300;
+            }
             for (int i = 0; i < row; i++)
             {
                 XWPFTableRow tabRow = (GetRow(i) == null) ? CreateRow() : GetRow(i);
                 for (int k = 0; k < col; k++)
                 {
-                    XWPFTableCell tabCell = (tabRow.GetCell(k) == null) ? tabRow
-                            .CreateCell() : null;
+                    if (tabRow.GetCell(k) == null)
+                    {
+                        tabRow.CreateCell();
+                    }
                 }
             }
+        }
+
+        public void SetColumnWidth(int columnIndex, ulong width)
+        {
+            if (this.ctTbl.tblGrid == null)
+                return;
+
+            if (columnIndex > this.ctTbl.tblGrid.gridCol.Count)
+            {
+                throw new ArgumentOutOfRangeException(string.Format("Column index {0} doesn't exist.", columnIndex));
+            }
+            this.ctTbl.tblGrid.gridCol[columnIndex].w = width;
+
         }
 
         public XWPFTable(CT_Tbl table, IBody part)
@@ -69,13 +116,12 @@ namespace NPOI.XWPF.UserModel
                 XWPFTableRow tabRow = new XWPFTableRow(row, this);
                 tableRows.Add(tabRow);
                 foreach (CT_Tc cell in row.GetTcList()) {
-                    cell.TableRow = row;
                     foreach (CT_P ctp in cell.GetPList()) {
                         XWPFParagraph p = new XWPFParagraph(ctp, part);
                         if (rowText.Length > 0) {
                             rowText.Append('\t');
                         }
-                        rowText.Append(p.GetText());
+                        rowText.Append(p.Text);
                     }
                 }
                 if (rowText.Length > 0) {
@@ -84,7 +130,7 @@ namespace NPOI.XWPF.UserModel
                 }
             }
         }
-
+        
         private void CreateEmptyTable(CT_Tbl table)
         {
             // MINIMUM ELEMENTS FOR A TABLE
@@ -96,22 +142,21 @@ namespace NPOI.XWPF.UserModel
             tblpro.tblW.type=(ST_TblWidth.auto);
 
             // layout
-            // tblpro.AddNewTblLayout().Type=(STTblLayoutType.AUTOFIT);
+             tblpro.AddNewTblLayout().type =  ST_TblLayoutType.autofit;
 
             // borders
             CT_TblBorders borders = tblpro.AddNewTblBorders();
-            borders.AddNewBottom().val=(ST_Border.single);
-            borders.AddNewInsideH().val = (ST_Border.single);
-            borders.AddNewInsideV().val = (ST_Border.single);
-            borders.AddNewLeft().val = (ST_Border.single);
-            borders.AddNewRight().val = (ST_Border.single);
-            borders.AddNewTop().val = (ST_Border.single);
+            borders.AddNewBottom().val=ST_Border.single;
+            borders.AddNewInsideH().val = ST_Border.single;
+            borders.AddNewInsideV().val = ST_Border.single;
+            borders.AddNewLeft().val = ST_Border.single;
+            borders.AddNewRight().val = ST_Border.single;
+            borders.AddNewTop().val = ST_Border.single;
 
-            /*
-           * CTTblGrid tblgrid=table.AddNewTblGrid();
-           * tblgrid.AddNewGridCol().W=(new Bigint("2000"));
-           */
-            GetRows();
+            
+            //CT_TblGrid tblgrid=table.AddNewTblGrid();
+            //tblgrid.AddNewGridCol().w= (ulong)2000;
+           
         }
 
         /**
@@ -124,16 +169,26 @@ namespace NPOI.XWPF.UserModel
         }
 
         /**
+         * Convenience method to extract text in cells.  This
+         * does not extract text recursively in cells, and it does not
+         * currently include text in SDT (form) components.
+         * <p>
+         * To get all text within a table, see XWPFWordExtractor's appendTableText
+         * as an example. 
+         *
          * @return text
          */
-        public String GetText()
+        public String Text
         {
-            return text.ToString();
+            get
+            {
+                return text.ToString();
+            }
         }
 
         public void AddNewRowBetween(int start, int end)
         {
-            // TODO
+            throw new NotImplementedException();
         }
 
         /**
@@ -173,38 +228,42 @@ namespace NPOI.XWPF.UserModel
         {
             if (pos >= 0 && pos < ctTbl.SizeOfTrArray()) {
                 //return new XWPFTableRow(ctTbl.GetTrArray(pos));
-                return GetRows()[(pos)];
+                return Rows[(pos)];
             }
             return null;
         }
 
 
         /**
-         * @param width
-         */
-        public void SetWidth(int width)
-        {
-            CT_TblPr tblPr = GetTrPr();
-            CT_TblWidth tblWidth = tblPr.IsSetTblW() ? tblPr.tblW : tblPr
-                    .AddNewTblW();
-            tblWidth.w = width.ToString();
-        }
-
-        /**
          * @return width value
          */
-        public int GetWidth()
+        public int Width
         {
-            CT_TblPr tblPr = GetTrPr();
-            return tblPr.IsSetTblW() ? int.Parse(tblPr.tblW.w) : -1;
+            get
+            {
+                CT_TblPr tblPr = GetTrPr();
+                return tblPr.IsSetTblW() ? int.Parse(tblPr.tblW.w) : -1;
+            }
+            set 
+            {
+
+                CT_TblPr tblPr = GetTrPr();
+                CT_TblWidth tblWidth = tblPr.IsSetTblW() ? tblPr.tblW : tblPr
+                        .AddNewTblW();
+                tblWidth.w = value.ToString();
+                tblWidth.type = ST_TblWidth.pct;
+            }
         }
 
         /**
          * @return number of rows in table
          */
-        public int GetNumberOfRows()
+        public int NumberOfRows
         {
-            return ctTbl.SizeOfTrArray();
+            get
+            {
+                return ctTbl.SizeOfTrArray();
+            }
         }
 
         private CT_TblPr GetTrPr()
@@ -228,11 +287,395 @@ namespace NPOI.XWPF.UserModel
          * Get the StyleID of the table
          * @return	style-ID of the table
          */
-        public String GetStyleID()
+        public String StyleID
         {
-            return ctTbl.tblPr.tblStyle.val;
+            get
+            {
+                String styleId = null;
+                CT_TblPr tblPr = ctTbl.tblPr;
+                if (tblPr != null)
+                {
+                    CT_String styleStr = tblPr.tblStyle;
+                    if (styleStr != null)
+                    {
+                        styleId = styleStr.val;
+                    }
+                }
+                return styleId;
+            }
+            set
+            {
+                CT_TblPr tblPr = GetTrPr();
+                CT_String styleStr = tblPr.tblStyle;
+                if (styleStr == null)
+                {
+                    styleStr = tblPr.AddNewTblStyle();
+                }
+                styleStr.val = value;
+            }
+        }
+        public XWPFBorderType InsideHBorderType
+        {
+            get
+            {
+                XWPFBorderType bt = XWPFBorderType.NONE;
+
+                CT_TblPr tblPr = GetTrPr();
+                if (tblPr.IsSetTblBorders())
+                {
+                    CT_TblBorders ctb = tblPr.tblBorders;
+                    if (ctb.IsSetInsideH())
+                    {
+                        CT_Border border = ctb.insideH;
+                        bt = stBorderTypeMap[border.val];
+                    }
+                }
+                return bt;
+            }
         }
 
+        public int InsideHBorderSize
+        {
+            get
+            {
+                int size = -1;
+
+                CT_TblPr tblPr = GetTrPr();
+                if (tblPr.IsSetTblBorders())
+                {
+                    CT_TblBorders ctb = tblPr.tblBorders;
+                    if (ctb.IsSetInsideH())
+                    {
+                        CT_Border border = ctb.insideH;
+                        size = (int)border.sz;
+                    }
+                }
+                return size;
+            }
+        }
+
+        public int InsideHBorderSpace
+        {
+            get
+            {
+                int space = -1;
+
+                CT_TblPr tblPr = GetTrPr();
+                if (tblPr.IsSetTblBorders())
+                {
+                    CT_TblBorders ctb = tblPr.tblBorders;
+                    if (ctb.IsSetInsideH())
+                    {
+                        CT_Border border = ctb.insideH;
+                        space = (int)border.space;
+                    }
+                }
+                return space;
+            }
+        }
+
+        public String InsideHBorderColor
+        {
+            get
+            {
+                String color = null;
+
+                CT_TblPr tblPr = GetTrPr();
+                if (tblPr.IsSetTblBorders())
+                {
+                    CT_TblBorders ctb = tblPr.tblBorders;
+                    if (ctb.IsSetInsideH())
+                    {
+                        CT_Border border = ctb.insideH;
+                        color = border.color;
+                    }
+                }
+                return color;
+            }
+        }
+
+        public XWPFBorderType InsideVBorderType
+        {
+            get
+            {
+                XWPFBorderType bt = XWPFBorderType.NONE;
+
+                CT_TblPr tblPr = GetTrPr();
+                if (tblPr.IsSetTblBorders())
+                {
+                    CT_TblBorders ctb = tblPr.tblBorders;
+                    if (ctb.IsSetInsideV())
+                    {
+                        CT_Border border = ctb.insideV;
+                        bt = stBorderTypeMap[border.val];
+                    }
+                }
+
+                return bt;
+            }
+        }
+
+        public int InsideVBorderSize
+        {
+            get
+            {
+                int size = -1;
+
+                CT_TblPr tblPr = GetTrPr();
+                if (tblPr.IsSetTblBorders())
+                {
+                    CT_TblBorders ctb = tblPr.tblBorders;
+                    if (ctb.IsSetInsideV())
+                    {
+                        CT_Border border = ctb.insideV;
+                        size = (int)border.sz;
+                    }
+                }
+                return size;
+            }
+        }
+
+        public int InsideVBorderSpace
+        {
+            get
+            {
+                int space = -1;
+
+                CT_TblPr tblPr = GetTrPr();
+                if (tblPr.IsSetTblBorders())
+                {
+                    CT_TblBorders ctb = tblPr.tblBorders;
+                    if (ctb.IsSetInsideV())
+                    {
+                        CT_Border border = ctb.insideV;
+                        space = (int)border.space;
+                    }
+                }
+                return space;
+            }
+        }
+
+        public String InsideVBorderColor
+        {
+            get
+            {
+                String color = null;
+
+                CT_TblPr tblPr = GetTrPr();
+                if (tblPr.IsSetTblBorders())
+                {
+                    CT_TblBorders ctb = tblPr.tblBorders;
+                    if (ctb.IsSetInsideV())
+                    {
+                        CT_Border border = ctb.insideV;
+                        color = border.color;
+                    }
+                }
+                return color;
+            }
+        }
+
+        public int RowBandSize
+        {
+            get
+            {
+                int size = 0;
+                CT_TblPr tblPr = GetTrPr();
+                if (tblPr.IsSetTblStyleRowBandSize())
+                {
+                    CT_DecimalNumber rowSize = tblPr.tblStyleRowBandSize;
+                    int.TryParse(rowSize.val, out size);
+                }
+                return size;
+            }
+            set 
+            {
+                CT_TblPr tblPr = GetTrPr();
+                CT_DecimalNumber rowSize = tblPr.IsSetTblStyleRowBandSize() ? tblPr.tblStyleRowBandSize : tblPr.AddNewTblStyleRowBandSize();
+                rowSize.val = value.ToString();			
+            }
+        }
+
+        public int ColBandSize
+        {
+            get
+            {
+                int size = 0;
+                CT_TblPr tblPr = GetTrPr();
+                if (tblPr.IsSetTblStyleColBandSize())
+                {
+                    CT_DecimalNumber colSize = tblPr.tblStyleColBandSize;
+                    int.TryParse(colSize.val, out size);
+                }
+                return size;
+            }
+            set 
+            {
+                CT_TblPr tblPr = GetTrPr();
+                CT_DecimalNumber colSize = tblPr.IsSetTblStyleColBandSize() ? tblPr.tblStyleColBandSize : tblPr.AddNewTblStyleColBandSize();
+                colSize.val = value.ToString();
+            }
+        }
+        public void SetTopBorder(XWPFBorderType type, int size, int space, String rgbColor)
+        {
+            CT_TblPr tblPr = GetTrPr();
+            CT_TblBorders ctb = tblPr.IsSetTblBorders() ? tblPr.tblBorders : tblPr.AddNewTblBorders();
+            CT_Border b = ctb.top!=null ? ctb.top : ctb.AddNewTop();
+            b.val = xwpfBorderTypeMap[type];
+            b.sz = (ulong)size;
+            b.space = (ulong)space;
+            b.color = (rgbColor);
+        }
+        public void SetBottomBorder(XWPFBorderType type, int size, int space, String rgbColor)
+        {
+            CT_TblPr tblPr = GetTrPr();
+            CT_TblBorders ctb = tblPr.IsSetTblBorders() ? tblPr.tblBorders : tblPr.AddNewTblBorders();
+            CT_Border b = ctb.bottom != null ? ctb.bottom : ctb.AddNewBottom();
+            b.val = xwpfBorderTypeMap[type];
+            b.sz = (ulong)size;
+            b.space = (ulong)space;
+            b.color = (rgbColor);
+        }
+        public void SetLeftBorder(XWPFBorderType type, int size, int space, String rgbColor)
+        {
+            CT_TblPr tblPr = GetTrPr();
+            CT_TblBorders ctb = tblPr.IsSetTblBorders() ? tblPr.tblBorders : tblPr.AddNewTblBorders();
+            CT_Border b = ctb.left != null ? ctb.left : ctb.AddNewLeft();
+            b.val = xwpfBorderTypeMap[type];
+            b.sz = (ulong)size;
+            b.space = (ulong)space;
+            b.color = (rgbColor);
+        }
+        public void SetRightBorder(XWPFBorderType type, int size, int space, String rgbColor)
+        {
+            CT_TblPr tblPr = GetTrPr();
+            CT_TblBorders ctb = tblPr.IsSetTblBorders() ? tblPr.tblBorders : tblPr.AddNewTblBorders();
+            CT_Border b = ctb.right != null ? ctb.right : ctb.AddNewRight();
+            b.val = xwpfBorderTypeMap[type];
+            b.sz = (ulong)size;
+            b.space = (ulong)space;
+            b.color = (rgbColor);
+        }
+        public void SetInsideHBorder(XWPFBorderType type, int size, int space, String rgbColor)
+        {
+            CT_TblPr tblPr = GetTrPr();
+            CT_TblBorders ctb = tblPr.IsSetTblBorders() ? tblPr.tblBorders : tblPr.AddNewTblBorders();
+            CT_Border b = ctb.IsSetInsideH() ? ctb.insideH : ctb.AddNewInsideH();
+            b.val = (xwpfBorderTypeMap[(type)]);
+            b.sz = (ulong)size;
+            b.space = (ulong)space;
+            b.color = (rgbColor);
+        }
+
+        public void SetInsideVBorder(XWPFBorderType type, int size, int space, String rgbColor)
+        {
+            CT_TblPr tblPr = GetTrPr();
+            CT_TblBorders ctb = tblPr.IsSetTblBorders() ? tblPr.tblBorders : tblPr.AddNewTblBorders();
+            CT_Border b = ctb.IsSetInsideV() ? ctb.insideV : ctb.AddNewInsideV();
+            b.val = (xwpfBorderTypeMap[type]);
+            b.sz = (ulong)size;
+            b.space = (ulong)space;
+            b.color = (rgbColor);
+        }
+
+        public int CellMarginTop
+        {
+            get
+            {
+                int margin = 0;
+                CT_TblPr tblPr = GetTrPr();
+                CT_TblCellMar tcm = tblPr.tblCellMar;
+                if (tcm != null)
+                {
+                    CT_TblWidth tw = tcm.top;
+                    if (tw != null)
+                    {
+                        int.TryParse(tw.w, out margin);
+                    }
+                }
+                return margin;
+            }
+        }
+
+        public int CellMarginLeft
+        {
+            get
+            {
+                int margin = 0;
+                CT_TblPr tblPr = GetTrPr();
+                CT_TblCellMar tcm = tblPr.tblCellMar;
+                if (tcm != null)
+                {
+                    CT_TblWidth tw = tcm.left;
+                    if (tw != null)
+                    {
+                        int.TryParse(tw.w, out margin);
+                    }
+                }
+                return margin;
+            }
+        }
+
+        public int CellMarginBottom
+        {
+            get
+            {
+                int margin = 0;
+                CT_TblPr tblPr = GetTrPr();
+                CT_TblCellMar tcm = tblPr.tblCellMar;
+                if (tcm != null)
+                {
+                    CT_TblWidth tw = tcm.bottom;
+                    if (tw != null)
+                    {
+                        int.TryParse(tw.w, out margin);
+                    }
+                }
+                return margin;
+            }
+        }
+
+        public int CellMarginRight
+        {
+            get
+            {
+                int margin = 0;
+                CT_TblPr tblPr = GetTrPr();
+                CT_TblCellMar tcm = tblPr.tblCellMar;
+                if (tcm != null)
+                {
+                    CT_TblWidth tw = tcm.right;
+                    if (tw != null)
+                    {
+                        int.TryParse(tw.w, out margin);
+                    }
+                }
+                return margin;
+            }
+        }
+
+        public void SetCellMargins(int top, int left, int bottom, int right)
+        {
+            CT_TblPr tblPr = GetTrPr();
+            CT_TblCellMar tcm = tblPr.IsSetTblCellMar() ? tblPr.tblCellMar : tblPr.AddNewTblCellMar();
+
+            CT_TblWidth tw = tcm.IsSetLeft() ? tcm.left : tcm.AddNewLeft();
+            tw.type = (ST_TblWidth.dxa);
+            tw.w = left.ToString();
+
+            tw = tcm.IsSetTop() ? tcm.top : tcm.AddNewTop();
+            tw.type = (ST_TblWidth.dxa);
+            tw.w = top.ToString();
+
+            tw = tcm.IsSetBottom() ? tcm.bottom : tcm.AddNewBottom();
+            tw.type = (ST_TblWidth.dxa);
+            tw.w = bottom.ToString();
+
+            tw = tcm.IsSetRight() ? tcm.right : tcm.AddNewRight();
+            tw.type = (ST_TblWidth.dxa);
+            tw.w = right.ToString();
+        }
+    
         /**
          * add a new Row to the table
          * 
@@ -241,7 +684,7 @@ namespace NPOI.XWPF.UserModel
         public void AddRow(XWPFTableRow row)
         {
             ctTbl.AddNewTr();
-            ctTbl.SetTrArray(GetNumberOfRows()-1, row.GetCtRow());
+            ctTbl.SetTrArray(this.NumberOfRows-1, row.GetCTRow());
             tableRows.Add(row);
         }
 
@@ -255,7 +698,7 @@ namespace NPOI.XWPF.UserModel
             if (pos >= 0 && pos <= tableRows.Count)
             {
                 ctTbl.InsertNewTr(pos);
-                ctTbl.SetTrArray(pos, row.GetCtRow());
+                ctTbl.SetTrArray(pos, row.GetCTRow());
                 tableRows.Insert(pos, row);
                 return true;
             }
@@ -286,16 +729,22 @@ namespace NPOI.XWPF.UserModel
         public bool RemoveRow(int pos)
         {
             if (pos >= 0 && pos < tableRows.Count) {
-                ctTbl.RemoveTr(pos);
+                if (ctTbl.SizeOfTrArray() > 0)
+                {
+                    ctTbl.RemoveTr(pos);
+                }
                 tableRows.RemoveAt(pos);
                 return true;
             }
             return false;
         }
 
-        public List<XWPFTableRow> GetRows()
+        public List<XWPFTableRow> Rows
         {
-            return tableRows;
+            get
+            {
+                return tableRows;
+            }
         }
 
 
@@ -323,22 +772,28 @@ namespace NPOI.XWPF.UserModel
          * returns the part of the bodyElement
          * @see NPOI.XWPF.UserModel.IBody#getPart()
          */
-        public POIXMLDocumentPart GetPart()
+        public POIXMLDocumentPart Part
         {
-            if (part != null)
+            get
             {
-                return part.GetPart();
+                if (part != null)
+                {
+                    return part.Part;
+                }
+                return null;
             }
-            return null;
         }
 
         /**
          * returns the partType of the bodyPart which owns the bodyElement
          * @see NPOI.XWPF.UserModel.IBody#getPartType()
          */
-        public BodyType GetPartType()
+        public BodyType PartType
         {
-            return part.GetPartType();
+            get
+            {
+                return part.PartType;
+            }
         }
 
         /**
@@ -347,8 +802,8 @@ namespace NPOI.XWPF.UserModel
          */
         public XWPFTableRow GetRow(CT_Row row)
         {
-            for(int i=0; i<GetRows().Count; i++){
-                if(GetRows()[(i)].GetCtRow() == row) return GetRow(i); 
+            for(int i=0; i<Rows.Count; i++){
+                if(Rows[(i)].GetCTRow() == row) return GetRow(i); 
             }
             return null;
         }

@@ -28,9 +28,10 @@
 namespace NPOI.HPSF
 {
     using System;
-    using System.IO;
     using System.Collections;
     using NPOI.HPSF.Wellknown;
+    using System.Text;
+    using NPOI.Util;
 
 
     /// <summary>
@@ -330,8 +331,12 @@ namespace NPOI.HPSF
                     while (dic.MoveNext())
                     {
                         string key = ((DictionaryEntry)dic.Current).Key as string;
-                        byte[] a=System.Text.Encoding.UTF8.GetBytes(key);
-                        byte[] b = System.Text.Encoding.UTF8.GetBytes(name);
+
+                        int codepage = this.Codepage;
+                        if (codepage < 0)
+                            codepage = (int)CodePageUtil.CP_UNICODE;
+                        byte[] a= Encoding.GetEncoding(codepage).GetBytes(key);
+                        byte[] b = Encoding.UTF8.GetBytes(name);
                         if (NPOI.Util.Arrays.Equals(a, b))
                             x = ((DictionaryEntry)dic.Current).Value;
                     }

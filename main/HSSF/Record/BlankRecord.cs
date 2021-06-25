@@ -26,7 +26,6 @@ namespace NPOI.HSSF.Record
 {
     using System;
     using System.Text;
-    using System.Collections;
     using NPOI.Util;
 
 
@@ -39,7 +38,7 @@ namespace NPOI.HSSF.Record
      * @version 2.0-pre
      */
 
-    public class BlankRecord : StandardRecord, CellValueRecordInterface, IComparable
+    public class BlankRecord : StandardRecord, CellValueRecordInterface, IComparable, ICloneable
     {
         public const short sid = 0x201;
         //private short             field_1_row;

@@ -17,8 +17,6 @@
 
 namespace NPOI.HSSF.UserModel
 {
-    using System;
-    using System.Text;
     using NPOI.SS.Formula;
     using NPOI.SS.UserModel;
 
@@ -57,6 +55,11 @@ namespace NPOI.HSSF.UserModel
                 return null;
             }
             return new HSSFEvaluationCell(cell, this);
+        }
+
+        public void ClearAllCachedResultValues()
+        {
+            // nothing to do
         }
     }
 }

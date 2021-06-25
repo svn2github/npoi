@@ -28,7 +28,6 @@
 
 using System;
 using System.Collections;
-using System.Text;
 using System.IO;
 
 using NPOI.POIFS.Common;
@@ -44,13 +43,13 @@ namespace NPOI.POIFS.Storage
     public class SmallDocumentBlock : BlockWritable, ListManagedBlock
     {
 
-        private static int BLOCK_SHIFT = 6;
+        private const int BLOCK_SHIFT = 6;
 
         private byte[]            _data;
-        private static byte _default_fill         = ( byte ) 0xff;
-        private static int  _block_size           =  1 << BLOCK_SHIFT;
-        private static int BLOCK_MASK = _block_size - 1;
-        private static int  _blocks_per_big_block =
+        private const byte _default_fill         = ( byte ) 0xff;
+        private const int  _block_size           =  1 << BLOCK_SHIFT;
+        private const int BLOCK_MASK = _block_size - 1;
+        private static int _blocks_per_big_block =
             POIFSConstants.BIG_BLOCK_SIZE / _block_size;
         private POIFSBigBlockSize _bigBlockSize;
 
@@ -124,7 +123,7 @@ namespace NPOI.POIFS.Storage
         /// <param name="bigBlockSize"></param>
         /// <param name="blocks">the List to be filled out.</param>
         /// <returns>number of big blocks the list encompasses</returns>
-        public static int Fill(POIFSBigBlockSize bigBlockSize,IList blocks)
+        public static int Fill(POIFSBigBlockSize bigBlockSize,IList<SmallDocumentBlock> blocks)
         {
             int _blocks_per_big_block = GetBlocksPerBigBlock(bigBlockSize);
             int count           = blocks.Count;
@@ -246,6 +245,14 @@ namespace NPOI.POIFS.Storage
         public static int CalcSize(int size)
         {
             return size * _block_size;
+        }
+
+        protected int SmallBlocksPerBigBlock
+        {
+            get
+            {
+                return _blocks_per_big_block;
+            }
         }
 
         /// <summary>

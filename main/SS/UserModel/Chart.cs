@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 using NPOI.SS.UserModel.Charts;
 
 namespace NPOI.SS.UserModel
@@ -16,12 +14,12 @@ namespace NPOI.SS.UserModel
         /**
          * @return an appropriate ChartDataFactory implementation
          */
-        IChartDataFactory GetChartDataFactory();
+        IChartDataFactory ChartDataFactory { get; }
 
         /**
          * @return an appropriate ChartAxisFactory implementation
          */
-        IChartAxisFactory GetChartAxisFactory();
+        IChartAxisFactory ChartAxisFactory { get; }
 
         /**
          * @return chart legend instance

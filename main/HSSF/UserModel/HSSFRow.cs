@@ -18,13 +18,10 @@
 namespace NPOI.HSSF.UserModel
 {
     using System;
-    using System.IO;
     using System.Collections;
     using System.Collections.Generic;
 
     using NPOI.HSSF.Record;
-    using NPOI.HSSF.Model;
-    using NPOI.Util;
     using NPOI.SS.UserModel;
     using NPOI.SS;
 
@@ -35,10 +32,8 @@ namespace NPOI.HSSF.UserModel
     /// @author Glen Stampoultzis (glens at apache.org)
     /// </summary>
     [Serializable]
-    public class HSSFRow : IComparable,IRow
+    public class HSSFRow : IRow, IComparable<HSSFRow>
     {
-
-
         /// <summary>
         /// used for collections
         /// </summary>
@@ -107,14 +102,14 @@ namespace NPOI.HSSF.UserModel
         }
         /// <summary>
         /// Use this to create new cells within the row and return it.
-        /// The cell that is returned is a CELL_TYPE_BLANK (<see cref="ICell"/>/<see cref="CellType.BLANK"/>). 
+        /// The cell that is returned is a CELL_TYPE_BLANK (<see cref="ICell"/>/<see cref="CellType.Blank"/>). 
         /// The type can be changed either through calling <c>SetCellValue</c> or <c>SetCellType</c>.
         /// </summary>
         /// <param name="column">the column number this cell represents</param>
         /// <returns>a high level representation of the created cell.</returns>
         public ICell CreateCell(int column)
         {
-            return this.CreateCell(column, CellType.BLANK);
+            return this.CreateCell(column, CellType.Blank);
         }
 
         /// <summary>
@@ -291,12 +286,12 @@ namespace NPOI.HSSF.UserModel
         /// </summary>
         public void RemoveAllCells()
         {
-            int initialLen = cells.Count;
-            for (int i = 0; i < initialLen; i++)
+            ICell[] cellsToRemove = new ICell[cells.Values.Count];
+            cells.Values.CopyTo(cellsToRemove, 0);
+            foreach (ICell cell in cellsToRemove)
             {
-                RemoveCell(cells[i], true);
+                RemoveCell(cell, true);
             }
-            //cells = new HSSFCell[INITIAL_CAPACITY];
         }
 
         /// <summary>
@@ -443,24 +438,6 @@ namespace NPOI.HSSF.UserModel
         /// 0-based.  If you ask for a cell that is not defined then
         /// you get a null, unless you have set a different
         /// MissingCellPolicy on the base workbook.
-        /// 
-        /// Short method signature provided to retain binary
-        /// compatibility.
-        /// </summary>
-        /// <param name="cellnum">0 based column number</param>
-        /// <returns>Cell representing that column or null if undefined.</returns>
-        [Obsolete]
-        public ICell GetCell(short cellnum)
-        {
-            int ushortCellNum = cellnum & 0x0000FFFF; // avoid sign extension
-            return GetCell(ushortCellNum);
-        }
-
-        /// <summary>
-        /// Get the hssfcell representing a given column (logical cell)
-        /// 0-based.  If you ask for a cell that is not defined then
-        /// you get a null, unless you have set a different
-        /// MissingCellPolicy on the base workbook.
         /// </summary>
         /// <param name="cellnum">0 based column number</param>
         /// <returns>Cell representing that column or null if undefined.</returns>
@@ -480,28 +457,18 @@ namespace NPOI.HSSF.UserModel
         public ICell GetCell(int cellnum, MissingCellPolicy policy)
         {
             ICell cell = RetrieveCell(cellnum);
-            if (policy == MissingCellPolicy.RETURN_NULL_AND_BLANK)
+            switch (policy)
             {
-                return cell;
+                case MissingCellPolicy.RETURN_NULL_AND_BLANK:
+                    return cell;
+                case MissingCellPolicy.RETURN_BLANK_AS_NULL:
+                    bool isBlank = (cell != null && cell.CellType == CellType.Blank);
+                    return (isBlank) ? null : cell;
+                case MissingCellPolicy.CREATE_NULL_AS_BLANK:
+                    return (cell == null) ? CreateCell(cellnum, CellType.Blank) : cell;
+                default:
+                    throw new ArgumentException("Illegal policy " + policy + " (" + policy + ")");
             }
-            if (policy == MissingCellPolicy.RETURN_BLANK_AS_NULL)
-            {
-                if (cell == null) return cell;
-                if (cell.CellType == CellType.BLANK)
-                {
-                    return null;
-                }
-                return cell;
-            }
-            if (policy == MissingCellPolicy.CREATE_NULL_AS_BLANK)
-            {
-                if (cell == null)
-                {
-                    return CreateCell(cellnum, CellType.BLANK);
-                }
-                return cell;
-            }
-            throw new ArgumentException("Illegal policy " + policy + " (" + policy.id + ")");
         }
 
         /// <summary>
@@ -603,7 +570,8 @@ namespace NPOI.HSSF.UserModel
             {
                 if (value == -1)
                 {
-                    row.Height = 20 * 20;
+                    row.Height = unchecked((short)(0xFF | 0x8000));
+                    row.BadFontHeight = false;
                 }
                 else
                 {
@@ -656,13 +624,13 @@ namespace NPOI.HSSF.UserModel
         {
             get
             {
-                return (row.Height / 20f);
+                return (Height / 20f);
             }
             set
             {
                 if (value == -1)
                 {
-                    row.Height = 20;
+                    row.Height = unchecked(((short)(0xFF | 0x8000)));
                 }
                 else
                 {
@@ -717,6 +685,32 @@ namespace NPOI.HSSF.UserModel
             }
         }
 
+        public bool? Hidden
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public bool? Collapsed
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
+
         /// <summary>
         /// Gets the cell enumerator of the physically defined cells.
         /// </summary>
@@ -725,115 +719,37 @@ namespace NPOI.HSSF.UserModel
         /// will not return Un-defined (null) cells.
         /// Call CellNum on the returned cells to know which cell they are.
         /// </remarks>
-        public IEnumerator GetEnumerator()
+        public IEnumerator<ICell> GetEnumerator()
         {
-            //return //new CellEnumerator(this.cells);
             return this.cells.Values.GetEnumerator();
         }
-        ///// <summary>
-        ///// Alias for {@link CellEnumerator} to allow
-        ///// foreach loops
-        ///// </summary>
-        ///// <returns></returns>
-        //public IEnumerator GetEnumerator()
-        //{
-        //    return GetCellEnumerator();
-        //}
-
-        /*
-         * An iterator over the (physical) cells in the row.
-         */
-        //private class CellEnumerator : IEnumerator
-        //{
-        //    int thisId = -1;
-        //    int nextId = -1;
-        //    private HSSFCell[] cells;
-
-        //    public CellEnumerator()
-        //    {
-        //    }
-
-        //    public CellEnumerator(HSSFCell[] cells)
-        //    {
-        //        this.cells = cells;
-        //    }
-
-        //    public bool MoveNext()
-        //    {
-                
-        //        FindNext();
-        //        return nextId < cells.Length;
-        //    }
-
-        //    public Object Current
-        //    {
-        //        get
-        //        {
-        //            thisId = nextId;
-        //            Cell cell = cells[thisId];
-        //            return cell;
-        //        }
-        //    }
-
-        //    public void Remove()
-        //    {
-        //        if (thisId == -1)
-        //            throw new InvalidOperationException("Remove() called before next()");
-        //        cells[thisId] = null;
-        //    }
-
-        //    private void FindNext()
-        //    {
-        //        int i = nextId + 1;
-        //        for (; i < cells.Length; i++)
-        //        {
-        //            if (cells[i] != null) break;
-        //        }
-        //        nextId = i;
-        //    }
-        //    public void Reset()
-        //    {
-        //        thisId = -1;
-        //        nextId = -1;
-        //    }
-
-        //}
-
+ 
         /// <summary>
         /// Compares the current instance with another object of the same type and returns an integer that indicates whether the current instance precedes, follows, or occurs in the same position in the sort order as the other object.
         /// </summary>
-        /// <param name="obj">An object to compare with this instance.</param>
+        /// <param name="other">An object to compare with this instance.</param>
         /// <returns>
         /// A 32-bit signed integer that indicates the relative order of the objects being compared. The return value has these meanings:
         /// Value
         /// Meaning
         /// Less than zero
-        /// This instance is less than <paramref name="obj"/>.
+        /// This instance is less than <paramref name="other"/>.
         /// Zero
-        /// This instance is equal to <paramref name="obj"/>.
+        /// This instance is equal to <paramref name="other"/>.
         /// Greater than zero
-        /// This instance is greater than <paramref name="obj"/>.
+        /// This instance is greater than <paramref name="other"/>.
         /// </returns>
         /// <exception cref="T:System.ArgumentException">
-        /// 	<paramref name="obj"/> is not the same type as this instance.
+        /// 	<paramref name="other"/> is not the same type as this instance.
         /// </exception>
-        public int CompareTo(Object obj)
+        public int CompareTo(HSSFRow other)
         {
-            HSSFRow loc = (HSSFRow)obj;
+            if (this.Sheet != other.Sheet)
+            {
+                throw new ArgumentException("The compared rows must belong to the same sheet");
+            }
 
-            if (this.RowNum == loc.RowNum)
-            {
-                return 0;
-            }
-            if (this.RowNum < loc.RowNum)
-            {
-                return -1;
-            }
-            if (this.RowNum > loc.RowNum)
-            {
-                return 1;
-            }
-            return -1;
+            return this.RowNum.CompareTo(other.RowNum);
         }
 
         /// <summary>
@@ -852,13 +768,10 @@ namespace NPOI.HSSF.UserModel
             {
                 return false;
             }
-            HSSFRow loc = (HSSFRow)obj;
+            HSSFRow other = (HSSFRow)obj;
 
-            if (this.RowNum == loc.RowNum)
-            {
-                return true;
-            }
-            return false;
+            return (this.RowNum == other.RowNum) &&
+                   (this.Sheet == other.Sheet);
         }
 
         /// <summary>
@@ -866,7 +779,17 @@ namespace NPOI.HSSF.UserModel
         /// </summary>
         public override int GetHashCode ()
         {
-            return RowNum;
+            return row.GetHashCode();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        public bool HasCustomHeight()
+        {
+            throw new NotImplementedException();
         }
     }
 }

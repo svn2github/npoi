@@ -22,16 +22,19 @@ using NPOI.SS.Formula;
 using System;
 using NPOI.SS.UserModel;
 using NPOI.OpenXmlFormats.Spreadsheet;
+using System.Linq;
+using NPOI.SS.UserModel.Helpers;
+
 namespace NPOI.XSSF.UserModel.Helpers
 {
     /**
      * @author Yegor Kozlov
      */
-    public class XSSFRowShifter
+    public class XSSFRowShifter : RowShifter
     {
-        private XSSFSheet sheet;
 
         public XSSFRowShifter(XSSFSheet sh)
+            : base(sh)
         {
             sheet = sh;
         }
@@ -44,75 +47,26 @@ namespace NPOI.XSSF.UserModel.Helpers
          * @param n        the number of rows to shift
          * @return an array of affected cell regions
          */
+         [Obsolete("deprecated POI 3.15 beta 2. Use ShiftMergedRegions(int, int, int) instead.")]
         public List<CellRangeAddress> ShiftMerged(int startRow, int endRow, int n)
         {
-            List<CellRangeAddress> ShiftedRegions = new List<CellRangeAddress>();
-            //move merged regions completely if they fall within the new region boundaries when they are Shifted
-            for (int i = 0; i < sheet.NumMergedRegions; i++)
-            {
-                CellRangeAddress merged = sheet.GetMergedRegion(i);
-
-                bool inStart = (merged.FirstRow >= startRow || merged.LastRow >= startRow);
-                bool inEnd = (merged.FirstRow <= endRow || merged.LastRow <= endRow);
-
-                //don't check if it's not within the Shifted area
-                if (!inStart || !inEnd)
-                {
-                    continue;
-                }
-
-                //only shift if the region outside the Shifted rows is not merged too
-                if (!ContainsCell(merged, startRow - 1, 0) && !ContainsCell(merged, endRow + 1, 0))
-                {
-                    merged.FirstRow = (merged.FirstRow + n);
-                    merged.LastRow = (merged.LastRow + n);
-                    //have to Remove/add it back
-                    ShiftedRegions.Add(merged);
-                    sheet.RemoveMergedRegion(i);
-                    i = i - 1; // we have to back up now since we Removed one
-                }
-            }
-
-            //read so it doesn't get Shifted again
-            foreach (CellRangeAddress region in ShiftedRegions)
-            {
-                sheet.AddMergedRegion(region);
-            }
-            return ShiftedRegions;
+            return ShiftMergedRegions(startRow, endRow, n);
         }
 
-        /**
-         * Check if the  row and column are in the specified cell range
-         *
-         * @param cr    the cell range to check in
-         * @param rowIx the row to check
-         * @param colIx the column to check
-         * @return true if the range Contains the cell [rowIx,colIx]
-         */
-        private static bool ContainsCell(CellRangeAddress cr, int rowIx, int colIx)
-        {
-            if (cr.FirstRow <= rowIx && cr.LastRow >= rowIx
-                    && cr.FirstColumn <= colIx && cr.LastColumn >= colIx)
-            {
-                return true;
-            }
-            return false;
-        }
 
         /**
          * Updated named ranges
          */
-        public void UpdateNamedRanges(FormulaShifter shifter)
+        public override void UpdateNamedRanges(FormulaShifter shifter)
         {
             IWorkbook wb = sheet.Workbook;
             XSSFEvaluationWorkbook fpb = XSSFEvaluationWorkbook.Create(wb);
-            for (int i = 0; i < wb.NumberOfNames; i++)
-            {
-                IName name = wb.GetNameAt(i);
+            foreach (IName name in wb.GetAllNames())
+            { 
                 String formula = name.RefersToFormula;
                 int sheetIndex = name.SheetIndex;
 
-                Ptg[] ptgs = FormulaParser.Parse(formula, fpb, FormulaType.NAMEDRANGE, sheetIndex);
+                Ptg[] ptgs = FormulaParser.Parse(formula, fpb, FormulaType.NamedRange, sheetIndex, -1);
                 if (shifter.AdjustFormula(ptgs, sheetIndex))
                 {
                     String shiftedFmla = FormulaRenderer.ToFormulaString(fpb, ptgs);
@@ -125,7 +79,7 @@ namespace NPOI.XSSF.UserModel.Helpers
         /**
          * Update formulas.
          */
-        public void UpdateFormulas(FormulaShifter shifter)
+        public override void UpdateFormulas(FormulaShifter shifter)
         {
             //update formulas on the parent sheet
             UpdateSheetFormulas(sheet, shifter);
@@ -139,17 +93,22 @@ namespace NPOI.XSSF.UserModel.Helpers
             }
         }
 
-        private void UpdateSheetFormulas(XSSFSheet sh, FormulaShifter Shifter)
+        private void UpdateSheetFormulas(ISheet sh, FormulaShifter Shifter)
         {
             foreach (IRow r in sh)
             {
                 XSSFRow row = (XSSFRow)r;
-                updateRowFormulas(row, Shifter);
+                UpdateRowFormulas(row, Shifter);
             }
         }
-
-        private void updateRowFormulas(XSSFRow row, FormulaShifter Shifter)
+        /// <summary>
+        /// Update the formulas in specified row using the formula shifting policy specified by shifter
+        /// </summary>
+        /// <param name="row">the row to update the formulas on</param>
+        /// <param name="Shifter">the formula shifting policy</param>
+        public override void UpdateRowFormulas(IRow row, FormulaShifter Shifter)
         {
+            XSSFSheet sheet = (XSSFSheet)row.Sheet;
             foreach (ICell c in row)
             {
                 XSSFCell cell = (XSSFCell)c;
@@ -165,6 +124,12 @@ namespace NPOI.XSSF.UserModel.Helpers
                         if (ShiftedFormula != null)
                         {
                             f.Value = (ShiftedFormula);
+                            if (f.t == ST_CellFormulaType.shared)
+                            {
+                                int si = (int)f.si;
+                                CT_CellFormula sf = sheet.GetSharedFormula(si);
+                                sf.Value = (ShiftedFormula);
+                            }
                         }
                     }
 
@@ -188,78 +153,134 @@ namespace NPOI.XSSF.UserModel.Helpers
          * @return the Shifted formula if the formula was Changed,
          *         <code>null</code> if the formula wasn't modified
          */
-        private static String ShiftFormula(XSSFRow row, String formula, FormulaShifter Shifter)
+        private static String ShiftFormula(IRow row, String formula, FormulaShifter Shifter)
         {
             ISheet sheet = row.Sheet;
             IWorkbook wb = sheet.Workbook;
             int sheetIndex = wb.GetSheetIndex(sheet);
             XSSFEvaluationWorkbook fpb = XSSFEvaluationWorkbook.Create(wb);
-            Ptg[] ptgs = FormulaParser.Parse(formula, fpb, FormulaType.CELL, sheetIndex);
-            String ShiftedFmla = null;
-            if (Shifter.AdjustFormula(ptgs, sheetIndex))
+            try
             {
-                ShiftedFmla = FormulaRenderer.ToFormulaString(fpb, ptgs);
+                Ptg[] ptgs = FormulaParser.Parse(formula, fpb, FormulaType.Cell, sheetIndex, -1);
+                String ShiftedFmla = null;
+                if (Shifter.AdjustFormula(ptgs, sheetIndex))
+                {
+                    ShiftedFmla = FormulaRenderer.ToFormulaString(fpb, ptgs);
+                }
+                return ShiftedFmla;
             }
-            return ShiftedFmla;
+            catch (FormulaParseException fpe)
+            {
+                // Log, but don't change, rather than breaking
+                Console.WriteLine("Error shifting formula on row {0}, {1}", row.RowNum, fpe);
+                return formula;
+            }
         }
 
-        public void UpdateConditionalFormatting(FormulaShifter Shifter) {
-        IWorkbook wb = sheet.Workbook;
-        int sheetIndex = wb.GetSheetIndex(sheet);
+        public override void UpdateConditionalFormatting(FormulaShifter Shifter)
+        {
+            XSSFSheet xsheet = (XSSFSheet)sheet;
+            XSSFWorkbook wb = xsheet.Workbook as XSSFWorkbook;
+            int sheetIndex = wb.GetSheetIndex(sheet);
 
 
-        XSSFEvaluationWorkbook fpb = XSSFEvaluationWorkbook.Create(wb);
-        List<CT_ConditionalFormatting> cfList = sheet.GetCTWorksheet().conditionalFormatting;
-        for(int j = 0; cfList!=null&&j< cfList.Count; j++){
-            CT_ConditionalFormatting cf = cfList[j];
+            XSSFEvaluationWorkbook fpb = XSSFEvaluationWorkbook.Create(wb);
+            CT_Worksheet ctWorksheet = xsheet.GetCTWorksheet();
+            List<CT_ConditionalFormatting> conditionalFormattingArray = ctWorksheet.conditionalFormatting;
+            // iterate backwards due to possible calls to ctWorksheet.removeConditionalFormatting(j)
+            for (int j = conditionalFormattingArray.Count - 1; j >= 0; j--)
+            {
+                CT_ConditionalFormatting cf = conditionalFormattingArray[j];
 
-            List<CellRangeAddress> cellRanges = new List<CellRangeAddress>();
-            foreach (Object stRef in cf.sqref) {
-                String[] regions = stRef.ToString().Split(new char[]{' '});
-                for (int i = 0; i < regions.Length; i++) {
+                List<CellRangeAddress> cellRanges = new List<CellRangeAddress>();
+                String[] regions = cf.sqref.ToString().Split(new char[] { ' ' });
+                for (int i = 0; i < regions.Length; i++)
+                {
                     cellRanges.Add(CellRangeAddress.ValueOf(regions[i]));
                 }
-            }
 
-            bool Changed = false;
-            List<CellRangeAddress> temp = new List<CellRangeAddress>();
-            for (int i = 0; i < cellRanges.Count; i++) {
-                CellRangeAddress craOld = cellRanges[i];
-                CellRangeAddress craNew = ShiftRange(Shifter, craOld, sheetIndex);
-                if (craNew == null) {
-                    Changed = true;
-                    continue;
+                bool Changed = false;
+                List<CellRangeAddress> temp = new List<CellRangeAddress>();
+                for (int i = 0; i < cellRanges.Count; i++)
+                {
+                    CellRangeAddress craOld = cellRanges[i];
+                    CellRangeAddress craNew = ShiftRange(Shifter, craOld, sheetIndex);
+                    if (craNew == null)
+                    {
+                        Changed = true;
+                        continue;
+                    }
+                    temp.Add(craNew);
+                    if (craNew != craOld)
+                    {
+                        Changed = true;
+                    }
                 }
-                temp.Add(craNew);
-                if (craNew != craOld) {
-                    Changed = true;
-                }
-            }
 
-            if (Changed) {
-                int nRanges = temp.Count;
-                if (nRanges == 0) {
-                    cfList.RemoveAt(j);
-                    continue;
+                if (Changed)
+                {
+                    int nRanges = temp.Count;
+                    if (nRanges == 0)
+                    {
+                        conditionalFormattingArray.RemoveAt(j);
+                        continue;
+                    }
+                    string refs = string.Empty;
+                    foreach (CellRangeAddress a in temp)
+                    {
+                        if (refs.Length == 0)
+                            refs = a.FormatAsString();
+                        else
+                            refs += " " + a.FormatAsString();
+                    }
+                    cf.sqref = refs;
                 }
-                List<String> refs = new List<String>();
-                foreach(CellRangeAddress a in temp) refs.Add(a.FormatAsString());
-                cf.sqref=(refs);
-            }
 
-            foreach(CT_CfRule cfRule in cf.cfRule){
-                List<String> formulas = cfRule.formula;
-                for (int i = 0; i < formulas.Count; i++) {
-                    String formula = formulas[i];
-                    Ptg[] ptgs = FormulaParser.Parse(formula, fpb, FormulaType.CELL, sheetIndex);
-                    if (Shifter.AdjustFormula(ptgs, sheetIndex)) {
-                        String ShiftedFmla = FormulaRenderer.ToFormulaString(fpb, ptgs);
-                        formulas[i] =  ShiftedFmla;
+                foreach (CT_CfRule cfRule in cf.cfRule)
+                {
+                    List<String> formulas = cfRule.formula;
+                    for (int i = 0; i < formulas.Count; i++)
+                    {
+                        String formula = formulas[i];
+                        Ptg[] ptgs = FormulaParser.Parse(formula, fpb, FormulaType.Cell, sheetIndex, -1);
+                        if (Shifter.AdjustFormula(ptgs, sheetIndex))
+                        {
+                            String ShiftedFmla = FormulaRenderer.ToFormulaString(fpb, ptgs);
+                            formulas[i] = ShiftedFmla;
+                        }
                     }
                 }
             }
         }
-    }
+
+        /**
+         * Shift the Hyperlink anchors (not the hyperlink text, even if the hyperlink
+         * is of type LINK_DOCUMENT and refers to a cell that was shifted). Hyperlinks
+         * do not track the content they point to.
+         *
+         * @param shifter
+         */
+        public override void UpdateHyperlinks(FormulaShifter shifter)
+        {
+            XSSFSheet xsheet = (XSSFSheet)sheet;
+            int sheetIndex = xsheet.GetWorkbook().GetSheetIndex(sheet);
+            List<IHyperlink> hyperlinkList = sheet.GetHyperlinkList();
+
+            foreach (IHyperlink hyperlink1 in hyperlinkList)
+            {
+                XSSFHyperlink hyperlink = hyperlink1 as XSSFHyperlink;
+                String cellRef = hyperlink.CellRef;
+                CellRangeAddress cra = CellRangeAddress.ValueOf(cellRef);
+                CellRangeAddress shiftedRange = ShiftRange(shifter, cra, sheetIndex);
+                if (shiftedRange != null && shiftedRange != cra)
+                {
+                    // shiftedRange should not be null. If shiftedRange is null, that means
+                    // that a hyperlink wasn't deleted at the beginning of shiftRows when
+                    // identifying rows that should be removed because they will be overwritten
+                    hyperlink.SetCellReference(shiftedRange.FormatAsString());
+                }
+            }
+        }
 
         private static CellRangeAddress ShiftRange(FormulaShifter Shifter, CellRangeAddress cra, int currentExternSheetIx)
         {

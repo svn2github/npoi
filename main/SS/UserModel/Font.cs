@@ -24,23 +24,23 @@ namespace NPOI.SS.UserModel
         /**
          * not underlined
          */
-        NONE = 0,
+        None = 0,
         /**
          * single (normal) underline
          */
-        SINGLE = 1,
+        Single = 1,
         /**
          * double underlined
          */
-        DOUBLE = 2,
+        Double = 2,
         /**
          * accounting style single underline
          */
-        SINGLE_ACCOUNTING = 0x21,
+        SingleAccounting = 0x21,
         /**
          * accounting style double underline
          */
-        DOUBLE_ACCOUNTING = 0x22
+        DoubleAccounting = 0x22
     }
 
     public enum FontSuperScript:short
@@ -50,20 +50,21 @@ namespace NPOI.SS.UserModel
          * no type Offsetting (not super or subscript)
          */
 
-        NONE = 0,
+        None = 0,
 
         /**
          * superscript
          */
 
-        SUPER = 1,
+        Super = 1,
 
         /**
          * subscript
          */
 
-        SUB = 2,
+        Sub = 2,
     }
+
     public enum FontColor:short
     {
         /// <summary>
@@ -75,14 +76,15 @@ namespace NPOI.SS.UserModel
          * normal type of black color.
          */
 
-        NORMAL = 0x7fff,
+        Normal = 0x7fff,
 
         /**
          * Dark Red color
          */
 
-        RED = 0xa,
+        Red = 0xa,
     }
+    [Obsolete("deprecated POI 3.15 beta 2. Boldweight constants no longer needed due to IsBold property")]
     public enum FontBoldWeight:short
     {
         /// <summary>
@@ -94,56 +96,50 @@ namespace NPOI.SS.UserModel
          * Normal boldness (not bold)
          */
 
-        NORMAL = 0x190,
+        Normal = 0x190,
 
         /**
          * Bold boldness (bold)
          */
 
-        BOLD = 0x2bc,
+        Bold = 0x2bc,
     }
 
 
     public interface IFont
     {
 
-        /**
-         * get the name for the font (i.e. Arial)
-         * @return String representing the name of the font to use
-         */
-
+        /// <summary>
+        /// get the name for the font (i.e. Arial)
+        /// </summary>
         String FontName { get; set; }
 
-        /**
-         * get the font height in unit's of 1/20th of a point.  Maybe you might want to
-         * use the GetFontHeightInPoints which matches to the familiar 10, 12, 14 etc..
-         * @return short - height in 1/20ths of a point
-         * @see #GetFontHeightInPoints()
-         */
+        /// <summary>
+        ///  Get the font height in unit's of 1/20th of a point.
+        /// </summary>
+        /// <remarks>
+        /// Maybe you might want to use the GetFontHeightInPoints which matches to the familiar 10, 12, 14 etc..
+        /// </remarks>
+        /// <see cref="FontHeightInPoints"/>
+        double FontHeight { get; set; }
 
-        short FontHeight { get; set; }
-
-        /**
-         * get the font height
-         * @return short - height in the familiar unit of measure - points
-         * @see #GetFontHeight()
-         */
-
-        short FontHeightInPoints { get; set; }
-
-        /**
-         * get whether to use italics or not
-         * @return italics or not
-         */
-
+        /// <summary>
+        /// Get the font height in points.
+        /// </summary>
+        /// <remarks>
+        /// This will return the same font height that is shown in Excel, such as 10 or 14 or 28.
+        /// </remarks>
+        /// <see cref="FontHeight"/>
+        double FontHeightInPoints { get; set; }
+ 
+        /// <summary>
+        /// get whether to use italics or not
+        /// </summary>
         bool IsItalic { get; set; }
 
-
-        /**
-         * get whether to use a strikeout horizontal line through the text or not
-         * @return strikeout or not
-         */
-
+        /// <summary>
+        /// get whether to use a strikeout horizontal line through the text or not
+        /// </summary>
         bool IsStrikeout { get; set; }
 
         /**
@@ -155,46 +151,34 @@ namespace NPOI.SS.UserModel
          */
         short Color { get; set; }
 
+        /// <summary>
+        ///  get type of text underlining to use
+        /// </summary>
+        FontSuperScript TypeOffset { get; set; }
 
-        /**
-         * get normal,super or subscript.
-         * @return offset type to use (none,super,sub)
-         * @see #SS_NONE
-         * @see #SS_SUPER
-         * @see #SS_SUB
-         */
+        /// <summary>
+        /// get type of text underlining to use
+        /// </summary>
+        FontUnderlineType Underline { get; set; }
 
-        short TypeOffset { get; set; }
-
-        /**
-         * get type of text underlining to use
-         * @return underlining type
-         * @see #U_NONE
-         * @see #U_SINGLE
-         * @see #U_DOUBLE
-         * @see #U_SINGLE_ACCOUNTING
-         * @see #U_DOUBLE_ACCOUNTING
-         */
-
-        byte Underline { get; set; }
-
-        /**
-         * get character-set to use.
-         * @return character-set
-         * @see #ANSI_CHARSET
-         * @see #DEFAULT_CHARSET
-         * @see #SYMBOL_CHARSET
-         */
+        /// <summary>
+        /// get character-set to use.
+        /// </summary>
+        /// <value>ANSI_CHARSET,DEFAULT_CHARSET,SYMBOL_CHARSET </value>
         short Charset { get; set; }
 
-        /**
-         * get the index within the XSSFWorkbook (sequence within the collection of Font objects)
-         * 
-         * @return unique index number of the underlying record this Font represents (probably you don't care
-         *  unless you're comparing which one is which)
-         */
+        /// <summary>
+        /// get the index within the Workbook (sequence within the collection of Font objects)
+        /// </summary>
         short Index { get; }
-
+        [Obsolete("deprecated POI 3.15 beta 2. Use IsBold instead.")]
         short Boldweight { get; set; }
+
+        bool IsBold { get; set; }
+
+        /// <summary>
+        /// Copies the style from another font into this one
+        /// </summary>
+        void CloneStyleFrom(IFont src);
     }
 }

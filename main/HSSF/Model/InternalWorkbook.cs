@@ -26,9 +26,11 @@ namespace NPOI.HSSF.Model
     using NPOI.HSSF.Util;
     using NPOI.SS.Formula;
     using NPOI.SS.Formula.PTG;
-    using NPOI.SS.Formula.Udf;
+    using NPOI.SS.Formula.UDF;
     using NPOI.SS.UserModel;
     using System.Security;
+    using NPOI.POIFS.Crypt;
+    using NPOI.Util;
 
 
     /**
@@ -64,16 +66,28 @@ namespace NPOI.HSSF.Model
          */
         private const int MAX_SENSITIVE_SHEET_NAME_LEN = 31;
 
-        //private static int DEBUG = POILogger.DEBUG;
-
-        //    public static Workbook currentBook = null;
+        /**
+         * Normally, the Workbook will be in a POIFS Stream
+         * called "Workbook". However, some weird XLS generators use "WORKBOOK"
+         */
+        public static readonly string[] WORKBOOK_DIR_ENTRY_NAMES = {
+            "Workbook", // as per BIFF8 spec
+            "WORKBOOK", // Typically from third party programs
+            "BOOK",     // Typically odd Crystal Reports exports
+        };
+        /**
+         * Name of older (pre-Excel 97) Workbook streams, which
+         *  aren't supported by HSSFWorkbook, only by
+         *  {@link OldExcelExtractor}
+         */
+        public static String OLD_WORKBOOK_DIR_ENTRY_NAME = "Book";
 
         /**
          * constant used to Set the "codepage" wherever "codepage" is Set in records
          * (which is duplciated in more than one record)
          */
 
-        private static short CODEPAGE = (short)0x4b0;
+        private const short CODEPAGE = (short)0x4b0;
 
         /**
          * this Contains the Worksheet record objects
@@ -269,6 +283,10 @@ namespace NPOI.HSSF.Model
                         NameCommentRecord ncr = (NameCommentRecord)rec;
                         retval.commentRecords[ncr.NameText] = ncr;
                         break;
+                    default:
+                        //if (log.check(POILogger.DEBUG))
+                            //log.log(DEBUG, "ignoring record (sid=" + rec.getSid() + ") at " + k);
+                        break;
                 }
                 records.Add(rec);
             }
@@ -287,6 +305,8 @@ namespace NPOI.HSSF.Model
                 {
                     case HyperlinkRecord.sid:
                         retval.hyperlinks.Add((HyperlinkRecord)rec);
+                        break;
+                    default:
                         break;
                 }
             }
@@ -416,18 +436,10 @@ namespace NPOI.HSSF.Model
         {
             return OrCreateLinkTable.GetSpecificBuiltinRecord(name, sheetIndex);
         }
-        public ExternalSheet GetExternalSheet(int externSheetIndex)
-        {
-            String[] extNames = linkTable.GetExternalBookAndSheetName(externSheetIndex);
-            if (extNames == null)
-            {
-                return null;
-            }
-            return new ExternalSheet(extNames[0], extNames[1]);
-        }
+
         public ExternalName GetExternalName(int externSheetIndex, int externNameIndex)
         {
-            String nameName = linkTable.ResolveNameXText(externSheetIndex, externNameIndex);
+            String nameName = linkTable.ResolveNameXText(externSheetIndex, externNameIndex, this);
             if (nameName == null)
             {
                 return null;
@@ -720,6 +732,14 @@ namespace NPOI.HSSF.Model
             BoundSheetRecord sheet = boundsheets[sheetNumber];
             boundsheets.RemoveAt(sheetNumber);
             boundsheets.Insert(pos, sheet);
+
+            // also adjust order of Records, calculate the position of the Boundsheets via getBspos()...
+            int initialBspos = records.Bspos;
+            int pos0 = records.Bspos - (boundsheets.Count - 1);
+            Record removed = records[(pos0 + sheetNumber)];
+            records.Remove(pos0 + sheetNumber);
+            records.Add(pos0 + pos, removed);
+            records.Bspos = initialBspos;
         }
 
         /**
@@ -846,28 +866,28 @@ namespace NPOI.HSSF.Model
                 OrCreateLinkTable.CheckExternSheet(sheetnum);
                 FixTabIdRecord();
             }
-            else
-            {
-                // Ensure we have enough tab IDs
-                // Can be a few short if new sheets were added
-                if (records.Tabpos > 0)
-                {
-                    TabIdRecord tir = (TabIdRecord)records[records.Tabpos];
-                    if (tir._tabids.Length < boundsheets.Count)
-                    {
-                        FixTabIdRecord();
-                    }
-                }
-            }
+            //else
+            //{
+            //    // Ensure we have enough tab IDs
+            //    // Can be a few short if new sheets were added
+            //    if (records.Tabpos > 0)
+            //    {
+            //        TabIdRecord tir = (TabIdRecord)records[records.Tabpos];
+            //        if (tir._tabids.Length < boundsheets.Count)
+            //        {
+            //            FixTabIdRecord();
+            //        }
+            //    }
+            //}
         }
 
-        public void RemoveSheet(int sheetnum)
+        public void RemoveSheet(int sheetIndex)
         {
-            if (boundsheets.Count > sheetnum)
+            if (boundsheets.Count > sheetIndex)
             {
-                records.Remove(records.Bspos - (boundsheets.Count - 1) + sheetnum);
+                records.Remove(records.Bspos - (boundsheets.Count - 1) + sheetIndex);
                 //            records.bspos--;
-                boundsheets.RemoveAt(sheetnum);
+                boundsheets.RemoveAt(sheetIndex);
                 FixTabIdRecord();
             }
 
@@ -878,7 +898,7 @@ namespace NPOI.HSSF.Model
             // However, the sheet index must be adjusted, or
             //  excel will break. (Sheet index is either 0 for
             //  global, or 1 based index to sheet)
-            int sheetNum1Based = sheetnum + 1;
+            int sheetNum1Based = sheetIndex + 1;
             for (int i = 0; i < NumNames; i++)
             {
                 NameRecord nr = GetNameRecord(i);
@@ -886,24 +906,40 @@ namespace NPOI.HSSF.Model
                 if (nr.SheetNumber == sheetNum1Based)
                 {
                     // Excel re-writes these to point to no sheet
-                    nr.SheetNumber=(0);
+                    nr.SheetNumber = (0);
                 }
                 else if (nr.SheetNumber > sheetNum1Based)
                 {
                     // Bump down by one, so still points
                     //  at the same sheet
-                    nr.SheetNumber=(nr.SheetNumber - 1);
+                    nr.SheetNumber = (nr.SheetNumber - 1);
+                    // also update the link-table as otherwise references might point at invalid sheets
                 }
+            }
+            if (linkTable != null)
+            {
+                // also tell the LinkTable about the removed sheet
+                //index hasn't change in the linktable
+                linkTable.RemoveSheet(sheetIndex);
             }
         }
 
-        /**
-         * make the tabid record look like the current situation.
-         *
-         */
+        /// <summary>
+        /// make the tabid record look like the current situation.
+        /// </summary>
+        /// <returns>number of bytes written in the TabIdRecord</returns>
         private void FixTabIdRecord()
         {
-            TabIdRecord tir = (TabIdRecord)records[records.Tabpos];
+            // see bug 55982, quite a number of documents do not have a TabIdRecord and
+            // thus there is no way to do the fixup here,
+            // we use the same check on Tabpos as done in other places
+            if (records.Tabpos <= 0)
+            {
+                return;
+            }
+            Record rec = records[records.Tabpos];
+            TabIdRecord tir = (TabIdRecord)rec;
+            int sz = tir.RecordSize;
             short[] tia = new short[boundsheets.Count];
 
             for (short k = 0; k < tia.Length; k++)
@@ -1176,7 +1212,24 @@ namespace NPOI.HSSF.Model
             //    log.Log(DEBUG, "Exiting Serialize workbook");
             return pos;
         }
-
+        /**
+         * Perform any work necessary before the workbook is about to be serialized.
+         *
+         * Include in it ant code that modifies the workbook record stream and affects its size.
+         */
+        public void PreSerialize()
+        {
+            // Ensure we have enough tab IDs
+            // Can be a few short if new sheets were added
+            if (records.Tabpos > 0)
+            {
+                TabIdRecord tir = (TabIdRecord)records[(records.Tabpos)];
+                if (tir._tabids.Length < boundsheets.Count)
+                {
+                    FixTabIdRecord();
+                }
+            }
+        }
         public int Size
         {
             get
@@ -1214,7 +1267,7 @@ namespace NPOI.HSSF.Model
             BOFRecord retval = new BOFRecord();
 
             retval.Version=(short)0x600;
-            retval.Type=(short)5;
+            retval.Type = BOFRecordType.Workbook;
             retval.Build=(short)0x10d3;
 
             //        retval.Build=(short)0x0dbb;
@@ -1279,16 +1332,20 @@ namespace NPOI.HSSF.Model
         private static Record CreateWriteAccess()
         {
             WriteAccessRecord retval = new WriteAccessRecord();
-
+            String defaultUserName = "NPOI";
             try
             {
-                retval.Username=(Environment.UserName);
+                String username = (Environment.UserName);
+                // Google App engine returns null for user.name, see Bug 53974
+                if (string.IsNullOrEmpty(username)) username = defaultUserName;
+
+                retval.Username = (username);
             }
             catch (SecurityException)
             {
                 // AccessControlException can occur in a restricted context
                 // (client applet/jws application or restricted security server)
-                retval.Username=("POI");
+                retval.Username = (defaultUserName);
             }
             return retval;
         }
@@ -1964,6 +2021,8 @@ namespace NPOI.HSSF.Model
                     retval.AdtlPaletteOptions=(short)0;
                     retval.FillPaletteOptions=(short)0x20c0;
                     break;
+                default:
+                    throw new InvalidOperationException("Unrecognized format id: " + id);
             }
             return retval;
         }
@@ -1986,10 +2045,10 @@ namespace NPOI.HSSF.Model
             retval.PaletteOptions=(short)0;
             retval.AdtlPaletteOptions=(short)0;
             retval.FillPaletteOptions=(short)0x20c0;
-            retval.TopBorderPaletteIdx=HSSFColor.BLACK.index;
-            retval.BottomBorderPaletteIdx=HSSFColor.BLACK.index;
-            retval.LeftBorderPaletteIdx=HSSFColor.BLACK.index;
-            retval.RightBorderPaletteIdx=HSSFColor.BLACK.index;
+            retval.TopBorderPaletteIdx=HSSFColor.Black.Index;
+            retval.BottomBorderPaletteIdx=HSSFColor.Black.Index;
+            retval.LeftBorderPaletteIdx=HSSFColor.Black.Index;
+            retval.RightBorderPaletteIdx=HSSFColor.Black.Index;
             return retval;
         }
 
@@ -2074,6 +2133,8 @@ namespace NPOI.HSSF.Model
                     retval.SetBuiltinStyle(5);
                     retval.OutlineStyleLevel= (unchecked((byte)0xffffffff));
                     break;
+                default:
+                    throw new InvalidOperationException("Unrecognized style id: " + id);
             }
             return retval;
         }
@@ -2167,57 +2228,123 @@ namespace NPOI.HSSF.Model
         {
             get
             {
-                if (linkTable == null)
-                {
-                    linkTable = new LinkTable((short)NumSheets, records);
-                }
-                return linkTable;
+                return GetOrCreateLinkTable();
             }
         }
 
-        /** Finds the sheet name by his extern sheet index
-         * @param num extern sheet index
-         * @return sheet name
-         */
-        public String FindSheetNameFromExternSheet(int externSheetIndex)
+        private LinkTable GetOrCreateLinkTable()
         {
-            int indexToSheet = linkTable.GetIndexToInternalSheet(externSheetIndex);
-            if (indexToSheet < 0)
+            if (linkTable == null)
+            {
+                linkTable = new LinkTable((short)NumSheets, records);
+            }
+            return linkTable;
+        }
+
+        public int LinkExternalWorkbook(String name, IWorkbook externalWorkbook)
+        {
+            return GetOrCreateLinkTable().LinkExternalWorkbook(name, externalWorkbook);
+        }
+
+        /** 
+         * Finds the first sheet name by his extern sheet index
+         * @param externSheetIndex extern sheet index
+         * @return first sheet name.
+         */
+        public String FindSheetFirstNameFromExternSheet(int externSheetIndex)
+        {
+            int indexToSheet = linkTable.GetFirstInternalSheetIndexForExtIndex(externSheetIndex);
+            return FindSheetNameFromIndex(indexToSheet);
+        }
+        public String FindSheetLastNameFromExternSheet(int externSheetIndex)
+        {
+            int indexToSheet = linkTable.GetLastInternalSheetIndexForExtIndex(externSheetIndex);
+            return FindSheetNameFromIndex(indexToSheet);
+        }
+        private String FindSheetNameFromIndex(int internalSheetIndex)
+        {
+            if (internalSheetIndex < 0)
             {
                 // TODO - what does '-1' mean here?
-                //error check, bail out gracefully!
+                //error Check, bail out gracefully!
                 return "";
             }
-            if (indexToSheet >= boundsheets.Count)
+            if (internalSheetIndex >= boundsheets.Count)
             {
                 // Not sure if this can ever happen (See bug 45798)
                 return ""; // Seems to be what excel would do in this case
             }
-            return GetSheetName(indexToSheet);
+            return GetSheetName(internalSheetIndex);
+        }
+
+        public ExternalSheet GetExternalSheet(int externSheetIndex)
+        {
+            String[] extNames = linkTable.GetExternalBookAndSheetName(externSheetIndex);
+            if (extNames == null)
+            {
+                return null;
+            }
+            if (extNames.Length == 2)
+            {
+                return new ExternalSheet(extNames[0], extNames[1]);
+            }
+            else
+            {
+                return new ExternalSheetRange(extNames[0], extNames[1], extNames[2]);
+            }
+        }
+
+
+        /**
+         * Finds the (first) sheet index for a particular external sheet number.
+         * @param externSheetNumber     The external sheet number to convert
+         * @return  The index to the sheet found.
+         */
+        public int GetFirstSheetIndexFromExternSheetIndex(int externSheetNumber)
+        {
+            return linkTable.GetFirstInternalSheetIndexForExtIndex(externSheetNumber);
         }
 
         /**
-         * Finds the sheet index for a particular external sheet number.
-         * @param externSheetNumber     The external sheet number to Convert
+         * Finds the last sheet index for a particular external sheet number,
+         *  which may be the same as the first (except for multi-sheet references)
+         * @param externSheetNumber     The external sheet number to convert
          * @return  The index to the sheet found.
          */
-        public int GetSheetIndexFromExternSheetIndex(int externSheetNumber)
+        public int GetLastSheetIndexFromExternSheetIndex(int externSheetNumber)
         {
-            return linkTable.GetSheetIndexFromExternSheetIndex(externSheetNumber);
+            return linkTable.GetLastInternalSheetIndexForExtIndex(externSheetNumber);
         }
 
-        /** returns the extern sheet number for specific sheet number ,
-         *  if this sheet doesn't exist in extern sheet , Add it
-         * @param sheetNumber sheet number
+        /** 
+         * Returns the extern sheet number for specific sheet number.
+         * If this sheet doesn't exist in extern sheet, add it
+         * @param sheetNumber local sheet number
          * @return index to extern sheet
          */
         public int CheckExternSheet(int sheetNumber)
         {
             return OrCreateLinkTable.CheckExternSheet(sheetNumber);
         }
+        /** 
+         * Returns the extern sheet number for specific range of sheets.
+         * If this sheet range doesn't exist in extern sheet, add it
+         * @param firstSheetNumber first local sheet number
+         * @param lastSheetNumber last local sheet number
+         * @return index to extern sheet
+         */
+        public short checkExternSheet(int firstSheetNumber, int lastSheetNumber)
+        {
+            return (short)OrCreateLinkTable.CheckExternSheet(firstSheetNumber, lastSheetNumber);
+        }
+
         public int GetExternalSheetIndex(String workbookName, String sheetName)
         {
-            return OrCreateLinkTable.GetExternalSheetIndex(workbookName, sheetName);
+            return OrCreateLinkTable.GetExternalSheetIndex(workbookName, sheetName, sheetName);
+        }
+        public int GetExternalSheetIndex(String workbookName, String firstSheetName, String lastSheetName)
+        {
+            return OrCreateLinkTable.GetExternalSheetIndex(workbookName, firstSheetName, lastSheetName);
         }
         /** Gets the total number of names
          * @return number of names
@@ -2234,15 +2361,16 @@ namespace NPOI.HSSF.Model
             }
         }
         /**
-     *
-     * @param name the  name of an external function, typically a name of a UDF
-     * @param udf  locator of user-defiend functions to resolve names of VBA and Add-In functions
-     * @return the external name or null
-     */
-        public NameXPtg GetNameXPtg(String name, UDFFinder udf)
+         *
+         * @param name the  name of an external function, typically a name of a UDF
+         * @param sheetRefIndex the sheet ref index, or -1 if not known
+         * @param udf  locator of user-defiend functions to resolve names of VBA and Add-In functions
+         * @return the external name or null
+         */
+        public NameXPtg GetNameXPtg(String name, int sheetRefIndex, UDFFinder udf)
         {
             LinkTable lnk = OrCreateLinkTable;
-            NameXPtg xptg = lnk.GetNameXPtg(name);
+            NameXPtg xptg = lnk.GetNameXPtg(name, sheetRefIndex);
 
             if (xptg == null && udf.FindFunction(name) != null)
             {
@@ -2252,10 +2380,10 @@ namespace NPOI.HSSF.Model
             }
             return xptg;
         }
-        //public NameXPtg GetNameXPtg(String name)
-        //{
-        //    return OrCreateLinkTable.GetNameXPtg(name);
-        //}
+        public NameXPtg GetNameXPtg(String name, UDFFinder udf)
+        {
+            return GetNameXPtg(name, -1, udf);
+        }
         /** Gets the name record
          * @param index name index
          * @return name record
@@ -2743,6 +2871,17 @@ namespace NPOI.HSSF.Model
             numxfs--;
         }
 
+        /// <summary>
+        /// Removes ExtendedFormatRecord record with given index from the file's list. This will make all
+        /// subsequent font indicies drop by one,so you'll need to update those yourself!
+        /// </summary>
+        /// <param name="index">index of the Extended format record (0-based)</param>
+        public void RemoveExFormatRecord(int index)
+        {
+            int xfptr = records.Xfpos - (numxfs - 1) + index;
+            records.Remove(xfptr); // this updates XfPos for us
+            numxfs--;
+        }
         public EscherBSERecord GetBSERecord(int pictureIndex)
         {
             return (EscherBSERecord)escherBSERecords[pictureIndex - 1];
@@ -2870,12 +3009,11 @@ namespace NPOI.HSSF.Model
          */
         public void WriteProtectWorkbook(String password, String username)
         {
-            //int protIdx = -1;
             FileSharingRecord frec = FileSharing;
             WriteAccessRecord waccess = WriteAccess;
-            WriteProtectRecord wprotect = WriteProtect;
             frec.ReadOnly=((short)1);
-            frec.Password=(FileSharingRecord.HashPassword(password));
+            //frec.Password=(FileSharingRecord.HashPassword(password));
+            frec.Password = (short)CryptoFunctions.CreateXorVerifier1(password);
             frec.Username=(username);
             waccess.Username=(username);
         }
@@ -2898,7 +3036,7 @@ namespace NPOI.HSSF.Model
          */
         public String ResolveNameXText(int reFindex, int definedNameIndex)
         {
-            return linkTable.ResolveNameXText(reFindex, definedNameIndex);
+            return linkTable.ResolveNameXText(reFindex, definedNameIndex, this);
         }
 
         public NameRecord CloneFilter(int filterDbNameIndex, int newSheetIndex)
@@ -2963,6 +3101,20 @@ namespace NPOI.HSSF.Model
                 }
                 return record;
             }
+        }
+
+        /**
+         * Changes an external referenced file to another file.
+         * A formular in Excel which refers a cell in another file is saved in two parts: 
+         * The referenced file is stored in an reference table. the row/cell information is saved separate.
+         * This method invokation will only change the reference in the lookup-table itself.
+         * @param oldUrl The old URL to search for and which is to be replaced
+         * @param newUrl The URL replacement
+         * @return true if the oldUrl was found and replaced with newUrl. Otherwise false
+         */
+        public bool ChangeExternalReference(String oldUrl, String newUrl)
+        {
+            return linkTable.ChangeExternalReference(oldUrl, newUrl);
         }
     }
 }

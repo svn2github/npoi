@@ -79,7 +79,7 @@ namespace NPOI.HPSF
         /// <value>The title.</value>
         public String Title
         {
-            get { return (String)GetProperty(PropertyIDMap.PID_TITLE); }
+            get { return GetPropertyStringValue(PropertyIDMap.PID_TITLE); }
             set
             {
                 MutableSection s = (MutableSection)FirstSection;
@@ -103,7 +103,7 @@ namespace NPOI.HPSF
         /// <value>The subject.</value>
         public String Subject
         {
-            get { return (String)GetProperty(PropertyIDMap.PID_SUBJECT); }
+            get { return GetPropertyStringValue(PropertyIDMap.PID_SUBJECT); }
             set
             {
                 MutableSection s = (MutableSection)FirstSection;
@@ -127,7 +127,7 @@ namespace NPOI.HPSF
         /// <value>The author.</value>
         public String Author
         {
-            get { return (String)GetProperty(PropertyIDMap.PID_AUTHOR); }
+            get { return GetPropertyStringValue(PropertyIDMap.PID_AUTHOR); }
             set
             {
                 MutableSection s = (MutableSection)FirstSection;
@@ -151,7 +151,7 @@ namespace NPOI.HPSF
         /// <value>The keywords.</value>
         public String Keywords
         {
-            get { return (String)GetProperty(PropertyIDMap.PID_KEYWORDS); }
+            get { return GetPropertyStringValue(PropertyIDMap.PID_KEYWORDS); }
             set
             {
                 MutableSection s = (MutableSection)FirstSection;
@@ -176,7 +176,7 @@ namespace NPOI.HPSF
         /// <value>The comments.</value>
         public String Comments
         {
-            get { return (String)GetProperty(PropertyIDMap.PID_COMMENTS); }
+            get { return GetPropertyStringValue(PropertyIDMap.PID_COMMENTS); }
             set
             {
                 MutableSection s = (MutableSection)FirstSection;
@@ -199,7 +199,7 @@ namespace NPOI.HPSF
         /// <value>The template.</value>
         public String Template
         {
-            get { return (String)GetProperty(PropertyIDMap.PID_TEMPLATE); }
+            get { return GetPropertyStringValue(PropertyIDMap.PID_TEMPLATE); }
             set
             {
                 MutableSection s = (MutableSection)FirstSection;
@@ -222,7 +222,7 @@ namespace NPOI.HPSF
         /// <value>The last author.</value>
         public String LastAuthor
         {
-            get{return (String)GetProperty(PropertyIDMap.PID_LASTAUTHOR);}
+            get{return GetPropertyStringValue(PropertyIDMap.PID_LASTAUTHOR);}
             set
             {
                 MutableSection s = (MutableSection)FirstSection;
@@ -246,7 +246,7 @@ namespace NPOI.HPSF
         /// <value>The rev number.</value>
         public String RevNumber
         {
-            get { return (String)GetProperty(PropertyIDMap.PID_REVNUMBER); }
+            get { return GetPropertyStringValue(PropertyIDMap.PID_REVNUMBER); }
             set
             {
                 MutableSection s = (MutableSection)FirstSection;
@@ -463,10 +463,9 @@ namespace NPOI.HPSF
         /// Gets or sets the thumbnail (or <c>null</c>) <strong>when this
         /// method is implemented. Please note that the return type is likely To
         /// Change!</strong>
-        /// <strong>Hint To developers:</strong> Drew Varner &lt;Drew.Varner
-        /// -at- sc.edu&gt; said that this is an image in WMF or Clipboard (BMP?)
-        /// format. However, we won't do any conversion into any image type but
-        /// instead just return a byte array.
+        /// <p>To process this data, you may wish to make use of the
+        ///  {@link Thumbnail} class. The raw data is generally 
+        /// an image in WMF or Clipboard (BMP?) format</p>
         /// </summary>
         /// <value>The thumbnail.</value>
         public byte[] Thumbnail
@@ -480,6 +479,19 @@ namespace NPOI.HPSF
             }
         }
 
+        /// <summary>
+        /// Returns the thumbnail or null, processed as an object 
+        /// which is (largely) able to unpack the thumbnail image data.
+        /// </summary>
+        public Thumbnail ThumbnailThumbnail
+        {
+            get
+            {
+                byte[] data = Thumbnail;
+                if (data == null) return null;
+                return new Thumbnail(data);
+            }
+        }
         /// <summary>
         /// Removes the thumbnail.
         /// </summary>
@@ -496,7 +508,7 @@ namespace NPOI.HPSF
         /// <value>The name of the application.</value>
         public String ApplicationName
         {
-            get { return (String)GetProperty(PropertyIDMap.PID_APPNAME); }
+            get { return GetPropertyStringValue(PropertyIDMap.PID_APPNAME); }
             set
             {
                 MutableSection s = (MutableSection)FirstSection;

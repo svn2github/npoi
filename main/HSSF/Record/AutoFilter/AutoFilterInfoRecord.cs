@@ -1,10 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 
 namespace NPOI.HSSF.Record.AutoFilter
 {
-    public class AutoFilterInfoRecord:StandardRecord
+    public class AutoFilterInfoRecord : StandardRecord, ICloneable
     {
 
         public AutoFilterInfoRecord()

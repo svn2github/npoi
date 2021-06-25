@@ -19,11 +19,10 @@
 namespace NPOI.DDF
 {
     using System;
-    using System.IO;
     using System.Text;
     using System.Collections;
     using NPOI.Util;
-    using NPOI.HSSF.Record;
+using System.Collections.Generic;
 
 
     /// <summary>
@@ -81,7 +80,8 @@ namespace NPOI.DDF
             int pos = offset + 8;
             int size = 0;
             field_1_shapeIdMax = LittleEndian.GetInt(data, pos + size); size += 4;
-            int field_2_numIdClusters = LittleEndian.GetInt(data, pos + size); size += 4;
+            //int field_2_numIdClusters = LittleEndian.GetInt(data, pos + size);
+            size += 4;
             field_3_numShapesSaved = LittleEndian.GetInt(data, pos + size); size += 4;
             field_4_drawingsSaved = LittleEndian.GetInt(data, pos + size); size += 4;
             field_5_fileIdClusters = new FileIdCluster[(bytesRemaining - size) / 8];  // Can't rely on field_2_numIdClusters
@@ -268,7 +268,7 @@ namespace NPOI.DDF
         public FileIdCluster[] FileIdClusters
         {
             get { return field_5_fileIdClusters; }
-            set { field_5_fileIdClusters = value; }
+            set { field_5_fileIdClusters = (FileIdCluster[])value.Clone(); }
         }
 
         /// <summary>
@@ -282,15 +282,13 @@ namespace NPOI.DDF
         }
 
 
-        private class EscherDggRecordComparer : IComparer
+        private class EscherDggRecordComparer : IComparer<FileIdCluster>
         {
 
             #region IComparer Members
 
-            public int Compare(object o1, object o2)
+            public int Compare(FileIdCluster f1, FileIdCluster f2)
             {
-                FileIdCluster f1 = (FileIdCluster)o1;
-                FileIdCluster f2 = (FileIdCluster)o2;
                 if (f1.DrawingGroupId == f2.DrawingGroupId)
                     return 0;
                 if (f1.DrawingGroupId < f2.DrawingGroupId)
@@ -310,11 +308,38 @@ namespace NPOI.DDF
         /// In Excel the clusters are sorted but in PPT they are not).</param>
         public void AddCluster(int dgId, int numShapedUsed, bool sort)
         {
-            ArrayList clusters = new ArrayList(field_5_fileIdClusters);
+            List<FileIdCluster> clusters = new List<FileIdCluster>(field_5_fileIdClusters);
             clusters.Add(new FileIdCluster(dgId, numShapedUsed));
-            clusters.Sort(new EscherDggRecordComparer());
+            if (sort)
+            {
+                //ArrayList.Sort is not stable, we need a stable sort ,
+                //see test case TestHSSFComment.TestBug56380InsertTooManyComments
+                //clusters.Sort(new EscherDggRecordComparer());
+                InsertionSort<FileIdCluster>(clusters, new EscherDggRecordComparer());
+            }
             maxDgId = Math.Min(maxDgId, dgId);
-            field_5_fileIdClusters = (FileIdCluster[])clusters.ToArray(typeof(FileIdCluster));
+            field_5_fileIdClusters = clusters.ToArray();
+        }
+
+        public static void InsertionSort<T>(List<T> list, IComparer<T> comparison)
+        {
+            if (list == null)
+                throw new ArgumentNullException("list");
+            if (comparison == null)
+                throw new ArgumentNullException("comparison");
+
+            int count = list.Count;
+            for (int j = 1; j < count; j++)
+            {
+                T key = list[j];
+
+                int i = j - 1;
+                for (; i >= 0 && comparison.Compare(list[i], key) > 0; i--)
+                {
+                    list[i + 1] = list[i];
+                }
+                list[i + 1] = key;
+            }
         }
     }
 }

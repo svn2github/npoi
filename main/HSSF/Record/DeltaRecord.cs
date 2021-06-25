@@ -20,7 +20,6 @@
 namespace NPOI.HSSF.Record
 {
     using System.Text;
-    using System.Collections;
     using NPOI.Util;
     using System;
 
@@ -34,10 +33,10 @@ namespace NPOI.HSSF.Record
      * @version 2.0-pre
      */
 
-    public class DeltaRecord : StandardRecord
+    public class DeltaRecord : StandardRecord, ICloneable
     {
         public const short sid = 0x10;
-        public static double DEFAULT_VALUE = 0.0010;   // should be .001
+        public const double DEFAULT_VALUE = 0.0010;   // should be .001
 
         // a double Is an IEEE 8-byte float...damn IEEE and their goofy standards an
         // ambiguous numeric identifiers

@@ -37,7 +37,7 @@ namespace NPOI.XWPF.UserModel
         internal static POIXMLRelation[] RELATIONS;
         static XWPFPictureData()
         {
-            RELATIONS = new POIXMLRelation[9];
+            RELATIONS = new POIXMLRelation[14];
             RELATIONS[(int)PictureType.EMF] = XWPFRelation.IMAGE_EMF;
             RELATIONS[(int)PictureType.WMF] = XWPFRelation.IMAGE_WMF;
             RELATIONS[(int)PictureType.PICT] = XWPFRelation.IMAGE_PICT;
@@ -45,6 +45,11 @@ namespace NPOI.XWPF.UserModel
             RELATIONS[(int)PictureType.PNG] = XWPFRelation.IMAGE_PNG;
             RELATIONS[(int)PictureType.DIB] = XWPFRelation.IMAGE_DIB;
             RELATIONS[(int)PictureType.GIF] = XWPFRelation.IMAGE_GIF;
+            RELATIONS[(int)PictureType.TIFF] = XWPFRelation.IMAGE_TIFF;
+            RELATIONS[(int)PictureType.EPS] = XWPFRelation.IMAGE_EPS;
+            RELATIONS[(int)PictureType.BMP] = XWPFRelation.IMAGE_BMP;
+            RELATIONS[(int)PictureType.WPG] = XWPFRelation.IMAGE_WPG;
+            RELATIONS[(int)PictureType.SVG] = XWPFRelation.IMAGE_SVG;
         }
 
         private long? checksum = null;
@@ -65,11 +70,16 @@ namespace NPOI.XWPF.UserModel
          * @param rel  the package relationship holding this Drawing,
          * the relationship type must be http://schemas.Openxmlformats.org/officeDocument/2006/relationships/image
          */
-        public XWPFPictureData(PackagePart part, PackageRelationship rel)
-            : base(part, rel)
+        public XWPFPictureData(PackagePart part)
+            : base(part)
         {
         }
+        [Obsolete("deprecated in POI 3.14, scheduled for removal in POI 3.16")]
+        public XWPFPictureData(PackagePart part, PackageRelationship rel)
+             : this(part)
+        {
 
+        }
 
         internal override void OnDocumentRead()
         {
@@ -88,15 +98,18 @@ namespace NPOI.XWPF.UserModel
          * </p>
          * @return the Picture data.
          */
-        public byte[] GetData()
+        public byte[] Data
         {
-            try
+            get
             {
-                return IOUtils.ToByteArray(GetPackagePart().GetInputStream());
-            }
-            catch (IOException e)
-            {
-                throw new POIXMLException(e);
+                try
+                {
+                    return IOUtils.ToByteArray(GetPackagePart().GetInputStream());
+                }
+                catch (IOException e)
+                {
+                    throw new POIXMLException(e);
+                }
             }
         }
 
@@ -105,19 +118,20 @@ namespace NPOI.XWPF.UserModel
          * isn't always available, but if it can be found it's likely to be in the
          * CTDrawing
          */
-        public String GetFileName()
+        public String FileName
         {
-            String name = GetPackagePart().PartName.Name;
-            if (name == null)
-                return null;
-            return name.Substring(name.LastIndexOf('/') + 1);
+            get
+            {
+                String name = GetPackagePart().PartName.Name;
+                return name.Substring(name.LastIndexOf('/') + 1);
+            }
         }
 
         /**
          * Suggests a file extension for this image.
          * @return the file extension.
          */
-        public String suggestFileExtension()
+        public String SuggestFileExtension()
         {
             return GetPackagePart().PartName.Extension;
         }
@@ -172,7 +186,8 @@ namespace NPOI.XWPF.UserModel
                     {
                         try
                         {
-                            is1.Close();
+                            if (is1 != null)
+                                is1.Close();
                         }
                         catch (IOException e)
                         {
@@ -252,13 +267,22 @@ namespace NPOI.XWPF.UserModel
             {
                 return false;
             }
-            return Arrays.Equals(this.GetData(), picData.GetData());
+            return Arrays.Equals(this.Data, picData.Data);
         }
 
 
         public override int GetHashCode()
         {
             return Checksum.GetHashCode();
+        }
+
+        /**
+         * *PictureData objects store the actual content in the part directly without keeping a 
+         * copy like all others therefore we need to handle them differently.
+         */
+        protected internal override void PrepareForCommit()
+        {
+            // do not clear the part here
         }
     }
 

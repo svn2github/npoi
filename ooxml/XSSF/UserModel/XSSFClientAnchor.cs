@@ -91,7 +91,7 @@ namespace NPOI.XSSF.UserModel
          * @param cell1 starting anchor point
          * @param cell2 ending anchor point
          */
-        protected XSSFClientAnchor(CT_Marker cell1, CT_Marker cell2)
+        internal XSSFClientAnchor(CT_Marker cell1, CT_Marker cell2)
         {
             this.cell1 = cell1;
             this.cell2 = cell2;
@@ -106,8 +106,14 @@ namespace NPOI.XSSF.UserModel
             if (o == null || !(o is XSSFClientAnchor)) return false;
 
             XSSFClientAnchor anchor = (XSSFClientAnchor)o;
-            return cell1.ToString().Equals(anchor.GetFrom().ToString()) &&
-                   cell2.ToString().Equals(anchor.GetTo().ToString());
+            return Dx1 == anchor.Dx1 &&
+                Dx2 == anchor.Dx2 &&
+                Dy1 == anchor.Dy1 &&
+                Dy2 == anchor.Dy2 &&
+                Col1 == anchor.Col1 &&
+                Col2 == anchor.Col2 &&
+                Row1 == anchor.Row1 &&
+                Row2 == anchor.Row2;
 
         }
 
@@ -123,14 +129,16 @@ namespace NPOI.XSSF.UserModel
          * @return starting anchor point
          */
 
-        internal CT_Marker GetFrom()
+        internal CT_Marker From
         {
-            return cell1;
-        }
-
-        internal void SetFrom(CT_Marker from)
-        {
-            cell1 = from;
+            get
+            {
+                return cell1;
+            }
+            set 
+            {
+                cell1 = value;
+            }
         }
 
         /**
@@ -139,14 +147,16 @@ namespace NPOI.XSSF.UserModel
          * @return ending anchor point
          */
 
-        internal CT_Marker GetTo()
+        internal CT_Marker To
         {
-            return cell2;
-        }
-
-        internal void SetTo(CT_Marker to)
-        {
-            cell2 = to;
+            get
+            {
+                return cell2;
+            }
+            set 
+            {
+                cell2 = value;
+            }
         }
 
 
@@ -204,15 +214,15 @@ namespace NPOI.XSSF.UserModel
                 cell2.colOff = value;
             }
         }
-        public int AnchorType
+        public AnchorType AnchorType
         {
             get
             {
-                return this.anchorType;
+                return (AnchorType)this.anchorType;
             }
             set
             {
-                this.anchorType = value;
+                this.anchorType = (int)value;
             }
         }
 

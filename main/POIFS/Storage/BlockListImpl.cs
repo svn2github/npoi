@@ -16,7 +16,6 @@
 ==================================================================== */
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 
 namespace NPOI.POIFS.Storage
@@ -41,7 +40,7 @@ namespace NPOI.POIFS.Storage
         /// <param name="blocks">blocks to be managed</param> 
         public virtual void SetBlocks(ListManagedBlock[] blocks)
         {
-            _blocks = blocks;
+            _blocks = (ListManagedBlock[])blocks.Clone();
         }
 
         /// <summary>

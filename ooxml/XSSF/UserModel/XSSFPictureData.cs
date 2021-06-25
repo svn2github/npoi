@@ -35,16 +35,22 @@ namespace NPOI.XSSF.UserModel
         /**
          * Relationships for each known picture type
          */
-        internal static Dictionary<PictureType, POIXMLRelation> RELATIONS;
+        internal static Dictionary<int, POIXMLRelation> RELATIONS;
         static XSSFPictureData()
         {
-            RELATIONS = new Dictionary<PictureType,POIXMLRelation>(8);
-            RELATIONS[PictureType.EMF] = XSSFRelation.IMAGE_EMF;
-            RELATIONS[PictureType.WMF] = XSSFRelation.IMAGE_WMF;
-            RELATIONS[PictureType.PICT] = XSSFRelation.IMAGE_PICT;
-            RELATIONS[PictureType.JPEG] = XSSFRelation.IMAGE_JPEG;
-            RELATIONS[PictureType.PNG] = XSSFRelation.IMAGE_PNG;
-            RELATIONS[PictureType.DIB] = XSSFRelation.IMAGE_DIB;
+            RELATIONS = new Dictionary<int,POIXMLRelation>(12);
+            RELATIONS[(int)PictureType.EMF] = XSSFRelation.IMAGE_EMF;
+            RELATIONS[(int)PictureType.WMF] = XSSFRelation.IMAGE_WMF;
+            RELATIONS[(int)PictureType.PICT] = XSSFRelation.IMAGE_PICT;
+            RELATIONS[(int)PictureType.JPEG] = XSSFRelation.IMAGE_JPEG;
+            RELATIONS[(int)PictureType.PNG] = XSSFRelation.IMAGE_PNG;
+            RELATIONS[(int)PictureType.DIB] = XSSFRelation.IMAGE_DIB;
+            RELATIONS[XSSFWorkbook.PICTURE_TYPE_GIF] = XSSFRelation.IMAGE_GIF;
+            RELATIONS[XSSFWorkbook.PICTURE_TYPE_TIFF] = XSSFRelation.IMAGE_TIFF;
+            RELATIONS[XSSFWorkbook.PICTURE_TYPE_EPS] = XSSFRelation.IMAGE_EPS;
+            RELATIONS[XSSFWorkbook.PICTURE_TYPE_BMP] = XSSFRelation.IMAGE_BMP;
+            RELATIONS[XSSFWorkbook.PICTURE_TYPE_WPG] = XSSFRelation.IMAGE_WPG;
+            RELATIONS[XSSFWorkbook.PICTURE_TYPE_JPG] = XSSFRelation.IMAGE_JPG;
         }
 
         /**
@@ -65,8 +71,14 @@ namespace NPOI.XSSF.UserModel
          * @param rel  the namespace relationship holding this Drawing,
          * the relationship type must be http://schemas.Openxmlformats.org/officeDocument/2006/relationships/image
          */
+        public XSSFPictureData(PackagePart part)
+            : base(part)
+        {
+
+        }
+        [Obsolete("deprecated in POI 3.14, scheduled for removal in POI 3.16")]
         internal XSSFPictureData(PackagePart part, PackageRelationship rel)
-            : base(part, rel)
+            : this(part)
         {
 
         }
@@ -93,17 +105,20 @@ namespace NPOI.XSSF.UserModel
          * @see NPOI.ss.usermodel.Workbook#PICTURE_TYPE_PNG
          * @see NPOI.ss.usermodel.Workbook#PICTURE_TYPE_DIB
          */
-        public int GetPictureType()
+        public PictureType PictureType
         {
-            String contentType = GetPackagePart().ContentType;
-            foreach (PictureType relation in RELATIONS.Keys)
+            get
             {
-                if ( RELATIONS[relation].ContentType.Equals(contentType))
+                String contentType = GetPackagePart().ContentType;
+                foreach (PictureType relation in RELATIONS.Keys)
                 {
-                    return (int)relation;
+                    if (RELATIONS[(int)relation].ContentType.Equals(contentType))
+                    {
+                        return relation;
+                    }
                 }
+                return PictureType.None;
             }
-            return 0;
         }
 
 
@@ -128,6 +143,14 @@ namespace NPOI.XSSF.UserModel
         public string MimeType
         {
             get { return GetPackagePart().ContentType; }
+        }
+
+        /**
+         * *PictureData objects store the actual content in the part directly without keeping a 
+         * copy like all others therefore we need to handle them differently.
+         */
+        protected internal override void PrepareForCommit() {
+            // do not clear the part here
         }
     }
 }

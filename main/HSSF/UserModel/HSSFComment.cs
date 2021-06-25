@@ -17,12 +17,10 @@
 namespace NPOI.HSSF.UserModel
 {
     using System;
-    using System.Collections;
-
-    using NPOI.Util;
     using NPOI.DDF;
     using NPOI.HSSF.Record;
     using NPOI.SS.UserModel;
+    using NPOI.SS.Util;
 
 
     /// <summary>
@@ -30,45 +28,116 @@ namespace NPOI.HSSF.UserModel
     /// @author Yegor Kozlov
     /// </summary>
     [Serializable]
-    public class HSSFComment : HSSFTextbox,IComment
+    public class HSSFComment : HSSFTextbox, IComment
     {
+        private const int FILL_TYPE_SOLID = 0;
+        private const int FILL_TYPE_PICTURE = 3;
 
-        private bool visible;
-        private int col, row;
-        private String author;
+        private const int GROUP_SHAPE_PROPERTY_DEFAULT_VALUE = 655362;
+        private const int GROUP_SHAPE_HIDDEN_MASK = 0x1000002;
+        private const int GROUP_SHAPE_NOT_HIDDEN_MASK = unchecked((int)0xFEFFFFFD);
 
-        
-        private NoteRecord note = null;
-        
-        private TextObjectRecord txo = null;
+        private NoteRecord _note = null;
 
+        //private TextObjectRecord txo = null;
+        public HSSFComment(EscherContainerRecord spContainer, ObjRecord objRecord, TextObjectRecord textObjectRecord, NoteRecord _note)
+            : base(spContainer, objRecord, textObjectRecord)
+        {
+            this._note = _note;
+        }
         /// <summary>
         /// Construct a new comment with the given parent and anchor.
         /// </summary>
         /// <param name="parent"></param>
         /// <param name="anchor">defines position of this anchor in the sheet</param>
-        public HSSFComment(HSSFShape parent, HSSFAnchor anchor):base(parent, anchor)
+        public HSSFComment(HSSFShape parent, HSSFAnchor anchor):
+            this(parent, anchor, CreateNoteRecord())
         {
-            
-            this.ShapeType = (OBJECT_TYPE_COMMENT);
+
+        }
+        private HSSFComment(HSSFShape parent, HSSFAnchor anchor, NoteRecord note)
+            : base(parent, anchor)
+        {
+            _note = note;
 
             //default color for comments
             this.FillColor = 0x08000050;
 
             //by default comments are hidden
-            visible = false;
+            Visible = false;
 
-            author = "";
+            Author = "";
+            CommonObjectDataSubRecord cod = (CommonObjectDataSubRecord)GetObjRecord().SubRecords[0];
+            cod.ObjectType = CommonObjectType.Comment; 
         }
         /// <summary>
         /// Initializes a new instance of the <see cref="HSSFComment"/> class.
         /// </summary>
         /// <param name="note">The note.</param>
         /// <param name="txo">The txo.</param>
-        public HSSFComment(NoteRecord note, TextObjectRecord txo):this((HSSFShape)null, (HSSFAnchor)null)
-        {          
-            this.txo = txo;
-            this.note = note;
+        public HSSFComment(NoteRecord note, TextObjectRecord txo)
+            : this((HSSFShape)null, new HSSFClientAnchor(), note)
+        {
+        }
+
+
+        internal override void AfterInsert(HSSFPatriarch patriarch)
+        {
+            base.AfterInsert(patriarch);
+            patriarch.GetBoundAggregate().AddTailRecord(NoteRecord);
+        }
+
+        protected override EscherContainerRecord CreateSpContainer()
+        {
+            EscherContainerRecord spContainer = base.CreateSpContainer();
+            EscherOptRecord opt = (EscherOptRecord)spContainer.GetChildById(EscherOptRecord.RECORD_ID);
+            opt.RemoveEscherProperty(EscherProperties.TEXT__TEXTLEFT);
+            opt.RemoveEscherProperty(EscherProperties.TEXT__TEXTRIGHT);
+            opt.RemoveEscherProperty(EscherProperties.TEXT__TEXTTOP);
+            opt.RemoveEscherProperty(EscherProperties.TEXT__TEXTBOTTOM);
+            opt.SetEscherProperty(new EscherSimpleProperty(EscherProperties.GROUPSHAPE__PRINT, false, false, GROUP_SHAPE_PROPERTY_DEFAULT_VALUE));
+            return spContainer;
+        }
+
+
+        protected override ObjRecord CreateObjRecord()
+        {
+            ObjRecord obj = new ObjRecord();
+            CommonObjectDataSubRecord c = new CommonObjectDataSubRecord();
+            c.ObjectType = (CommonObjectType)OBJECT_TYPE_COMMENT;
+            c.IsLocked = (true);
+            c.IsPrintable = (true);
+            c.IsAutoFill = (false);
+            c.IsAutoline = (true);
+
+            NoteStructureSubRecord u = new NoteStructureSubRecord();
+            EndSubRecord e = new EndSubRecord();
+            obj.AddSubRecord(c);
+            obj.AddSubRecord(u);
+            obj.AddSubRecord(e);
+            return obj;
+        }
+
+        private static NoteRecord CreateNoteRecord()
+        {
+            NoteRecord note = new NoteRecord();
+            note.Flags = (NoteRecord.NOTE_HIDDEN);
+            note.Author = ("");
+            return note;
+        }
+
+        public override int ShapeId
+        {
+            get { return base.ShapeId; }
+            set
+            {
+                if (value > 65535)
+                    throw new ArgumentException("Cannot add more than 65535 shapes");
+                base.ShapeId = (value);
+                CommonObjectDataSubRecord cod = (CommonObjectDataSubRecord)GetObjRecord().SubRecords[0];
+                cod.ObjectId = value;
+                _note.ShapeId = value;
+            }
         }
 
         /// <summary>
@@ -85,24 +154,43 @@ namespace NPOI.HSSF.UserModel
         {
             get
             {
-                return this.visible;
+                return _note.Flags == NoteRecord.NOTE_VISIBLE;
             }
-            set {
-                if (note != null) note.Flags = value ? NoteRecord.NOTE_VISIBLE : NoteRecord.NOTE_HIDDEN;
-                this.visible = value;
+            set
+            {
+                if (_note != null) _note.Flags = value ? NoteRecord.NOTE_VISIBLE : NoteRecord.NOTE_HIDDEN;
+                SetHidden(!value);
             }
         }
 
+        public CellAddress Address
+        {
+            get
+            {
+                return new CellAddress(Row, Column);
+            }
+            set
+            {
+                Row = value.Row;
+                Column = value.Column;
+            }
+        }
+        public void SetAddress(int row, int col)
+        {
+            Row = row;
+            Column = col;
+        }
         /// <summary>
         /// Gets or sets the row of the cell that Contains the comment
         /// </summary>
         /// <value>the 0-based row of the cell that Contains the comment</value>
         public int Row
         {
-            get{return row;}
-            set{            
-                if (note != null) note.Row=value;
-            this.row = value;}
+            get { return _note.Row; }
+            set
+            {
+                if (_note != null) _note.Row = value;
+            }
         }
 
 
@@ -112,11 +200,10 @@ namespace NPOI.HSSF.UserModel
         /// <value>the 0-based column of the cell that Contains the comment</value>
         public int Column
         {
-            get { return col; }
+            get { return _note.Column; }
             set
             {
-                if (note != null) note.Column=value;
-                this.col = value;
+                if (_note != null) _note.Column = value;
             }
         }
 
@@ -128,33 +215,15 @@ namespace NPOI.HSSF.UserModel
         {
             get
             {
-                return author;
+                return _note.Author;
             }
             set
             {
-                if (note != null) note.Author = value;
-                this.author = value;
+                if (_note != null) _note.Author = value;
             }
         }
 
-        /// <summary>
-        /// Gets or sets the rich text string used by this comment.
-        /// </summary>   
-        public override IRichTextString String
-        {
-            get { return base.String; }
-            set
-            {
-                //if font Is not Set we must Set the default one
-                if (value.NumFormattingRuns == 0) value.ApplyFont((short)0);
-
-                if (txo != null)
-                {
-                    txo.Str=value;
-                }
-                base.String = value;
-            }
-        }
+        
 
         /// <summary>
         /// Gets the note record.
@@ -162,30 +231,70 @@ namespace NPOI.HSSF.UserModel
         /// <value>the underlying Note record.</value>
         internal NoteRecord NoteRecord
         {
-            get { return note; }
+            get { return _note; }
         }
-        /// <summary>
-        /// Gets the text object record.
-        /// </summary>
-        /// <value>the underlying Text record</value>
-        internal TextObjectRecord TextObjectRecord
+
+        /**
+         * Do we know which cell this comment belongs to?
+         */
+        public bool HasPosition
         {
-            get { return txo; }
+            get
+            {
+                if (_note == null) return false;
+                if (this.Column < 0 || this.Row < 0) return false;
+                return true;
+            }
         }
+
+        public IClientAnchor ClientAnchor
+        {
+            get
+            {
+                HSSFAnchor ha = base.Anchor;
+                if (ha is IClientAnchor)
+                {
+                    return (IClientAnchor)ha;
+                }
+
+                throw new InvalidCastException("Anchor can not be changed in "
+                        + typeof(IClientAnchor).Name);
+            }
+        }
+
+        public override int ShapeType
+        {
+            get
+            {
+                return base.ShapeType;
+            }
+            set
+            {
+                throw new InvalidOperationException("Shape type can not be changed in " + this.GetType().Name);
+            }
+        }
+        
 
         internal override void AfterRemove(HSSFPatriarch patriarch)
         {
             base.AfterRemove(patriarch);
-            patriarch._getBoundAggregate().RemoveTailRecord(this.NoteRecord);
+            patriarch.GetBoundAggregate().RemoveTailRecord(this.NoteRecord);
         }
-
-        private const int FILL_TYPE_SOLID = 0;
-        private const int FILL_TYPE_PICTURE = 3;
+        internal override HSSFShape CloneShape()
+        {
+            TextObjectRecord txo = (TextObjectRecord)GetTextObjectRecord().CloneViaReserialise();
+            EscherContainerRecord spContainer = new EscherContainerRecord();
+            byte[] inSp = GetEscherContainer().Serialize();
+            spContainer.FillFields(inSp, 0, new DefaultEscherRecordFactory());
+            ObjRecord obj = (ObjRecord)GetObjRecord().CloneViaReserialise();
+            NoteRecord note = (NoteRecord)NoteRecord.CloneViaReserialise();
+            return new HSSFComment(spContainer, obj, txo, note);
+        }
         public void SetBackgroundImage(int pictureIndex)
         {
             SetPropertyValue(new EscherSimpleProperty(EscherProperties.FILL__PATTERNTEXTURE, false, true, pictureIndex));
             SetPropertyValue(new EscherSimpleProperty(EscherProperties.FILL__FILLTYPE, false, false, FILL_TYPE_PICTURE));
-            EscherBSERecord bse = ((HSSFWorkbook)((HSSFPatriarch)Patriarch)._sheet.Workbook).Workbook.GetBSERecord(pictureIndex);
+            EscherBSERecord bse = ((HSSFWorkbook)((HSSFPatriarch)Patriarch).Sheet.Workbook).Workbook.GetBSERecord(pictureIndex);
             bse.Ref = (bse.Ref + 1);
         }
 
@@ -194,7 +303,7 @@ namespace NPOI.HSSF.UserModel
             EscherSimpleProperty property = (EscherSimpleProperty)GetOptRecord().Lookup(EscherProperties.FILL__PATTERNTEXTURE);
             if (null != property)
             {
-                EscherBSERecord bse =((HSSFWorkbook)((HSSFPatriarch) Patriarch)._sheet.Workbook).Workbook.GetBSERecord(property.PropertyValue);
+                EscherBSERecord bse = ((HSSFWorkbook)((HSSFPatriarch)Patriarch).Sheet.Workbook).Workbook.GetBSERecord(property.PropertyValue);
                 bse.Ref = (bse.Ref - 1);
                 GetOptRecord().RemoveEscherProperty(EscherProperties.FILL__PATTERNTEXTURE);
             }
@@ -205,6 +314,32 @@ namespace NPOI.HSSF.UserModel
         {
             EscherSimpleProperty property = (EscherSimpleProperty)GetOptRecord().Lookup(EscherProperties.FILL__PATTERNTEXTURE);
             return property == null ? 0 : property.PropertyValue;
+        }
+        private void SetHidden(bool value)
+        {
+            EscherSimpleProperty property = (EscherSimpleProperty)GetOptRecord().Lookup(EscherProperties.GROUPSHAPE__PRINT);
+            // see http://msdn.microsoft.com/en-us/library/dd949807(v=office.12).aspx
+            if (value)
+            {
+                SetPropertyValue(new EscherSimpleProperty(EscherProperties.GROUPSHAPE__PRINT, false, false, property.PropertyValue | GROUP_SHAPE_HIDDEN_MASK));
+            }
+            else
+            {
+                SetPropertyValue(new EscherSimpleProperty(EscherProperties.GROUPSHAPE__PRINT, false, false, property.PropertyValue & GROUP_SHAPE_NOT_HIDDEN_MASK));
+            }
+        }
+        public override bool Equals(Object obj)
+        {
+            if (!(obj is HSSFComment))
+            {
+                return false;
+            }
+            HSSFComment other = (HSSFComment)obj;
+            return NoteRecord.Equals(other.NoteRecord);
+        }
+        public override int GetHashCode()
+        {
+            return ((Row * 17) + Column) * 31;
         }
     }
 }

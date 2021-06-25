@@ -20,7 +20,6 @@ namespace NPOI.HSSF.Record
 {
 
     using System;
-    using System.IO;
     using System.Text;
     using NPOI.Util;
 
@@ -31,8 +30,7 @@ namespace NPOI.HSSF.Record
      *
      * @author Shawn Laubach (slaubach at apache dot org)
      */
-    public class BottomMarginRecord
-           : StandardRecord, IMargin
+    public class BottomMarginRecord : StandardRecord, IMargin, ICloneable
     {
         public const short sid = 0x29;
         private double field_1_margin;

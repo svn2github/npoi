@@ -1,4 +1,4 @@
-﻿/*
+/*
  *  ====================================================================
  *    Licensed to the Apache Software Foundation (ASF) under one or more
  *    contributor license agreements.  See the NOTICE file distributed with
@@ -45,7 +45,7 @@ namespace NPOI.SS.UserModel.Charts
         public override double GetPointAt(int index)
         {
             CellValue cellValue = GetCellValueAt(index);
-            if (cellValue != null && cellValue.CellType == CellType.NUMERIC)
+            if (cellValue != null && cellValue.CellType == CellType.Numeric)
             {
                 return cellValue.NumberValue;
             }
@@ -75,7 +75,7 @@ namespace NPOI.SS.UserModel.Charts
         public override string GetPointAt(int index)
         {
             CellValue cellValue = GetCellValueAt(index);
-            if (cellValue != null && cellValue.CellType == CellType.STRING)
+            if (cellValue != null && cellValue.CellType == CellType.String)
             {
                 return cellValue.StringValue;
             }
@@ -96,7 +96,7 @@ namespace NPOI.SS.UserModel.Charts
         private T[] elements;
 
         public ArrayDataSource(T[] elements) {
-            this.elements = elements;
+            this.elements = (T[])elements.Clone();
         }
 
         public int PointCount {

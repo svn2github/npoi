@@ -15,10 +15,9 @@
    limitations under the License.
 ==================================================================== */
 
+using NPOI.Util.Collections;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.IO;
 
 namespace NPOI.POIFS.FileSystem
@@ -30,7 +29,7 @@ namespace NPOI.POIFS.FileSystem
     public class FilteringDirectoryNode : DirectoryEntry
     {
 
-        private HashSet<String> excludes;
+        private List<String> excludes;
         private Dictionary<String, List<String>> childExcludes;
         private DirectoryEntry directory;
         /// <summary>
@@ -44,7 +43,7 @@ namespace NPOI.POIFS.FileSystem
             this.directory = directory;
 
             // Process the excludes
-            this.excludes = new HashSet<String>();
+            this.excludes = new List<String>();
             this.childExcludes = new Dictionary<String, List<String>>();
             foreach (String excl in excludes)
             {
@@ -72,6 +71,22 @@ namespace NPOI.POIFS.FileSystem
         public IEnumerator<Entry> Entries
         {
             get { return GetEntries(); }
+        }
+
+        public List<String> EntryNames
+        {
+            get
+            {
+                List<String> names = new List<String>();
+                foreach (String name in directory.EntryNames)
+                {
+                    if (!excludes.Contains(name))
+                    {
+                        names.Add(name);
+                    }
+                }
+                return names;
+            }
         }
 
         public bool IsEmpty

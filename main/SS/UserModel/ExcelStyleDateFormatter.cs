@@ -33,22 +33,23 @@ namespace NPOI.SS.UserModel
      */
     public class ExcelStyleDateFormatter : SimpleDateFormat
     {
-        public static char MMMMM_START_SYMBOL = '\ue001';
-        public static char MMMMM_TRUNCATE_SYMBOL = '\ue002';
-        public static char H_BRACKET_SYMBOL = '\ue010';
-        public static char HH_BRACKET_SYMBOL = '\ue011';
-        public static char M_BRACKET_SYMBOL = '\ue012';
-        public static char MM_BRACKET_SYMBOL = '\ue013';
-        public static char S_BRACKET_SYMBOL = '\ue014';
-        public static char SS_BRACKET_SYMBOL = '\ue015';
-        public static char L_BRACKET_SYMBOL = '\ue016';
-        public static char LL_BRACKET_SYMBOL = '\ue017';
+        public const char MMMMM_START_SYMBOL = '\ue001';
+        public const char MMMMM_TRUNCATE_SYMBOL = '\ue002';
+        public const char H_BRACKET_SYMBOL = '\ue010';
+        public const char HH_BRACKET_SYMBOL = '\ue011';
+        public const char M_BRACKET_SYMBOL = '\ue012';
+        public const char MM_BRACKET_SYMBOL = '\ue013';
+        public const char S_BRACKET_SYMBOL = '\ue014';
+        public const char SS_BRACKET_SYMBOL = '\ue015';
+        public const char L_BRACKET_SYMBOL = '\ue016';
+        public const char LL_BRACKET_SYMBOL = '\ue017';
+        public const char QUOTE_SYMBOL = '\ue009'; //add for C# DateTime format
 
-        private DecimalFormat format1digit = new DecimalFormat("0");
-        private DecimalFormat format2digits = new DecimalFormat("00");
+        private static DecimalFormat format1digit = new DecimalFormat("0");
+        private static DecimalFormat format2digits = new DecimalFormat("00");
 
-        private DecimalFormat format3digit = new DecimalFormat("0");
-        private DecimalFormat format4digits = new DecimalFormat("00");
+        private static DecimalFormat format3digit = new DecimalFormat("0");
+        private static DecimalFormat format4digits = new DecimalFormat("00");
 
         static ExcelStyleDateFormatter()
         {
@@ -102,6 +103,7 @@ namespace NPOI.SS.UserModel
             t = t.Replace("s.000", "s.fff");
             t = t.Replace("s.00", "s." + LL_BRACKET_SYMBOL);
             t = t.Replace("s.0", "s." + L_BRACKET_SYMBOL);
+            t = t.Replace("\"", QUOTE_SYMBOL.ToString());
             //only one char 'M'
             //see http://msdn.microsoft.com/en-us/library/8kb3ddd4.aspx#UsingSingleSpecifiers
             t = Regex.Replace(t, "(?<![M%])M(?!M)", "%M");
@@ -127,13 +129,16 @@ namespace NPOI.SS.UserModel
         {
             // Do the normal format
             string s = string.Empty;
-            if (Regex.IsMatch(pattern, "[yYmMdDhHsS\\-/,. :\"\\\\]+0?[ampAMP/]*"))
+            if (Regex.IsMatch(Pattern, "[yYmMdDhHsS\\-/,. :\"\\\\]+0?[ampAMP/]*"))
             {
-                s = date.ToString(pattern, culture);
+                s = date.ToString(Pattern, culture);
             }
             else
-                s = pattern;
-            
+                s = Pattern;
+            if (s.IndexOf(QUOTE_SYMBOL) != -1)
+            {
+                s = s.Replace(QUOTE_SYMBOL, '"');
+            }
             // Now handle our special cases
             if (s.IndexOf(MMMMM_START_SYMBOL) != -1)
             {
@@ -205,6 +210,21 @@ namespace NPOI.SS.UserModel
             }
 
             return new StringBuilder(s);
+        }
+
+        public override bool Equals(Object o)
+        {
+            if (!(o is ExcelStyleDateFormatter)) {
+                return false;
+            }
+
+            ExcelStyleDateFormatter other = (ExcelStyleDateFormatter)o;
+            return dateToBeFormatted == other.dateToBeFormatted;
+        }
+
+        public override int GetHashCode()
+        {
+            return dateToBeFormatted.GetHashCode();
         }
     }
 

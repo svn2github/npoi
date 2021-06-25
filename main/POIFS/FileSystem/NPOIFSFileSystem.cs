@@ -39,7 +39,7 @@ namespace NPOI.POIFS.FileSystem
      * This is the new NIO version
      */
 
-    public class NPOIFSFileSystem : BlockStore, POIFSViewable //, Closeable Leon
+    public class NPOIFSFileSystem : BlockStore, POIFSViewable , ICloseable
     {
         private static POILogger _logger =
                 POILogFactory.GetLogger(typeof(NPOIFSFileSystem));
@@ -98,58 +98,152 @@ namespace NPOI.POIFS.FileSystem
             : this(true)
         {
 
-            // Mark us as having a single empty BAT at offset 0
+            // Reserve block 0 for the start of the Properties Table
+            // Create a single empty BAT, at pop that at offset 1
             _header.BATCount = 1;
-            _header.BATArray = new int[] { 0 };
-            _bat_blocks.Add(BATBlock.CreateEmptyBATBlock(bigBlockSize, false));
-            SetNextBlock(0, POIFSConstants.FAT_SECTOR_BLOCK);
+            _header.BATArray = new int[] { 1 };
 
-            // Now associate the properties with the empty block
-            _property_table.StartBlock = 1;
-            SetNextBlock(1, POIFSConstants.END_OF_CHAIN);
+            BATBlock bb = BATBlock.CreateEmptyBATBlock(bigBlockSize, false);
+            bb.OurBlockIndex = 1;
+            _bat_blocks.Add(bb);
+
+            SetNextBlock(0, POIFSConstants.END_OF_CHAIN);
+            SetNextBlock(1, POIFSConstants.FAT_SECTOR_BLOCK);
+
+            _property_table.StartBlock = 0;
         }
-
-
+        /**
+         * <p>Creates a POIFSFileSystem from a <tt>File</tt>. This uses less memory than
+         *  creating from an <tt>InputStream</tt>. The File will be opened read-only</p>
+         *  
+         * <p>Note that with this constructor, you will need to call {@link #close()}
+         *  when you're done to have the underlying file closed, as the file is
+         *  kept open during normal operation to read the data out.</p> 
+         *  
+         * @param file the File from which to read the data
+         *
+         * @exception IOException on errors reading, or on invalid data
+         */
+        public NPOIFSFileSystem(FileInfo file)
+            : this(file, true)
+        {
+            
+        }
+        /**
+         * <p>Creates a POIFSFileSystem from a <tt>File</tt>. This uses less memory than
+         *  creating from an <tt>InputStream</tt>.</p>
+         *  
+         * <p>Note that with this constructor, you will need to call {@link #close()}
+         *  when you're done to have the underlying file closed, as the file is
+         *  kept open during normal operation to read the data out.</p> 
+         *  
+         * @param file the File from which to read or read/write the data
+         * @param readOnly whether the POIFileSystem will only be used in read-only mode
+         *
+         * @exception IOException on errors reading, or on invalid data
+         */
+        public NPOIFSFileSystem(FileInfo file, bool readOnly)
+            : this(null, file, readOnly, true)
+        {
+            ;
+        }
+        /**
+         * <p>Creates a POIFSFileSystem from an open <tt>FileChannel</tt>. This uses 
+         *  less memory than creating from an <tt>InputStream</tt>. The stream will
+        *  be used in read-only mode.</p>
+         *  
+         * <p>Note that with this constructor, you will need to call {@link #close()}
+         *  when you're done to have the underlying Channel closed, as the channel is
+         *  kept open during normal operation to read the data out.</p> 
+         *  
+         * @param channel the FileChannel from which to read the data
+         *
+         * @exception IOException on errors reading, or on invalid data
+         */
         public NPOIFSFileSystem(FileStream channel)
             : this(channel, true)
         {
 
         }
-        private NPOIFSFileSystem(FileStream channel, bool closeChannelOnError)
+
+        /**
+         * <p>Creates a POIFSFileSystem from an open <tt>FileChannel</tt>. This uses 
+         *  less memory than creating from an <tt>InputStream</tt>.</p>
+         *  
+         * <p>Note that with this constructor, you will need to call {@link #close()}
+         *  when you're done to have the underlying Channel closed, as the channel is
+         *  kept open during normal operation to read the data out.</p> 
+         *  
+         * @param channel the FileChannel from which to read or read/write the data
+         * @param readOnly whether the POIFileSystem will only be used in read-only mode
+         *
+         * @exception IOException on errors reading, or on invalid data
+         */
+        public NPOIFSFileSystem(FileStream channel, bool readOnly)
+            : this(channel, null, readOnly, false)
+        {
+            ;
+        }
+        public NPOIFSFileSystem(FileStream channel, FileInfo srcFile, bool readOnly, bool closeChannelOnError)
             : this(false)
         {
 
             try
             {
-                // Get the header
-                byte[] headerBuffer = new byte[POIFSConstants.SMALLER_BIG_BLOCK_SIZE];
-                IOUtils.ReadFully(channel, headerBuffer);
+                // Initialize the datasource
+                if (srcFile != null)
+                {
+                    if (srcFile.Length == 0)
+                        throw new EmptyFileException();
+                    //FileBackedDataSource d = new FileBackedDataSource(srcFile, readOnly);
+                    channel = new FileStream(srcFile.FullName, FileMode.Open, FileAccess.Read);
+                    _data = new FileBackedDataSource(channel, readOnly);
+                }
+                else
+                {
+                    _data = new FileBackedDataSource(channel, readOnly);
+                }
+                try
+                {
+                    // Get the header
+                    byte[] headerBuffer = new byte[POIFSConstants.SMALLER_BIG_BLOCK_SIZE];
+                    IOUtils.ReadFully(channel, headerBuffer);
 
-                // Have the header Processed
-                _header = new HeaderBlock(headerBuffer);
+                    // Have the header Processed
+                    _header = new HeaderBlock(headerBuffer);
 
-                // Now process the various entries
-                _data = new FileBackedDataSource(channel);
-                ReadCoreContents();
-                channel.Close();
-
+                    // Now process the various entries
+                    //_data = new FileBackedDataSource(channel, readOnly);
+                    ReadCoreContents();
+                }
+                catch (Exception)
+                {
+                    throw;
+                }
+                finally
+                {
+                    if (channel != null)
+                        channel.Close();
+                }
             }
             catch (IOException e)
             {
-                if (closeChannelOnError)
+                if (closeChannelOnError && channel != null)
                 {
                     channel.Close();
+                    channel = null;
                 }
                 throw e;
             }
-            catch (Exception e)
+            catch (RuntimeException e)
             {
                 // Comes from Iterators etc.
                 // TODO Decide if we can handle these better whilst
                 //  still sticking to the iterator contract
-                if (closeChannelOnError)
+                if (closeChannelOnError && channel != null)
                 {
                     channel.Close();
+                    channel = null;
                 }
                 throw e;
             }
@@ -209,18 +303,13 @@ namespace NPOI.POIFS.FileSystem
                 // We need to buffer the whole file into memory when
                 //  working with an InputStream.
                 // The max possible size is when each BAT block entry is used
-                int maxSize = BATBlock.CalculateMaximumSize(_header);
-                //ByteBuffer data = ByteBuffer.allocate(maxSize);
-                // byte[] data = new byte[maxSize];
-                //// Copy in the header
-                //for(int i = 0; i < headerBuffer.Length; i++)
-                //{
-                //    data[i] = headerBuffer[i];
-                //}
-                // byte[] temp = new byte[channel.Length];
-                // Now read the rest of the stream
+                long maxSize = BATBlock.CalculateMaximumSize(_header);
+                if (maxSize > int.MaxValue)
+                {
+                    throw new ArgumentException("Unable read a >2gb file via an InputStream");
+                }
 
-                ByteBuffer data = ByteBuffer.CreateBuffer(maxSize);
+                ByteBuffer data = ByteBuffer.CreateBuffer((int)maxSize);
                 headerBuffer.Position = 0;
                 data.Write(headerBuffer.Buffer);
                 data.Position = headerBuffer.Length;
@@ -264,6 +353,48 @@ namespace NPOI.POIFS.FileSystem
         }
 
         /**
+         * Checks that the supplied InputStream (which MUST
+         *  support mark and reset, or be a PushbackInputStream)
+         *  has a POIFS (OLE2) header at the start of it.
+         * If your InputStream does not support mark / reset,
+         *  then wrap it in a PushBackInputStream, then be
+         *  sure to always use that, and not the original!
+         * @param inp An InputStream which supports either mark/reset, or is a PushbackInputStream
+         */
+        public static bool HasPOIFSHeader(Stream inp)
+        {
+            // We want to peek at the first 8 bytes
+            //inp.Mark(8);
+
+            byte[] header = new byte[8];
+            int bytesRead = IOUtils.ReadFully(inp, header);
+            LongField signature = new LongField(HeaderBlockConstants._signature_offset, header);
+
+            // Wind back those 8 bytes
+            if (inp is PushbackInputStream) {
+                PushbackInputStream pin = (PushbackInputStream)inp;
+                pin.Unread(header, 0, bytesRead);
+            } else {
+                inp.Position = 0;
+            }
+            
+
+            // Did it match the signature?
+            return (signature.Value == HeaderBlockConstants._signature);
+        }
+
+        /**
+         * Checks if the supplied first 8 bytes of a stream / file
+         *  has a POIFS (OLE2) header.
+         */
+        public static bool HasPOIFSHeader(byte[] header8Bytes)
+        {
+            LongField signature = new LongField(HeaderBlockConstants._signature_offset, header8Bytes);
+            return (signature.Value == HeaderBlockConstants._signature);
+        }
+
+
+        /**
          * Read and process the PropertiesTable and the
          *  FAT / XFAT blocks, so that we're Ready to
          *  work with the file
@@ -282,7 +413,9 @@ namespace NPOI.POIFS.FileSystem
             {
                 ReadBAT(fatAt, loopDetector);
             }
-
+            // Work out how many FAT blocks remain in the XFATs
+            int remainingFATs = _header.BATCount - _header.BATArray.Length;
+       
             // Now read the XFAT blocks, and the FATs within them
             BATBlock xfat;
             int nextAt = _header.XBATIndex;
@@ -294,13 +427,15 @@ namespace NPOI.POIFS.FileSystem
                 xfat.OurBlockIndex = nextAt;
                 nextAt = xfat.GetValueAt(bigBlockSize.GetXBATEntriesPerBlock());
                 _xbat_blocks.Add(xfat);
-
-                for (int j = 0; j < bigBlockSize.GetXBATEntriesPerBlock(); j++)
+                // Process all the (used) FATs from this XFAT
+                int xbatFATs = Math.Min(remainingFATs, bigBlockSize.GetXBATEntriesPerBlock());
+                for(int j=0; j<xbatFATs; j++) 
                 {
                     int fatAt = xfat.GetValueAt(j);
                     if (fatAt == POIFSConstants.UNUSED_BLOCK || fatAt == POIFSConstants.END_OF_CHAIN) break;
                     ReadBAT(fatAt, loopDetector);
                 }
+                remainingFATs -= xbatFATs;
             }
 
             // We're now able to load steams
@@ -312,7 +447,7 @@ namespace NPOI.POIFS.FileSystem
             List<BATBlock> sbats = new List<BATBlock>();
             _mini_store = new NPOIFSMiniStore(this, _property_table.Root, sbats, _header);
             nextAt = _header.SBATStart;
-            for (int i = 0; i < _header.SBATCount; i++)
+            for (int i = 0; i < _header.SBATCount && nextAt != POIFSConstants.END_OF_CHAIN; i++)
             {
                 loopDetector.Claim(nextAt);
                 ByteBuffer fatData = GetBlockAt(nextAt);
@@ -352,7 +487,15 @@ namespace NPOI.POIFS.FileSystem
         {
             // The header block doesn't count, so add one
             long startAt = (offset + 1) * bigBlockSize.GetBigBlockSize();
-            return _data.Read(bigBlockSize.GetBigBlockSize(), startAt);
+            try
+            {
+                return _data.Read(bigBlockSize.GetBigBlockSize(), startAt);
+            }
+            catch (IndexOutOfRangeException e)
+            {
+                throw new IndexOutOfRangeException("Block " + offset + " not found - ", e);
+            }
+            
         }
 
         /**
@@ -412,14 +555,11 @@ namespace NPOI.POIFS.FileSystem
          */
         public override int GetFreeBlock()
         {
+            int numSectors = bigBlockSize.GetBATEntriesPerBlock();
             // First up, do we have any spare ones?
             int offset = 0;
-            for (int i = 0; i < _bat_blocks.Count; i++)
+            foreach(BATBlock temp in _bat_blocks)
             {
-                int numSectors = bigBlockSize.GetBATEntriesPerBlock();
-
-                // Check this one
-                BATBlock temp = _bat_blocks[i];
                 if (temp.HasFreeSectors)
                 {
                     // Claim one of them and return it
@@ -461,7 +601,9 @@ namespace NPOI.POIFS.FileSystem
                 {
                     // Oh joy, we need a new XBAT too...
                     xbat = CreateBAT(offset + 1, false);
+                    // Allocate our new BAT as the first block in the XBAT
                     xbat.SetValueAt(0, offset);
+                    // And allocate the XBAT in the BAT
                     bat.SetValueAt(1, POIFSConstants.DIFAT_SECTOR_BLOCK);
 
                     // Will go one place higher as XBAT Added in
@@ -481,12 +623,16 @@ namespace NPOI.POIFS.FileSystem
                     _xbat_blocks.Add(xbat);
                     _header.XBATCount = _xbat_blocks.Count;
                 }
-                // Allocate us in the XBAT
-                for (int i = 0; i < bigBlockSize.GetXBATEntriesPerBlock(); i++)
+                else
                 {
-                    if (xbat.GetValueAt(i) == POIFSConstants.UNUSED_BLOCK)
+                    // Allocate us in the XBAT
+                    for (int i = 0; i < bigBlockSize.GetXBATEntriesPerBlock(); i++)
                     {
-                        xbat.SetValueAt(i, offset);
+                        if (xbat.GetValueAt(i) == POIFSConstants.UNUSED_BLOCK)
+                        {
+                            xbat.SetValueAt(i, offset);
+                            break;
+                        }
                     }
                 }
             }
@@ -504,7 +650,13 @@ namespace NPOI.POIFS.FileSystem
             return offset + 1;
         }
 
-
+        protected internal long Size
+        {
+            get
+            {
+                return _data.Size;
+            }
+        }
         public override ChainLoopDetector GetChainLoopDetector()
         {
             return new ChainLoopDetector(_data.Size, this);
@@ -599,13 +751,49 @@ namespace NPOI.POIFS.FileSystem
         }
 
         /**
+         * Set the contents of a document in1 the root directory,
+         *  creating if needed, otherwise updating
+         *
+         * @param stream the InputStream from which the document's data
+         *               will be obtained
+         * @param name the name of the new or existing POIFSDocument
+         *
+         * @return the new or updated DocumentEntry
+         *
+         * @exception IOException on error populating the POIFSDocument
+         */
+        public DocumentEntry CreateOrUpdateDocument(Stream stream,
+                                                    String name)
+
+        {
+            return Root.CreateOrUpdateDocument(name, stream);
+        }
+
+        /**
+         * Does the filesystem support an in-place write via
+         *  {@link #writeFilesystem()} ? If false, only writing out to
+         *  a brand new file via {@link #writeFilesystem(OutputStream)}
+         *  is supported.
+         */
+        public bool IsInPlaceWriteable()
+        {
+            if (_data is FileBackedDataSource) {
+                if (((FileBackedDataSource)_data).IsWriteable)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /**
          * Write the filesystem out to the open file. Will thrown an
          *  {@link ArgumentException} if opened from an 
          *  {@link InputStream}.
          * 
          * @exception IOException thrown on errors writing to the stream
          */
-        public void WriteFilesystem()
+        public void WriteFileSystem()
         {
             if (_data is FileBackedDataSource)
             {
@@ -630,8 +818,9 @@ namespace NPOI.POIFS.FileSystem
          * @exception IOException thrown on errors writing to the stream
          */
 
-        public void WriteFilesystem(Stream stream)
+        public void WriteFileSystem(Stream stream)
         {
+
             // Have the datasource updated
             syncWithDataSource();
 
@@ -645,6 +834,15 @@ namespace NPOI.POIFS.FileSystem
          */
         private void syncWithDataSource()
         {
+            // Mini Stream + SBATs first, as mini-stream details have
+            //  to be stored in the Root Property
+            _mini_store.SyncWithDataSource();
+
+            // Properties
+            NPOIFSStream propStream = new NPOIFSStream(this, _header.PropertyStart);
+            _property_table.PreWrite();
+            _property_table.Write(propStream);
+            // _header.setPropertyStart has been updated on write ...
             // HeaderBlock
             HeaderBlockWriter hbw = new HeaderBlockWriter(_header);
             hbw.WriteBlock(GetBlockAt(-1));
@@ -656,13 +854,12 @@ namespace NPOI.POIFS.FileSystem
                 //byte[] block = GetBlockAt(bat.OurBlockIndex);
                 BlockAllocationTableWriter.WriteBlock(bat, block);
             }
-
-            // SBATs
-            _mini_store.SyncWithDataSource();
-
-            // Properties
-            _property_table.Write(new NPOIFSStream(this, _header.PropertyStart)
-        );
+            // XBats
+            foreach (BATBlock bat in _xbat_blocks)
+            {
+                ByteBuffer block = GetBlockAt(bat.OurBlockIndex);
+                BlockAllocationTableWriter.WriteBlock(bat, block);
+            }
         }
 
         /**
@@ -670,7 +867,7 @@ namespace NPOI.POIFS.FileSystem
          *  and buffers. After this, you will be unable to read or 
          *  write from the FileSystem.
          */
-        public void close()
+        public void Close()
         {
             _data.Close();
         }
@@ -714,6 +911,11 @@ namespace NPOI.POIFS.FileSystem
 
         public void Remove(EntryNode entry)
         {
+            // If it's a document, free the blocks
+            if (entry is DocumentEntry) {
+                NPOIFSDocument doc = new NPOIFSDocument((DocumentProperty)entry.Property, this);
+                doc.Free();
+            }
             _property_table.RemoveProperty(entry.Property);
         }
 

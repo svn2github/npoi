@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace NPOI.Util
+﻿namespace NPOI.Util
 {
     public class Character
     {
@@ -21,6 +17,12 @@ namespace NPOI.Util
                 return ((int)src) - 87;
             }
             return -1;
+        }
+
+        //TODO: this should work but maybe not.
+        public static bool isWhitespace(char src)
+        {
+            return char.IsWhiteSpace(src);
         }
     }
 }

@@ -72,9 +72,26 @@ namespace NPOI.SS.Formula.Functions
                 case 3:
                     return Evaluate(srcRowIndex, srcColumnIndex, args[0], args[1], args[2], DEFAULT_ARG3, DEFAULT_ARG4);
                 case 4:
-                    return Evaluate(srcRowIndex, srcColumnIndex, args[0], args[1], args[2], args[3], DEFAULT_ARG4);
+                    ValueEval arg3 = args[3];
+                    if (arg3 == MissingArgEval.instance)
+                    {
+                        arg3 = DEFAULT_ARG3;
+                    }
+                    return Evaluate(srcRowIndex, srcColumnIndex, args[0], args[1], args[2], arg3, DEFAULT_ARG4);
                 case 5:
-                    return Evaluate(srcRowIndex, srcColumnIndex, args[0], args[1], args[2], args[3], args[4]);
+                    arg3 = args[3];
+                    if (arg3 == MissingArgEval.instance)
+                    {
+                        arg3 = DEFAULT_ARG3;
+                    }
+                    ValueEval arg4 = args[4];
+                    if (arg4 == MissingArgEval.instance)
+                    {
+                        arg4 = DEFAULT_ARG4;
+                    }
+                    return Evaluate(srcRowIndex, srcColumnIndex, args[0], args[1], args[2], arg3, arg4);
+                default:
+                    return ErrorEval.VALUE_INVALID;
             }
             return ErrorEval.VALUE_INVALID;
         }
@@ -106,9 +123,9 @@ namespace NPOI.SS.Formula.Functions
 
         public abstract double Evaluate(double rate, double arg1, double arg2, double arg3, bool type);
 
-        public static Function FV = new Fv();
-        public static Function NPER = new Nper();
-        public static Function PMT = new Pmt();
-        public static Function PV = new Pv();
+        public static readonly Function FV = new Fv();
+        public static readonly Function NPER = new Nper();
+        public static readonly Function PMT = new Pmt();
+        public static readonly Function PV = new Pv();
     }
 }

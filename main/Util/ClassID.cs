@@ -27,6 +27,7 @@
 
 using System;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace NPOI.Util
 {
@@ -42,7 +43,17 @@ namespace NPOI.Util
     /// </summary>
     public class ClassID
     {
-
+        public static ClassID OLE10_PACKAGE = new ClassID("{0003000C-0000-0000-C000-000000000046}");
+        public static ClassID PPT_SHOW = new ClassID("{64818D10-4F9B-11CF-86EA-00AA00B929E8}");
+        public static ClassID XLS_WORKBOOK = new ClassID("{00020841-0000-0000-C000-000000000046}");
+        public static ClassID TXT_ONLY = new ClassID("{5e941d80-bf96-11cd-b579-08002b30bfeb}"); // ???
+        public static ClassID EXCEL97      = new ClassID("{00020820-0000-0000-C000-000000000046}");
+        public static ClassID EXCEL95      = new ClassID("{00020810-0000-0000-C000-000000000046}");
+        public static ClassID WORD97       = new ClassID("{00020906-0000-0000-C000-000000000046}");
+        public static ClassID WORD95       = new ClassID("{00020900-0000-0000-C000-000000000046}");
+        public static ClassID POWERPOINT97 = new ClassID("{64818D10-4F9B-11CF-86EA-00AA00B929E8}");
+        public static ClassID POWERPOINT95 = new ClassID("{EA7BAE70-FB3B-11CD-A903-00AA00510EA3}");
+        public static ClassID EQUATION30   = new ClassID("{0002CE02-0000-0000-C000-000000000046}");
         /**
          * The bytes making out the class ID in correct order,
          * i.e. big-endian.
@@ -72,11 +83,25 @@ namespace NPOI.Util
                 bytes[i] = 0x00;
         }
 
-
+        /**
+         * <p>Creates a {@link ClassID} from a human-readable representation of the Class ID in standard 
+         * format <code>"{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}"</code>.</p>
+         * 
+         * @param externalForm representation of the Class ID represented by this object.
+         */
+        public ClassID(String externalForm)
+        {
+            bytes = new byte[LENGTH];
+            String clsStr = Regex.Replace(externalForm, "[{}-]", "");
+            for (int i = 0; i < clsStr.Length; i += 2)
+            {
+                bytes[i / 2] = (byte)Convert.ToInt64(clsStr.Substring(i, 2), 16);
+            }
+        }
 
         /** The number of bytes occupied by this object in the byte
          * stream. */
-        public static int LENGTH = 16;
+        public const int LENGTH = 16;
 
         /// <summary>
         /// Gets the length.

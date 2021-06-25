@@ -17,14 +17,16 @@
 
 namespace TestCases.SS.Formula
 {
-
     using System;
-    using NUnit.Framework;
+    using System.IO;
     using NPOI.HSSF.UserModel;
     using NPOI.SS.Formula;
     using NPOI.SS.Formula.Eval;
     using NPOI.SS.Formula.PTG;
     using NPOI.SS.UserModel;
+
+    using NUnit.Framework;
+
     using TestCases.HSSF;
 
     /**
@@ -35,6 +37,7 @@ namespace TestCases.SS.Formula
     [TestFixture]
     public class TestWorkbookEvaluator
     {
+        private static readonly double EPSILON = 0.0000001;
 
         private static ValueEval EvaluateFormula(Ptg[] ptgs)
         {
@@ -49,11 +52,7 @@ namespace TestCases.SS.Formula
         [Test]
         public void TestAttrSum()
         {
-
-            Ptg[] ptgs = {
-			new IntPtg(42),
-			AttrPtg.SUM,
-		};
+            Ptg[] ptgs = { new IntPtg(42), AttrPtg.SUM, };
 
             ValueEval result = EvaluateFormula(ptgs);
             Assert.AreEqual(42, ((NumberEval)result).NumberValue, 0.0);
@@ -75,9 +74,7 @@ namespace TestCases.SS.Formula
         }
         private static void ConfirmRefErr(Ptg ptg)
         {
-            Ptg[] ptgs = {
-			ptg,
-		};
+            Ptg[] ptgs = { ptg };
 
             ValueEval result = EvaluateFormula(ptgs);
             Assert.AreEqual(ErrorEval.REF_INVALID, result);
@@ -90,11 +87,7 @@ namespace TestCases.SS.Formula
         [Test]
         public void TestMemFunc()
         {
-
-            Ptg[] ptgs = {
-			new IntPtg(42),
-			AttrPtg.SUM,
-		};
+            Ptg[] ptgs = { new IntPtg(42), AttrPtg.SUM, };
 
             ValueEval result = EvaluateFormula(ptgs);
             Assert.AreEqual(42, ((NumberEval)result).NumberValue, 0.0);
@@ -109,25 +102,23 @@ namespace TestCases.SS.Formula
             HSSFFormulaEvaluator EvaluatorA = new HSSFFormulaEvaluator(wbA);
             HSSFFormulaEvaluator EvaluatorB = new HSSFFormulaEvaluator(wbB);
 
-            // Hook up the workbook Evaluators to enable Evaluation of formulas across books
+            // Hook up the IWorkbook Evaluators to enable Evaluation of formulas across books
             String[] bookNames = { "multibookFormulaA.xls", "multibookFormulaB.xls", };
             HSSFFormulaEvaluator[] Evaluators = { EvaluatorA, EvaluatorB, };
             HSSFFormulaEvaluator.SetupEnvironment(bookNames, Evaluators);
-
-            ICell cell;
 
             ISheet aSheet1 = wbA.GetSheetAt(0);
             ISheet bSheet1 = wbB.GetSheetAt(0);
 
             // Simple case - single link from wbA to wbB
             ConfirmFormula(wbA, 0, 0, 0, "[multibookFormulaB.xls]BSheet1!B1");
-            cell = aSheet1.GetRow(0).GetCell(0);
+            ICell cell = aSheet1.GetRow(0).GetCell(0);
             ConfirmEvaluation(35, EvaluatorA, cell);
-
 
             // more complex case - back link into wbA
             // [wbA]ASheet1!A2 references (among other things) [wbB]BSheet1!B2
             ConfirmFormula(wbA, 0, 1, 0, "[multibookFormulaB.xls]BSheet1!$B$2+2*A3");
+
             // [wbB]BSheet1!B2 references (among other things) [wbA]AnotherSheet!A1:B2
             ConfirmFormula(wbB, 0, 1, 1, "SUM([multibookFormulaA.xls]AnotherSheet!$A$1:$B$2)+B3");
 
@@ -178,16 +169,18 @@ namespace TestCases.SS.Formula
             ICell cell = row.CreateCell(0);
             cell.CellFormula = "1+IF(1,,)";
             HSSFFormulaEvaluator fe = new HSSFFormulaEvaluator(wb);
-            CellValue cv;
+            CellValue cv = null;
             try
             {
                 cv = fe.Evaluate(cell);
             }
             catch (Exception)
             {
-                throw new AssertionException("Missing arg result not being handled correctly.");
+                Assert.Fail("Missing arg result not being handled correctly.");
             }
-            Assert.AreEqual(CellType.NUMERIC, cv.CellType);
+
+            Assert.AreEqual(CellType.Numeric, cv.CellType);
+
             // Adding blank to 1.0 gives 1.0
             Assert.AreEqual(1.0, cv.NumberValue, 0.0);
 
@@ -195,7 +188,8 @@ namespace TestCases.SS.Formula
             cell.CellFormula = "\"abc\"&IF(1,,)";
             fe.NotifySetFormula(cell);
             cv = fe.Evaluate(cell);
-            Assert.AreEqual(CellType.STRING, cv.CellType);
+            Assert.AreEqual(CellType.String, cv.CellType);
+
             // Adding blank to "abc" gives "abc"
             Assert.AreEqual("abc", cv.StringValue);
 
@@ -203,7 +197,8 @@ namespace TestCases.SS.Formula
             cell.CellFormula = "\"abc\"&CHOOSE(2,5,,9)";
             fe.NotifySetFormula(cell);
             cv = fe.Evaluate(cell);
-            Assert.AreEqual(CellType.STRING, cv.CellType);
+            Assert.AreEqual(CellType.String, cv.CellType);
+
             // Adding blank to "abc" gives "abc"
             Assert.AreEqual("abc", cv.StringValue);
         }
@@ -230,18 +225,19 @@ namespace TestCases.SS.Formula
             {
                 if ("Specified row index (0) is outside the allowed range (1..4)".Equals(e.Message))
                 {
-                    throw new AssertionException("Identified bug in result dereferencing");
+                    Assert.Fail("Identified bug in result dereferencing");
                 }
                 throw;
             }
-            Assert.AreEqual(CellType.ERROR, cv.CellType);
-            Assert.AreEqual(ErrorConstants.ERROR_VALUE, cv.ErrorValue);
+
+            Assert.AreEqual(CellType.Error, cv.CellType);
+            Assert.AreEqual(ErrorEval.VALUE_INVALID.ErrorCode, cv.ErrorValue);
 
             // verify circular refs are still detected properly
             fe.ClearAllCachedResultValues();
             cell.CellFormula = "OFFSET(A1,0,0)";
             cv = fe.Evaluate(cell);
-            Assert.AreEqual(CellType.ERROR, cv.CellType);
+            Assert.AreEqual(CellType.Error, cv.CellType);
             Assert.AreEqual(ErrorEval.CIRCULAR_REF_ERROR.ErrorCode, cv.ErrorValue);
         }
 
@@ -251,21 +247,22 @@ namespace TestCases.SS.Formula
         [Test]
         public void TestNamesInFormulas()
         {
+            System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.CreateSpecificCulture("en-US");
+
             IWorkbook wb = new HSSFWorkbook();
             ISheet sheet = wb.CreateSheet("Sheet1");
 
             IName name1 = wb.CreateName();
-            name1.NameName = ("aConstant");
-            name1.RefersToFormula = ("3.14");
+            name1.NameName = "aConstant";
+            name1.RefersToFormula = "3.14";
 
             IName name2 = wb.CreateName();
-            name2.NameName = ("aFormula");
-            name2.RefersToFormula = ("SUM(Sheet1!$A$1:$A$3)");
+            name2.NameName = "aFormula";
+            name2.RefersToFormula = "SUM(Sheet1!$A$1:$A$3)";
 
             IName name3 = wb.CreateName();
-            name3.NameName = ("aSet");
-            name3.RefersToFormula = ("Sheet1!$A$2:$A$4");
-
+            name3.NameName = "aSet";
+            name3.RefersToFormula = "Sheet1!$A$2:$A$4";
 
             IRow row0 = sheet.CreateRow(0);
             IRow row1 = sheet.CreateRow(1);
@@ -287,6 +284,309 @@ namespace TestCases.SS.Formula
             Assert.AreEqual(15.0, fe.Evaluate(row2.GetCell(2)).NumberValue);
             Assert.AreEqual(28.14, fe.Evaluate(row3.GetCell(2)).NumberValue);
         }
-    }
 
+
+        // Test IF-Equals Formula Evaluation (bug 58591)
+        
+        private IWorkbook TestIFEqualsFormulaEvaluation_setup(String formula, CellType a1CellType)
+        {
+            IWorkbook wb = new HSSFWorkbook();
+            ISheet sheet = wb.CreateSheet("IFEquals");
+            IRow row = sheet.CreateRow(0);
+            ICell A1 = row.CreateCell(0);
+            ICell B1 = row.CreateCell(1);
+            ICell C1 = row.CreateCell(2);
+            ICell D1 = row.CreateCell(3);
+
+            switch (a1CellType)
+            {
+                case CellType.Numeric:
+                    A1.SetCellValue(1.0);
+                    // "A1=1" should return true
+                    break;
+                case CellType.String:
+                    A1.SetCellValue("1");
+                    // "A1=1" should return false
+                    // "A1=\"1\"" should return true
+                    break;
+                case CellType.Boolean:
+                    A1.SetCellValue(true);
+                    // "A1=1" should return true
+                    break;
+                case CellType.Formula:
+                    A1.SetCellFormula("1");
+                    // "A1=1" should return true
+                    break;
+                case CellType.Blank:
+                    A1.SetCellValue((String)null);
+                    // "A1=1" should return false
+                    break;
+            }
+            B1.SetCellValue(2.0);
+            C1.SetCellValue(3.0);
+            D1.CellFormula = (formula);
+
+            return wb;
+        }
+
+        private void TestIFEqualsFormulaEvaluation_teardown(IWorkbook wb)
+        {
+            try
+            {
+                wb.Close();
+            }
+            catch (IOException)
+            {
+                Assert.Fail("Unable to close workbook");
+            }
+        }
+
+
+        private void TestIFEqualsFormulaEvaluation_evaluate(
+            String formula, CellType cellType, String expectedFormula, double expectedResult)
+        {
+            IWorkbook wb = TestIFEqualsFormulaEvaluation_setup(formula, cellType);
+            ICell D1 = wb.GetSheet("IFEquals").GetRow(0).GetCell(3);
+
+            IFormulaEvaluator eval = wb.GetCreationHelper().CreateFormulaEvaluator();
+            CellValue result = eval.Evaluate(D1);
+
+            // Call should not modify the contents
+            Assert.AreEqual(CellType.Formula, D1.CellType);
+            Assert.AreEqual(expectedFormula, D1.CellFormula);
+
+            Assert.AreEqual(CellType.Numeric, result.CellType);
+            Assert.AreEqual(expectedResult, result.NumberValue, EPSILON);
+
+            TestIFEqualsFormulaEvaluation_teardown(wb);
+        }
+
+        private void TestIFEqualsFormulaEvaluation_eval(
+                String formula, CellType cellType, String expectedFormula, double expectedValue)
+        {
+            TestIFEqualsFormulaEvaluation_evaluate(formula, cellType, expectedFormula, expectedValue);
+            TestIFEqualsFormulaEvaluation_evaluateFormulaCell(formula, cellType, expectedFormula, expectedValue);
+            TestIFEqualsFormulaEvaluation_evaluateInCell(formula, cellType, expectedFormula, expectedValue);
+            TestIFEqualsFormulaEvaluation_evaluateAll(formula, cellType, expectedFormula, expectedValue);
+            TestIFEqualsFormulaEvaluation_evaluateAllFormulaCells(formula, cellType, expectedFormula, expectedValue);
+        }
+
+        [Test]
+        public void TestIFEqualsFormulaEvaluation_NumericLiteral()
+        {
+            String formula = "IF(A1=1, 2, 3)";
+            CellType cellType = CellType.Numeric;
+            String expectedFormula = "IF(A1=1,2,3)";
+            double expectedValue = 2.0;
+            TestIFEqualsFormulaEvaluation_eval(formula, cellType, expectedFormula, expectedValue);
+        }
+
+        [Test]
+        public void TestIFEqualsFormulaEvaluation_Numeric()
+        {
+            String formula = "IF(A1=1, B1, C1)";
+            CellType cellType = CellType.Numeric;
+            String expectedFormula = "IF(A1=1,B1,C1)";
+            double expectedValue = 2.0;
+            TestIFEqualsFormulaEvaluation_eval(formula, cellType, expectedFormula, expectedValue);
+        }
+
+        [Test]
+        public void TestIFEqualsFormulaEvaluation_NumericCoerceToString()
+        {
+            String formula = "IF(A1&\"\"=\"1\", B1, C1)";
+            CellType cellType = CellType.Numeric;
+            String expectedFormula = "IF(A1&\"\"=\"1\",B1,C1)";
+            double expectedValue = 2.0;
+            TestIFEqualsFormulaEvaluation_eval(formula, cellType, expectedFormula, expectedValue);
+        }
+
+        [Test]
+        public void TestIFEqualsFormulaEvaluation_String()
+        {
+            String formula = "IF(A1=1, B1, C1)";
+            CellType cellType = CellType.String;
+            String expectedFormula = "IF(A1=1,B1,C1)";
+            double expectedValue = 3.0;
+            TestIFEqualsFormulaEvaluation_eval(formula, cellType, expectedFormula, expectedValue);
+        }
+
+        [Test]
+        public void TestIFEqualsFormulaEvaluation_StringCompareToString()
+        {
+            String formula = "IF(A1=\"1\", B1, C1)";
+            CellType cellType = CellType.String;
+            String expectedFormula = "IF(A1=\"1\",B1,C1)";
+            double expectedValue = 2.0;
+            TestIFEqualsFormulaEvaluation_eval(formula, cellType, expectedFormula, expectedValue);
+        }
+
+        [Test]
+        public void TestIFEqualsFormulaEvaluation_StringCoerceToNumeric()
+        {
+            String formula = "IF(A1+0=1, B1, C1)";
+            CellType cellType = CellType.String;
+            String expectedFormula = "IF(A1+0=1,B1,C1)";
+            double expectedValue = 2.0;
+            TestIFEqualsFormulaEvaluation_eval(formula, cellType, expectedFormula, expectedValue);
+        }
+
+        [Ignore("Bug 58591: this test currently Assert.Fails")]
+        [Test]
+        public void TestIFEqualsFormulaEvaluation_Boolean()
+        {
+            String formula = "IF(A1=1, B1, C1)";
+            CellType cellType = CellType.Boolean;
+            String expectedFormula = "IF(A1=1,B1,C1)";
+            double expectedValue = 2.0;
+            TestIFEqualsFormulaEvaluation_eval(formula, cellType, expectedFormula, expectedValue);
+        }
+
+        [Ignore("Bug 58591: this test currently Assert.Fails")]
+        [Test]
+        public void TestIFEqualsFormulaEvaluation_BooleanSimple()
+        {
+            String formula = "3-(A1=1)";
+            CellType cellType = CellType.Boolean;
+            String expectedFormula = "3-(A1=1)";
+            double expectedValue = 2.0;
+            TestIFEqualsFormulaEvaluation_eval(formula, cellType, expectedFormula, expectedValue);
+        }
+
+        [Test]
+        public void TestIFEqualsFormulaEvaluation_Formula()
+        {
+            String formula = "IF(A1=1, B1, C1)";
+            CellType cellType = CellType.Formula;
+            String expectedFormula = "IF(A1=1,B1,C1)";
+            double expectedValue = 2.0;
+            TestIFEqualsFormulaEvaluation_eval(formula, cellType, expectedFormula, expectedValue);
+        }
+
+        [Test]
+        public void TestIFEqualsFormulaEvaluation_Blank()
+        {
+            String formula = "IF(A1=1, B1, C1)";
+            CellType cellType = CellType.Blank;
+            String expectedFormula = "IF(A1=1,B1,C1)";
+            double expectedValue = 3.0;
+            TestIFEqualsFormulaEvaluation_eval(formula, cellType, expectedFormula, expectedValue);
+        }
+
+        [Test]
+        public void TestIFEqualsFormulaEvaluation_BlankCompareToZero()
+        {
+            String formula = "IF(A1=0, B1, C1)";
+            CellType cellType = CellType.Blank;
+            String expectedFormula = "IF(A1=0,B1,C1)";
+            double expectedValue = 2.0;
+            TestIFEqualsFormulaEvaluation_eval(formula, cellType, expectedFormula, expectedValue);
+        }
+
+        [Ignore("Bug 58591: this test currently Assert.Fails")]
+        [Test]
+        public void TestIFEqualsFormulaEvaluation_BlankInverted()
+        {
+            String formula = "IF(NOT(A1)=1, B1, C1)";
+            CellType cellType = CellType.Blank;
+            String expectedFormula = "IF(NOT(A1)=1,B1,C1)";
+            double expectedValue = 2.0;
+            TestIFEqualsFormulaEvaluation_eval(formula, cellType, expectedFormula, expectedValue);
+        }
+
+        [Ignore("Bug 58591: this test currently Assert.Fails")]
+        [Test]
+        public void TestIFEqualsFormulaEvaluation_BlankInvertedSimple()
+        {
+            String formula = "3-(NOT(A1)=1)";
+            CellType cellType = CellType.Blank;
+            String expectedFormula = "3-(NOT(A1)=1)";
+            double expectedValue = 2.0;
+            TestIFEqualsFormulaEvaluation_eval(formula, cellType, expectedFormula, expectedValue);
+        }
+
+
+        private void TestIFEqualsFormulaEvaluation_evaluateFormulaCell(
+                String formula, CellType cellType, String expectedFormula, double expectedResult)
+        {
+            IWorkbook wb = TestIFEqualsFormulaEvaluation_setup(formula, cellType);
+            ICell D1 = wb.GetSheet("IFEquals").GetRow(0).GetCell(3);
+
+            IFormulaEvaluator eval = wb.GetCreationHelper().CreateFormulaEvaluator();
+            CellType resultCellType = eval.EvaluateFormulaCell(D1);
+
+            // Call should modify the contents, but leave the formula intact
+            Assert.AreEqual(CellType.Formula, D1.CellType);
+            Assert.AreEqual(expectedFormula, D1.CellFormula);
+            Assert.AreEqual(CellType.Numeric, resultCellType);
+            Assert.AreEqual(CellType.Numeric, D1.CachedFormulaResultType);
+            Assert.AreEqual(expectedResult, D1.NumericCellValue, EPSILON);
+
+            TestIFEqualsFormulaEvaluation_teardown(wb);
+        }
+
+        private void TestIFEqualsFormulaEvaluation_evaluateInCell(
+                String formula, CellType cellType, String expectedFormula, double expectedResult)
+        {
+            IWorkbook wb = TestIFEqualsFormulaEvaluation_setup(formula, cellType);
+            ICell D1 = wb.GetSheet("IFEquals").GetRow(0).GetCell(3);
+
+            IFormulaEvaluator eval = wb.GetCreationHelper().CreateFormulaEvaluator();
+            ICell result = eval.EvaluateInCell(D1);
+
+            // Call should modify the contents and replace the formula with the result
+            Assert.AreSame(D1, result); // returns the same cell that was provided as an argument so that calls can be chained.
+            try
+            {
+                string tmp = D1.CellFormula;
+                Assert.Fail("cell formula should be overwritten with formula result");
+            }
+            catch (InvalidOperationException)
+            {
+            }
+            Assert.AreEqual(CellType.Numeric, D1.CellType);
+            Assert.AreEqual(expectedResult, D1.NumericCellValue, EPSILON);
+
+            TestIFEqualsFormulaEvaluation_teardown(wb);
+        }
+
+        private void TestIFEqualsFormulaEvaluation_evaluateAll(
+                String formula, CellType cellType, String expectedFormula, double expectedResult)
+        {
+            IWorkbook wb = TestIFEqualsFormulaEvaluation_setup(formula, cellType);
+            ICell D1 = wb.GetSheet("IFEquals").GetRow(0).GetCell(3);
+
+            IFormulaEvaluator eval = wb.GetCreationHelper().CreateFormulaEvaluator();
+            eval.EvaluateAll();
+
+            // Call should modify the contents
+            Assert.AreEqual(CellType.Formula, D1.CellType);
+            Assert.AreEqual(expectedFormula, D1.CellFormula);
+
+            Assert.AreEqual(CellType.Numeric, D1.CachedFormulaResultType);
+            Assert.AreEqual(expectedResult, D1.NumericCellValue, EPSILON);
+
+            TestIFEqualsFormulaEvaluation_teardown(wb);
+        }
+
+        private void TestIFEqualsFormulaEvaluation_evaluateAllFormulaCells(
+                String formula, CellType cellType, String expectedFormula, double expectedResult)
+        {
+            IWorkbook wb = TestIFEqualsFormulaEvaluation_setup(formula, cellType);
+            ICell D1 = wb.GetSheet("IFEquals").GetRow(0).GetCell(3);
+
+            HSSFFormulaEvaluator.EvaluateAllFormulaCells(wb);
+
+            // Call should modify the contents
+            Assert.AreEqual(CellType.Formula, D1.CellType);
+            // whitespace gets deleted because formula is parsed and re-rendered
+            Assert.AreEqual(expectedFormula, D1.CellFormula);
+
+            Assert.AreEqual(CellType.Numeric, D1.CachedFormulaResultType);
+            Assert.AreEqual(expectedResult, D1.NumericCellValue, EPSILON);
+
+            TestIFEqualsFormulaEvaluation_teardown(wb);
+        }
+
+    }
 }
